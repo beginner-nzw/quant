@@ -4,3 +4,30 @@
 *.docx
 *.pdf
 quant-ai-platform/docs/
+
+# Local/generated files
+.pycache_tmp/
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.cache
+runtime-logs/
+quant-ai-platform/runtime-logs/
+
+# IDE/editor local files
+.idea/
+.vscode/
+
+# Local secrets
+.env
+.env.*
+*.local
+*.key
+*.pem
+*.p12
+*.jks
+
+# Local test/data artifacts
+/quant.jmx
+/企业级AI项目选题分析_*.json
