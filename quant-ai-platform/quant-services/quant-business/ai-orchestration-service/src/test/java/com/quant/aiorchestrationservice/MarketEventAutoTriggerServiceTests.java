@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.MarketEventAutoTriggerServiceImpl;
+
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
 import com.quant.aiorchestrator.mapper.MarketEventMapper;
 import com.quant.aiorchestrator.service.EventAutoTaskDispatchService;
@@ -21,7 +23,7 @@ class MarketEventAutoTriggerServiceTests {
         EventAutoTriggerConfigService configService = mock(EventAutoTriggerConfigService.class);
         EventAutoTaskDispatchService dispatchService = mock(EventAutoTaskDispatchService.class);
 
-        MarketEventAutoTriggerService service = new MarketEventAutoTriggerService(
+        MarketEventAutoTriggerService service = new MarketEventAutoTriggerServiceImpl(
                 marketEventMapper,
                 configService,
                 dispatchService
@@ -54,7 +56,7 @@ class MarketEventAutoTriggerServiceTests {
         EventAutoTriggerConfigService configService = mock(EventAutoTriggerConfigService.class);
         EventAutoTaskDispatchService dispatchService = mock(EventAutoTaskDispatchService.class);
 
-        MarketEventAutoTriggerService service = new MarketEventAutoTriggerService(
+        MarketEventAutoTriggerService service = new MarketEventAutoTriggerServiceImpl(
                 marketEventMapper,
                 configService,
                 dispatchService

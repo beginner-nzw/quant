@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.TaskDomainEventPublisherServiceImpl;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.RiskWarningDO;
@@ -48,7 +50,7 @@ class TaskDomainEventPublisherServiceTests {
         ReportEvidenceRefMapper reportEvidenceRefMapper = mock(ReportEvidenceRefMapper.class);
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
-        TaskDomainEventPublisherService service = new TaskDomainEventPublisherService(
+        TaskDomainEventPublisherService service = new TaskDomainEventPublisherServiceImpl(
                 objectMapper,
                 kafkaTemplate,
                 riskWarningMapper,

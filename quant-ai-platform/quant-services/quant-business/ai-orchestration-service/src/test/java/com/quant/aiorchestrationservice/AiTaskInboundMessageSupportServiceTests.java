@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.AiTaskInboundMessageSupportServiceImpl;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.service.AiTaskDeadLetterPublisherService;
 import com.quant.aiorchestrator.service.AiTaskInboundMessageSupportService;
@@ -24,7 +26,7 @@ class AiTaskInboundMessageSupportServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
         AiTaskDeadLetterPublisherService deadLetterPublisherService = mock(AiTaskDeadLetterPublisherService.class);
 
-        AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportService(
+        AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportServiceImpl(
                 new ObjectMapper(),
                 taskMessageLogService,
                 deadLetterPublisherService
@@ -67,7 +69,7 @@ class AiTaskInboundMessageSupportServiceTests {
 
     @Test
     void missingPayloadShouldBeRejected() {
-        AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportService(
+        AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportServiceImpl(
                 new ObjectMapper(),
                 mock(TaskMessageLogService.class),
                 mock(AiTaskDeadLetterPublisherService.class)

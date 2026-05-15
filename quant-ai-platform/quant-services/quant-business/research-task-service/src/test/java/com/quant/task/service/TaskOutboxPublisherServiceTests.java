@@ -1,5 +1,7 @@
 package com.quant.task.service;
 
+import com.quant.task.service.impl.TaskOutboxPublisherServiceImpl;
+
 import com.quant.common.messaging.KafkaTopicConstants;
 import com.quant.task.domain.entity.TaskOutboxMessageDO;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ class TaskOutboxPublisherServiceTests {
         TaskMessageLogService messageLogService = mock(TaskMessageLogService.class);
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         TaskOutboxPublisherService publisher =
-                new TaskOutboxPublisherService(outboxService, messageLogService, kafkaTemplate);
+                new TaskOutboxPublisherServiceImpl(outboxService, messageLogService, kafkaTemplate);
         TaskOutboxMessageDO outbox = outbox();
 
         when(outboxService.selectReadyToPublish(anyInt(), any(LocalDateTime.class))).thenReturn(List.of(outbox));
@@ -48,7 +50,7 @@ class TaskOutboxPublisherServiceTests {
         TaskMessageLogService messageLogService = mock(TaskMessageLogService.class);
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         TaskOutboxPublisherService publisher =
-                new TaskOutboxPublisherService(outboxService, messageLogService, kafkaTemplate);
+                new TaskOutboxPublisherServiceImpl(outboxService, messageLogService, kafkaTemplate);
         TaskOutboxMessageDO outbox = outbox();
 
         when(outboxService.selectReadyToPublish(anyInt(), any(LocalDateTime.class))).thenReturn(List.of(outbox));
@@ -67,7 +69,7 @@ class TaskOutboxPublisherServiceTests {
         TaskMessageLogService messageLogService = mock(TaskMessageLogService.class);
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         TaskOutboxPublisherService publisher =
-                new TaskOutboxPublisherService(outboxService, messageLogService, kafkaTemplate);
+                new TaskOutboxPublisherServiceImpl(outboxService, messageLogService, kafkaTemplate);
         TaskOutboxMessageDO outbox = outbox();
         CompletableFuture<SendResult<String, String>> failedFuture = new CompletableFuture<>();
         failedFuture.completeExceptionally(new RuntimeException("kafka down"));

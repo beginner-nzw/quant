@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.StrategySignalServiceImpl;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.dto.StrategySignalCreateDTO;
@@ -141,7 +143,7 @@ class StrategySignalServiceTests {
     }
 
     private StrategySignalService newService(TestDeps deps) {
-        return new StrategySignalService(
+        return new StrategySignalServiceImpl(
                 deps.strategySignalMapper,
                 deps.strategySignalFactorMapper,
                 new ObjectMapper(),

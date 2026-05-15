@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.MarketEventStandardizedPublisherServiceImpl;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
@@ -34,7 +36,7 @@ class MarketEventStandardizedPublisherServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
         doReturn(CompletableFuture.completedFuture(null)).when(kafkaTemplate).send(anyString(), anyString(), anyString());
 
-        MarketEventStandardizedPublisherService service = new MarketEventStandardizedPublisherService(
+        MarketEventStandardizedPublisherService service = new MarketEventStandardizedPublisherServiceImpl(
                 objectMapper,
                 kafkaTemplate,
                 taskMessageLogService

@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.AiResultDomainProjectionServiceImpl;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
@@ -89,7 +91,7 @@ class AiResultDomainProjectionServiceTests {
     }
 
     private AiResultDomainProjectionService newService(TestDeps deps) {
-        return new AiResultDomainProjectionService(
+        return new AiResultDomainProjectionServiceImpl(
                 deps.riskWarningMapper,
                 deps.riskWarningDetailMapper,
                 deps.strategySignalMapper,

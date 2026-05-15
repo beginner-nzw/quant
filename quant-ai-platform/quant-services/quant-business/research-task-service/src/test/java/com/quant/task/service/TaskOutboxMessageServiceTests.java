@@ -1,5 +1,7 @@
 package com.quant.task.service;
 
+import com.quant.task.service.impl.TaskOutboxMessageServiceImpl;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -24,7 +26,7 @@ class TaskOutboxMessageServiceTests {
         TaskOutboxMessageMapper mapper = mock(TaskOutboxMessageMapper.class);
         when(mapper.insert(any(TaskOutboxMessageDO.class))).thenReturn(1);
         ObjectMapper objectMapper = new ObjectMapper();
-        TaskOutboxMessageService service = new TaskOutboxMessageService(mapper, objectMapper);
+        TaskOutboxMessageService service = new TaskOutboxMessageServiceImpl(mapper, objectMapper);
 
         ResearchTaskDO task = new ResearchTaskDO();
         task.setTaskId("task-1");

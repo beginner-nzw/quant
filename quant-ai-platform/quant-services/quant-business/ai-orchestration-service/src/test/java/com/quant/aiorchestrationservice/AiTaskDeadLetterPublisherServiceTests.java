@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.service.impl.AiTaskDeadLetterPublisherServiceImpl;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.service.AiTaskDeadLetterPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
@@ -32,7 +34,7 @@ class AiTaskDeadLetterPublisherServiceTests {
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
-        AiTaskDeadLetterPublisherService service = new AiTaskDeadLetterPublisherService(
+        AiTaskDeadLetterPublisherService service = new AiTaskDeadLetterPublisherServiceImpl(
                 objectMapper,
                 kafkaTemplate,
                 taskMessageLogService
