@@ -1,0 +1,6 @@
+# Documentation and local planning artifacts
+*.md
+*.doc
+*.docx
+*.pdf
+quant-ai-platform/docs/
