@@ -2,6 +2,7 @@ package com.quant.aiorchestrator.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.quant.aiorchestrator.domain.dto.TaskCancelDTO;
 import com.quant.aiorchestrator.domain.entity.AuditRecordDO;
 import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
@@ -62,17 +63,13 @@ public class TaskControlServiceImpl implements TaskControlService {
 
         stringRedisTemplate.opsForValue().set(
                 RedisKeyBuilder.taskControl(taskId),
-                """
-                {"cancelled":true,"reason":"%s"}
-                """.formatted(cancelReason.replace("\"", "'")),
+                buildCancelRuntimeSignal(cancelReason),
                 Duration.ofHours(24)
         );
 
         stringRedisTemplate.opsForValue().set(
                 RedisKeyBuilder.taskState(taskId),
-                """
-                {"status":"%s","currentStage":"%s","progress":100}
-                """.formatted(TaskStatusEnum.CANCELLED.name(), TaskStageEnum.CANCELLED.name()),
+                buildCancelledTaskState(),
                 Duration.ofHours(24)
         );
         stringRedisTemplate.delete(RedisKeyBuilder.taskFull(taskId));
@@ -101,5 +98,20 @@ public class TaskControlServiceImpl implements TaskControlService {
         );
 
         return taskId;
+    }
+
+    private String buildCancelRuntimeSignal(String cancelReason) {
+        ObjectNode signal = objectMapper.createObjectNode();
+        signal.put("cancelled", true);
+        signal.put("reason", cancelReason);
+        return signal.toString();
+    }
+
+    private String buildCancelledTaskState() {
+        ObjectNode state = objectMapper.createObjectNode();
+        state.put("status", TaskStatusEnum.CANCELLED.name());
+        state.put("currentStage", TaskStageEnum.CANCELLED.name());
+        state.put("progress", 100);
+        return state.toString();
     }
 }
