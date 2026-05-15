@@ -65,13 +65,18 @@ import com.quant.aiorchestrator.domain.vo.TaskStepVO;
 import com.quant.aiorchestrator.domain.vo.WorkflowInstanceVO;
 import com.quant.aiorchestrator.sentinel.TaskQuerySentinelBlockHandler;
 import com.quant.aiorchestrator.service.AgentConfigService;
+import com.quant.aiorchestrator.service.AuditConfigDashboardQueryService;
 import com.quant.aiorchestrator.service.EventAutoTriggerConfigService;
 import com.quant.aiorchestrator.service.EventSourceConfigService;
 import com.quant.aiorchestrator.service.EventSourcePreviewService;
 import com.quant.aiorchestrator.service.MarketEventService;
+import com.quant.aiorchestrator.service.MarketQueryService;
 import com.quant.aiorchestrator.service.ModelStrategyConfigService;
 import com.quant.aiorchestrator.service.PromptTemplateConfigService;
+import com.quant.aiorchestrator.service.ReportQueryService;
+import com.quant.aiorchestrator.service.RiskQueryService;
 import com.quant.aiorchestrator.service.RoleAccessConfigService;
+import com.quant.aiorchestrator.service.StrategyQueryService;
 import com.quant.aiorchestrator.service.StrategySignalService;
 import com.quant.aiorchestrator.service.TaskControlService;
 import com.quant.aiorchestrator.service.TaskQueryService;
@@ -98,6 +103,10 @@ public class TaskQueryController {
     private final TaskRetryService taskRetryService;
     private final TaskControlService taskControlService;
     private final TaskReportService taskReportService;
+    private final ReportQueryService reportQueryService;
+    private final RiskQueryService riskQueryService;
+    private final MarketQueryService marketQueryService;
+    private final AuditConfigDashboardQueryService auditConfigDashboardQueryService;
     private final MarketEventService marketEventService;
     private final EventAutoTriggerConfigService eventAutoTriggerConfigService;
     private final EventSourceConfigService eventSourceConfigService;
@@ -107,6 +116,7 @@ public class TaskQueryController {
     private final AgentConfigService agentConfigService;
     private final WorkflowConfigService workflowConfigService;
     private final RoleAccessConfigService roleAccessConfigService;
+    private final StrategyQueryService strategyQueryService;
     private final StrategySignalService strategySignalService;
 
     @GetMapping("/{taskId}")
@@ -178,27 +188,27 @@ public class TaskQueryController {
 
     @GetMapping("/market-events")
     public Result<MarketEventPageVO> pageMarketEvents(MarketEventPageQueryDTO queryDTO) {
-        return Result.success(marketEventService.pageMarketEvents(queryDTO));
+        return Result.success(marketQueryService.pageMarketEvents(queryDTO));
     }
 
     @GetMapping("/market-event-stats")
     public Result<MarketEventStatsVO> getMarketEventStats() {
-        return Result.success(marketEventService.getMarketEventStats());
+        return Result.success(marketQueryService.getMarketEventStats());
     }
 
     @GetMapping("/market-events/{eventId}")
     public Result<MarketEventListItemVO> getMarketEvent(@PathVariable("eventId") String eventId) {
-        return Result.success(marketEventService.getMarketEvent(eventId));
+        return Result.success(marketQueryService.getMarketEvent(eventId));
     }
 
     @GetMapping("/market-events/ingest-history")
     public Result<List<MarketEventIngestHistoryItemVO>> listMarketEventIngestHistory() {
-        return Result.success(marketEventService.listMarketEventIngestHistory());
+        return Result.success(marketQueryService.listMarketEventIngestHistory());
     }
 
     @GetMapping("/market-event-source-configs")
     public Result<List<EventSourceConfigItemVO>> listMarketEventSourceConfigs() {
-        return Result.success(eventSourceConfigService.loadSources());
+        return Result.success(auditConfigDashboardQueryService.listMarketEventSourceConfigs());
     }
 
     @PostMapping("/market-events")
@@ -253,22 +263,22 @@ public class TaskQueryController {
 
     @GetMapping("/risk-warnings")
     public Result<RiskWarningPageVO> pageRiskWarnings(RiskWarningPageQueryDTO queryDTO) {
-        return Result.success(taskQueryService.pageRiskWarnings(queryDTO));
+        return Result.success(riskQueryService.pageRiskWarnings(queryDTO));
     }
 
     @GetMapping("/risk-warning-stats")
     public Result<RiskWarningStatsVO> getRiskWarningStats() {
-        return Result.success(taskQueryService.getRiskWarningStats());
+        return Result.success(riskQueryService.getRiskWarningStats());
     }
 
     @GetMapping("/strategy-signals")
     public Result<StrategySignalPageVO> pageStrategySignals(StrategySignalPageQueryDTO queryDTO) {
-        return Result.success(taskQueryService.pageStrategySignals(queryDTO));
+        return Result.success(strategyQueryService.pageStrategySignals(queryDTO));
     }
 
     @GetMapping("/strategy-signal-stats")
     public Result<StrategySignalStatsVO> getStrategySignalStats() {
-        return Result.success(taskQueryService.getStrategySignalStats());
+        return Result.success(strategyQueryService.getStrategySignalStats());
     }
 
     @PostMapping("/strategy-signals")
@@ -279,7 +289,7 @@ public class TaskQueryController {
 
     @GetMapping("/strategy-signals/{signalId}/factors")
     public Result<List<StrategySignalFactorItemVO>> listStrategySignalFactors(@PathVariable("signalId") String signalId) {
-        return Result.success(strategySignalService.listFactors(signalId));
+        return Result.success(strategyQueryService.listStrategySignalFactors(signalId));
     }
 
     @PostMapping("/strategy-signals/{signalId}/status")
@@ -291,45 +301,45 @@ public class TaskQueryController {
 
     @GetMapping("/report-center")
     public Result<ReportCenterPageVO> pageReportCenter(ReportCenterPageQueryDTO queryDTO) {
-        return Result.success(taskQueryService.pageReportCenter(queryDTO));
+        return Result.success(reportQueryService.pageReportCenter(queryDTO));
     }
 
     @GetMapping("/report-center-stats")
     public Result<ReportCenterStatsVO> getReportCenterStats() {
-        return Result.success(taskQueryService.getReportCenterStats());
+        return Result.success(reportQueryService.getReportCenterStats());
     }
 
     @GetMapping("/market-intelligence")
     public Result<MarketIntelligencePageVO> pageMarketIntelligence(MarketIntelligencePageQueryDTO queryDTO) {
-        return Result.success(taskQueryService.pageMarketIntelligence(queryDTO));
+        return Result.success(marketQueryService.pageMarketIntelligence(queryDTO));
     }
 
     @GetMapping("/market-intelligence-stats")
     public Result<MarketIntelligenceStatsVO> getMarketIntelligenceStats() {
-        return Result.success(taskQueryService.getMarketIntelligenceStats());
+        return Result.success(marketQueryService.getMarketIntelligenceStats());
     }
 
     @GetMapping("/audit-compliance")
     public Result<AuditCompliancePageVO> pageAuditCompliance(AuditCompliancePageQueryDTO queryDTO) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_AUDIT_COMPLIANCE_VIEW);
-        return Result.success(taskQueryService.pageAuditCompliance(queryDTO));
+        return Result.success(auditConfigDashboardQueryService.pageAuditCompliance(queryDTO));
     }
 
     @GetMapping("/audit-compliance-stats")
     public Result<AuditComplianceStatsVO> getAuditComplianceStats() {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_AUDIT_COMPLIANCE_VIEW);
-        return Result.success(taskQueryService.getAuditComplianceStats());
+        return Result.success(auditConfigDashboardQueryService.getAuditComplianceStats());
     }
 
     @GetMapping("/model-agent-config")
     public Result<ModelAgentConfigCenterVO> getModelAgentConfigCenter() {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_VIEW);
-        return Result.success(taskQueryService.getModelAgentConfigCenter());
+        return Result.success(auditConfigDashboardQueryService.getModelAgentConfigCenter());
     }
 
     @GetMapping("/role-access-configs")
     public Result<List<RoleAccessConfigItemVO>> getRoleAccessConfigs() {
-        return Result.success(roleAccessConfigService.loadRoles());
+        return Result.success(auditConfigDashboardQueryService.listRoleAccessConfigs());
     }
 
     @PostMapping("/model-agent-config/prompt-templates/{templateCode}")
@@ -390,7 +400,7 @@ public class TaskQueryController {
 
     @GetMapping("/research-workbench")
     public Result<ResearchWorkbenchVO> getResearchWorkbench(ResearchWorkbenchQueryDTO queryDTO) {
-        return Result.success(taskQueryService.getResearchWorkbench(queryDTO));
+        return Result.success(auditConfigDashboardQueryService.getResearchWorkbench(queryDTO));
     }
 
     @GetMapping("/failed")
@@ -408,7 +418,7 @@ public class TaskQueryController {
 
     @GetMapping("/{taskId}/report")
     public Result<TaskReportVO> getTaskReport(@PathVariable("taskId") String taskId) {
-        return Result.success(taskQueryService.getTaskReportOnly(taskId));
+        return Result.success(reportQueryService.getTaskReportOnly(taskId));
     }
 
     @PostMapping("/{taskId}/report/review")
@@ -420,11 +430,11 @@ public class TaskQueryController {
 
     @GetMapping("/report-review-stats")
     public Result<ReportReviewStatsVO> getReportReviewStats() {
-        return Result.success(taskQueryService.getReportReviewStats());
+        return Result.success(reportQueryService.getReportReviewStats());
     }
 
     @GetMapping("/{taskId}/report/review-logs")
     public Result<List<TaskReportReviewLogVO>> listReportReviewLogs(@PathVariable("taskId") String taskId) {
-        return Result.success(taskReportService.listReviewLogs(taskId));
+        return Result.success(reportQueryService.listReviewLogs(taskId));
     }
 }
