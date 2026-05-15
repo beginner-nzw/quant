@@ -1,0 +1,73 @@
+{
+  "agents" : [ {
+    "agentCode" : "planner_agent",
+    "agentName" : "Planner Agent",
+    "stageCode" : "PLANNING",
+    "executionOrder" : 1,
+    "enabled" : true,
+    "timeoutSeconds" : 75,
+    "needHumanReview" : false,
+    "implementationMode" : "PYTHON_LANGCHAIN_NODE",
+    "version" : "1.0.0",
+    "toolWhitelist" : [ "task_control_service.check_cancelled" ],
+    "inputKeys" : [ "task_id", "task_type", "target_code" ],
+    "outputKeys" : [ "current_stage", "current_node", "agent_audits", "plan_result" ],
+    "remark" : "规划节点，负责任务规划和执行模式判断。"
+  }, {
+    "agentCode" : "intent_agent",
+    "agentName" : "Intent Agent",
+    "stageCode" : "INTENT_UNDERSTANDING",
+    "executionOrder" : 2,
+    "enabled" : true,
+    "timeoutSeconds" : 75,
+    "needHumanReview" : false,
+    "implementationMode" : "PYTHON_LANGCHAIN_NODE",
+    "version" : "1.0.0",
+    "toolWhitelist" : [ "task_control_service.check_cancelled" ],
+    "inputKeys" : [ "task_id", "task_type", "target_name" ],
+    "outputKeys" : [ "current_stage", "current_node", "agent_audits", "intent_result" ],
+    "remark" : "意图识别节点，输出关注维度和审核压力。"
+  }, {
+    "agentCode" : "financial_analysis_agent",
+    "agentName" : "Financial Analysis Agent",
+    "stageCode" : "FINANCIAL_ANALYSIS",
+    "executionOrder" : 3,
+    "enabled" : true,
+    "timeoutSeconds" : 75,
+    "needHumanReview" : false,
+    "implementationMode" : "PYTHON_LANGCHAIN_NODE",
+    "version" : "1.0.0",
+    "toolWhitelist" : [ "task_control_service.check_cancelled", "market_data_service.load_financial_data" ],
+    "inputKeys" : [ "task_id", "target_code", "target_name" ],
+    "outputKeys" : [ "financial_result", "current_stage", "agent_audits" ],
+    "remark" : "财务分析节点，负责财务摘要和趋势判断。"
+  }, {
+    "agentCode" : "risk_review_agent",
+    "agentName" : "Risk Review Agent",
+    "stageCode" : "RISK_REVIEW",
+    "executionOrder" : 4,
+    "enabled" : true,
+    "timeoutSeconds" : 75,
+    "needHumanReview" : false,
+    "implementationMode" : "PYTHON_LANGCHAIN_NODE",
+    "version" : "1.0.0",
+    "toolWhitelist" : [ "task_control_service.check_cancelled" ],
+    "inputKeys" : [ "financial_result", "target_name" ],
+    "outputKeys" : [ "risk_result", "current_stage", "agent_audits" ],
+    "remark" : "风险复核节点，输出风险等级、风险点和人工复核判断。"
+  }, {
+    "agentCode" : "report_generation_agent",
+    "agentName" : "Report Generation Agent",
+    "stageCode" : "REPORT_GENERATION",
+    "executionOrder" : 5,
+    "enabled" : true,
+    "timeoutSeconds" : 75,
+    "needHumanReview" : false,
+    "implementationMode" : "PYTHON_LANGCHAIN_NODE",
+    "version" : "1.0.0",
+    "toolWhitelist" : [ "task_control_service.check_cancelled" ],
+    "inputKeys" : [ "financial_result", "risk_result", "target_name" ],
+    "outputKeys" : [ "report_result", "evidence_refs", "status", "agent_audits" ],
+    "remark" : "报告生成节点，负责最终结构化报告输出。"
+  } ]
+}

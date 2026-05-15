@@ -1,0 +1,68 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: quant-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: quant_ai
+      MYSQL_USER: quant
+      MYSQL_PASSWORD: quant123
+      TZ: Asia/Shanghai
+    ports:
+      - "3307:3306"
+    volumes:
+      - ../mysql/init:/docker-entrypoint-initdb.d
+      - mysql_data:/var/lib/mysql
+    command:
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+
+  redis:
+    image: redis:7.4
+    container_name: quant-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  zookeeper:
+    image: bitnamilegacy/zookeeper:3.9
+    container_name: quant-zookeeper
+    restart: unless-stopped
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnamilegacy/kafka:3.9
+    container_name: quant-kafka
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+    ports:
+      - "19092:19092"
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@quant-kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:19092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://quant-kafka:9092,EXTERNAL://127.0.0.1:19092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_CFG_NUM_PARTITIONS: 3
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka_data:/bitnamilegacy/kafka
+
+volumes:
+  mysql_data:
+  redis_data:
+  kafka_data:

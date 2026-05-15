@@ -1,0 +1,158 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.quant</groupId>
+  <artifactId>quant-services</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>quant-services</name>
+  <description>Parent and aggregator project for quant AI platform services</description>
+
+  <modules>
+    <module>quant-common/quant-common-core</module>
+    <module>quant-common/quant-common-model</module>
+    <module>quant-common/quant-common-kafka</module>
+    <module>quant-common/quant-common-redis</module>
+    <module>quant-common/quant-common-web</module>
+    <module>quant-common/quant-common-mybatis</module>
+    <module>quant-common/quant-common-messaging</module>
+    <module>quant-common/quant-common-security</module>
+
+<!--    <module>quant-api/quant-api-task</module>-->
+<!--    <module>quant-api/quant-api-ai</module>-->
+
+    <module>quant-business/research-task-service</module>
+    <module>quant-business/ai-orchestration-service</module>
+  </modules>
+
+  <properties>
+    <java.version>17</java.version>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <spring.boot.version>3.5.5</spring.boot.version>
+    <spring.cloud.version>2025.0.0</spring.cloud.version>
+    <spring.cloud.alibaba.version>2025.0.0.0</spring.cloud.alibaba.version>
+
+    <mybatis.plus.version>3.5.12</mybatis.plus.version>
+    <mapstruct.version>1.6.3</mapstruct.version>
+    <jackson.version>2.20.0</jackson.version>
+    <lombok.version>1.18.38</lombok.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+
+      <!-- Spring Boot BOM -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring.boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Spring Cloud BOM -->
+      <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-dependencies</artifactId>
+        <version>${spring.cloud.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Spring Cloud Alibaba BOM -->
+      <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+        <version>${spring.cloud.alibaba.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- MyBatis-Plus -->
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        <version>${mybatis.plus.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.baomidou</groupId>
+        <artifactId>mybatis-plus-jsqlparser</artifactId>
+        <version>${mybatis.plus.version}</version>
+      </dependency>
+
+      <!-- Jackson (optional explicit lock) -->
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
+      </dependency>
+
+      <!-- MapStruct -->
+      <dependency>
+        <groupId>org.mapstruct</groupId>
+        <artifactId>mapstruct</artifactId>
+        <version>${mapstruct.version}</version>
+      </dependency>
+
+      <!-- Lombok -->
+      <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>${lombok.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <!-- Java 17 -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.13.0</version>
+          <configuration>
+            <release>${maven.compiler.release}</release>
+            <parameters>true</parameters>
+            <annotationProcessorPaths>
+              <path>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+              </path>
+              <path>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+              </path>
+            </annotationProcessorPaths>
+          </configuration>
+        </plugin>
+
+        <!-- Spring Boot plugin -->
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <version>${spring.boot.version}</version>
+        </plugin>
+
+        <!-- Surefire -->
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>3.5.2</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>

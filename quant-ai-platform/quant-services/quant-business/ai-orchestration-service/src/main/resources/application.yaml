@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: ai-orchestration-service
+  profiles:
+    active: local

@@ -1,0 +1,43 @@
+{
+  "workflows" : [ {
+    "workflowCode" : "stock_research_workflow",
+    "workflowVersion" : "1.0.0",
+    "workflowType" : "LANGGRAPH_STATE_GRAPH",
+    "taskTypes" : [ "STOCK_RESEARCH" ],
+    "entryAgent" : "planner_agent",
+    "enabled" : true,
+    "defaultSelected" : true,
+    "nodeSequence" : [ "planner_agent", "intent_agent", "financial_analysis_agent", "risk_review_agent", "report_generation_agent" ],
+    "remark" : "股票深度研究主流程，覆盖规划、意图、财务、风险和报告生成。"
+  }, {
+    "workflowCode" : "follow_up_research_workflow",
+    "workflowVersion" : "1.0.0",
+    "workflowType" : "LANGGRAPH_STATE_GRAPH",
+    "taskTypes" : [ "FOLLOW_UP_RESEARCH" ],
+    "entryAgent" : "planner_agent",
+    "enabled" : true,
+    "defaultSelected" : false,
+    "nodeSequence" : [ "planner_agent", "intent_agent", "financial_analysis_agent", "report_generation_agent" ],
+    "remark" : "跟踪研究流程，聚焦上下文延续和补充分析。"
+  }, {
+    "workflowCode" : "review_research_workflow",
+    "workflowVersion" : "1.0.0",
+    "workflowType" : "LANGGRAPH_STATE_GRAPH",
+    "taskTypes" : [ "REPORT_REVIEW", "AUDIT_REVIEW" ],
+    "entryAgent" : "planner_agent",
+    "enabled" : true,
+    "defaultSelected" : false,
+    "nodeSequence" : [ "planner_agent", "intent_agent", "risk_review_agent", "report_generation_agent" ],
+    "remark" : "报告复核与审计复核共用流程，重点做意图重判、风险复核和再生成。"
+  }, {
+    "workflowCode" : "risk_review_workflow",
+    "workflowVersion" : "1.0.0",
+    "workflowType" : "LANGGRAPH_STATE_GRAPH",
+    "taskTypes" : [ "RISK_REVIEW" ],
+    "entryAgent" : "planner_agent",
+    "enabled" : true,
+    "defaultSelected" : false,
+    "nodeSequence" : [ "planner_agent", "risk_review_agent", "report_generation_agent" ],
+    "remark" : "风险复核流程，跳过财务分析和意图细分，直接聚焦风险判断与报告。"
+  } ]
+}

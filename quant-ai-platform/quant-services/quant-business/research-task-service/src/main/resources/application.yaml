@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: research-task-service
+  profiles:
+    active: local

@@ -1,0 +1,33 @@
+USE quant_ai;
+
+CREATE TABLE IF NOT EXISTS task_outbox_message (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    outbox_id VARCHAR(64) NOT NULL UNIQUE,
+    message_id VARCHAR(64) NOT NULL,
+    task_id VARCHAR(64) NOT NULL,
+    event_id VARCHAR(64) DEFAULT NULL,
+    topic_name VARCHAR(128) NOT NULL,
+    message_key VARCHAR(128) NOT NULL,
+    message_type VARCHAR(64) NOT NULL,
+    producer_service VARCHAR(128) NOT NULL,
+    target_service VARCHAR(128) DEFAULT NULL,
+    payload_json JSON NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    retry_count INT NOT NULL DEFAULT 0,
+    max_retry_count INT NOT NULL DEFAULT 10,
+    next_retry_at DATETIME DEFAULT NULL,
+    last_error VARCHAR(1000) DEFAULT NULL,
+    message_timestamp BIGINT DEFAULT NULL,
+    trace_id VARCHAR(128) DEFAULT NULL,
+    tenant_id VARCHAR(64) NOT NULL DEFAULT 'default',
+    sent_at DATETIME DEFAULT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted TINYINT NOT NULL DEFAULT 0,
+    UNIQUE KEY uk_task_outbox_message (topic_name, message_id),
+    INDEX idx_task_id (task_id),
+    INDEX idx_topic_status_retry (topic_name, status, next_retry_at),
+    INDEX idx_status_updated_at (status, updated_at),
+    INDEX idx_trace_id (trace_id),
+    INDEX idx_created_at (created_at)
+);

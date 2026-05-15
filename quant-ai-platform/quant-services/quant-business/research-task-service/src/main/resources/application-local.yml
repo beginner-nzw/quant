@@ -1,0 +1,43 @@
+server:
+  port: 8081
+
+spring:
+  jackson:
+    time-zone: Asia/Shanghai
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
+  kafka:
+    bootstrap-servers: 127.0.0.1:19092
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level traceId=%X{traceId} %logger{36} - %msg%n"
+
+quant:
+  ai:
+    role-access-config: ../../../ai-config/role-access-configs.json

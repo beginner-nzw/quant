@@ -1,0 +1,125 @@
+{
+  "roles": [
+    {
+      "roleCode": "RESEARCHER",
+      "roleName": "研究员",
+      "roleDescription": "负责研究任务创建、事件查看、报告查看和投研工作台使用。",
+      "menuKeys": [
+        "TASK_LIST",
+        "TASK_CREATE",
+        "MARKET_EVENTS",
+        "MARKET_INTELLIGENCE",
+        "RESEARCH_WORKBENCH",
+        "STRATEGY_SIGNALS",
+        "RISK_WARNINGS",
+        "RESEARCH_REPORTS"
+      ],
+      "permissionKeys": [
+        "TASK_VIEW",
+        "TASK_CREATE"
+      ],
+      "remark": "默认业务角色，不具备审核、重试取消或平台配置权限。"
+    },
+    {
+      "roleCode": "PM",
+      "roleName": "投资经理",
+      "roleDescription": "负责查看投研结果、跟踪市场事件与情报并发起研究任务。",
+      "menuKeys": [
+        "TASK_LIST",
+        "TASK_CREATE",
+        "MARKET_EVENTS",
+        "MARKET_INTELLIGENCE",
+        "RESEARCH_WORKBENCH",
+        "STRATEGY_SIGNALS",
+        "RISK_WARNINGS",
+        "RESEARCH_REPORTS"
+      ],
+      "permissionKeys": [
+        "TASK_VIEW",
+        "TASK_CREATE"
+      ],
+      "remark": "业务管理角色，不参与审核、重试取消与平台配置。"
+    },
+    {
+      "roleCode": "RISK_MANAGER",
+      "roleName": "风控人员",
+      "roleDescription": "负责风险预警、事件查看、审计与合规结果查看。",
+      "menuKeys": [
+        "TASK_LIST",
+        "TASK_CREATE",
+        "MARKET_EVENTS",
+        "MARKET_INTELLIGENCE",
+        "RESEARCH_WORKBENCH",
+        "STRATEGY_SIGNALS",
+        "RISK_WARNINGS",
+        "RESEARCH_REPORTS",
+        "AUDIT_COMPLIANCE"
+      ],
+      "permissionKeys": [
+        "TASK_VIEW",
+        "TASK_CREATE",
+        "AUDIT_COMPLIANCE_VIEW"
+      ],
+      "remark": "可查看审计与合规中心，不具备报告审核、任务重试取消与平台配置权限。"
+    },
+    {
+      "roleCode": "COMPLIANCE_AUDITOR",
+      "roleName": "合规审核",
+      "roleDescription": "负责报告审核、审计合规查看和配置中心只读访问。",
+      "menuKeys": [
+        "TASK_LIST",
+        "TASK_CREATE",
+        "MARKET_EVENTS",
+        "MARKET_INTELLIGENCE",
+        "RESEARCH_WORKBENCH",
+        "STRATEGY_SIGNALS",
+        "RISK_WARNINGS",
+        "RESEARCH_REPORTS",
+        "AUDIT_COMPLIANCE",
+        "MODEL_AGENT_CONFIG",
+        "REPORTS_PENDING",
+        "REPORTS_APPROVED",
+        "REPORTS_REJECTED"
+      ],
+      "permissionKeys": [
+        "TASK_VIEW",
+        "TASK_CREATE",
+        "AUDIT_COMPLIANCE_VIEW",
+        "REPORT_REVIEW",
+        "MODEL_AGENT_CONFIG_VIEW"
+      ],
+      "remark": "审阅角色，可读配置中心，但不可修改配置，也不可执行任务重试取消。"
+    },
+    {
+      "roleCode": "ADMIN",
+      "roleName": "平台管理员",
+      "roleDescription": "负责全平台配置、审核流程和运行时治理。",
+      "menuKeys": [
+        "TASK_LIST",
+        "TASK_CREATE",
+        "MARKET_EVENTS",
+        "MARKET_INTELLIGENCE",
+        "RESEARCH_WORKBENCH",
+        "STRATEGY_SIGNALS",
+        "RISK_WARNINGS",
+        "RESEARCH_REPORTS",
+        "AUDIT_COMPLIANCE",
+        "MODEL_AGENT_CONFIG",
+        "REPORTS_PENDING",
+        "REPORTS_APPROVED",
+        "REPORTS_REJECTED"
+      ],
+      "permissionKeys": [
+        "TASK_VIEW",
+        "TASK_CREATE",
+        "TASK_RETRY",
+        "TASK_CANCEL",
+        "AUDIT_COMPLIANCE_VIEW",
+        "REPORT_REVIEW",
+        "MODEL_AGENT_CONFIG_VIEW",
+        "MODEL_AGENT_CONFIG_EDIT"
+      ],
+      "remark": "具备全部菜单访问、配置修改以及任务重试取消权限。"
+    }
+  ]
+}

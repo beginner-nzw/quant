@@ -1,0 +1,33 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: research-task-service
+  datasource:
+    url: jdbc:mysql://mysql:3306/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: redis
+      port: 6379
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      acks: all
+      retries: 3
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+      config:
+        server-addr: nacos:8848
+        import-check:
+          enabled: false
+    sentinel:
+      transport:
+        dashboard: nacos:8848

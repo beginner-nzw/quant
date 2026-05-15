@@ -1,0 +1,25 @@
+{
+  "enabled": true,
+  "rules": [
+    {
+      "ruleCode": "HIGH_IMPACT_EVENT_AUTO_RESEARCH",
+      "ruleName": "高影响事件自动跟踪研究",
+      "enabled": true,
+      "eventTypes": [
+        "ANNOUNCEMENT",
+        "EARNINGS",
+        "POLICY",
+        "RISK_ALERT"
+      ],
+      "impactLevels": [
+        "HIGH"
+      ],
+      "taskType": "FOLLOW_UP_RESEARCH",
+      "analysisScope": "INTELLIGENCE_FOLLOW_UP",
+      "priority": "HIGH",
+      "sourceChannel": "EVENT_AUTO",
+      "titleTemplate": "{targetName}事件跟踪研究",
+      "remark": "高影响公告、业绩、政策和风险事件录入后自动创建跟踪研究任务"
+    }
+  ]
+}

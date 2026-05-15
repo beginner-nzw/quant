@@ -1,0 +1,52 @@
+server:
+  port: 8082
+
+spring:
+  jackson:
+    time-zone: Asia/Shanghai
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+
+  kafka:
+    bootstrap-servers: 127.0.0.1:19092
+    consumer:
+      group-id: ai-orchestration-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level traceId=%X{traceId} %logger{36} - %msg%n"
+
+quant:
+  ai:
+    prompt-template-dir: ../../../prompt-templates
+    model-strategy-config: ../../../ai-config/model-strategies.json
+    agent-config: ../../../ai-config/agent-configs.json
+    workflow-config: ../../../ai-config/workflow-configs.json
+    event-auto-trigger-config: ../../../ai-config/event-auto-trigger-configs.json
+    event-source-config: ../../../ai-config/event-source-configs.json
+    event-ingest-history: ../../../ai-config/event-ingest-histories.json
+    config-audit: ../../../ai-config/config-change-audits.json
+    role-access-config: ../../../ai-config/role-access-configs.json
+    research-task-service-base-url: http://127.0.0.1:8081

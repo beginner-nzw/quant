@@ -1,0 +1,142 @@
+@import './base.css';
+
+:root {
+  --el-color-primary: #2653b1;
+  --el-color-success: #158c73;
+  --el-color-warning: #b26b11;
+  --el-color-danger: #cf3b38;
+  --el-text-color-primary: #172033;
+  --el-text-color-regular: #4f6073;
+  --el-border-radius-base: 6px;
+  --el-font-family:
+    'Noto Sans SC',
+    'PingFang SC',
+    'Microsoft YaHei',
+    'HarmonyOS Sans SC',
+    sans-serif;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.el-card {
+  border: 1px solid var(--qa-line);
+  border-radius: var(--qa-radius-lg);
+  background: var(--qa-surface);
+  box-shadow: var(--qa-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.el-card__header {
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+  color: var(--qa-ink);
+  font-weight: 900;
+}
+
+.el-card__body {
+  color: var(--qa-ink-soft);
+}
+
+.el-button {
+  border-radius: var(--qa-radius-md);
+  font-weight: 800;
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--qa-primary-strong);
+  --el-button-border-color: var(--qa-primary-strong);
+  --el-button-hover-bg-color: #2653b1;
+  --el-button-hover-border-color: #2653b1;
+  box-shadow: 0 12px 24px rgba(20, 32, 51, 0.16);
+}
+
+.el-button--success {
+  --el-button-bg-color: var(--qa-green);
+  --el-button-border-color: var(--qa-green);
+  --el-button-hover-bg-color: #20a98c;
+  --el-button-hover-border-color: #20a98c;
+}
+
+.el-button--warning {
+  --el-button-bg-color: var(--qa-amber);
+  --el-button-border-color: var(--qa-amber);
+}
+
+.el-table {
+  overflow: hidden;
+  border-radius: var(--qa-radius-lg);
+  --el-table-border-color: rgba(23, 32, 51, 0.08);
+  --el-table-header-bg-color: #eef4f8;
+  --el-table-header-text-color: #344256;
+  --el-table-text-color: #344256;
+  --el-table-row-hover-bg-color: rgba(38, 83, 177, 0.06);
+}
+
+.el-table th.el-table__cell {
+  font-weight: 900;
+}
+
+.el-table .cell {
+  line-height: 1.6;
+}
+
+.el-form--inline {
+  row-gap: 10px;
+}
+
+.el-form--inline .el-form-item {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: var(--qa-radius-md);
+  box-shadow: 0 0 0 1px rgba(23, 32, 51, 0.1) inset;
+}
+
+.el-dialog {
+  border-radius: var(--qa-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 252, 0.96)),
+    var(--qa-surface-solid);
+}
+
+.el-dialog__header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.el-dialog__title {
+  color: var(--qa-ink);
+  font-weight: 900;
+}
+
+.el-tag {
+  border-radius: var(--qa-radius-md);
+  font-weight: 800;
+}
+
+.el-pagination.is-background .el-pager li,
+.el-pagination.is-background .btn-next,
+.el-pagination.is-background .btn-prev {
+  border-radius: var(--qa-radius-md);
+}
+
+.el-empty {
+  border: 1px dashed rgba(23, 32, 51, 0.14);
+  border-radius: var(--qa-radius-lg);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+@media (max-width: 760px) {
+  .el-table {
+    font-size: 13px;
+  }
+
+  .el-dialog {
+    width: calc(100vw - 24px) !important;
+  }
+}

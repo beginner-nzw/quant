@@ -1,0 +1,27 @@
+{
+  "audits" : [ {
+    "auditId" : "bf1231fd-578e-432e-a4dd-5ee3b999d7fb",
+    "configType" : "EVENT_SOURCE_CONFIG",
+    "targetCode" : "CNINFO_ANNOUNCEMENT_PROXY",
+    "targetName" : "巨潮公告包装源",
+    "operation" : "UPDATE",
+    "operatorId" : "admin",
+    "operatorRole" : "ADMIN",
+    "configPath" : "D:\\projects\\bussiness\\quant-ai-platform\\ai-config\\event-source-configs.json",
+    "changeSummary" : "更新事件源配置",
+    "changedFields" : [ "enabled", "remark" ],
+    "createdAt" : "2026-04-08 16:04:02"
+  }, {
+    "auditId" : "7946c7ca-d0dd-4cda-8f9c-cdab86e1a811",
+    "configType" : "MODEL_STRATEGY",
+    "targetCode" : "intent_langchain_strategy",
+    "targetName" : "intent_langchain_strategy",
+    "operation" : "UPDATE",
+    "operatorId" : "admin",
+    "operatorRole" : "ADMIN",
+    "configPath" : "D:\\projects\\bussiness\\quant-ai-platform\\ai-config\\model-strategies.json",
+    "changeSummary" : "更新模型策略配置",
+    "changedFields" : [ ],
+    "createdAt" : "2026-04-02 13:36:25"
+  } ]
+}
