@@ -1,6 +1,7 @@
 package com.quant.aiorchestrator.consumer;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Slf4j
@@ -121,6 +123,7 @@ public class AiTaskResultConsumer {
 
             String finalStatus = message.getPayload().getFinalStatus();
             String finalStage = resolveFinalStage(message);
+            String expectedStatus = task.getStatus();
             if (!taskStateManager.canTransfer(task.getStatus(), finalStatus)) {
                 skipReason = "STATUS_TRANSFER_NOT_ALLOWED";
                 return;
@@ -132,11 +135,25 @@ public class AiTaskResultConsumer {
             }
 
             if (TaskStatusEnum.FAILED.name().equals(finalStatus)) {
-                researchTaskMapper.updateTaskFailed(
+                ResearchTaskDO update = new ResearchTaskDO();
+                update.setStatus(TaskStatusEnum.FAILED.name());
+                update.setCurrentStage(finalStage);
+                update.setErrorMessage(message.getPayload().getSummary());
+                update.setFinishTime(LocalDateTime.now());
+                update.setUpdatedAt(LocalDateTime.now());
+                LambdaUpdateWrapper<ResearchTaskDO> guard = finalStateGuard(
                         message.getTaskId(),
-                        finalStage,
-                        message.getPayload().getSummary()
+                        expectedStatus,
+                        messageRetryCount
                 );
+                int updated = researchTaskMapper.update(
+                        update,
+                        guard
+                );
+                if (updated <= 0) {
+                    skipReason = "TASK_FINAL_STATE_UPDATE_SKIPPED";
+                    return;
+                }
                 taskTraceManager.finishWorkflow(workflowInstanceId, finalStage, finalStatus);
 
                 stringRedisTemplate.opsForValue().set(
@@ -154,10 +171,25 @@ public class AiTaskResultConsumer {
             }
 
             if (TaskStatusEnum.CANCELLED.name().equals(finalStatus)) {
-                researchTaskMapper.updateTaskCancelled(
+                ResearchTaskDO update = new ResearchTaskDO();
+                update.setStatus(TaskStatusEnum.CANCELLED.name());
+                update.setCurrentStage(TaskStageEnum.CANCELLED.name());
+                update.setErrorMessage(message.getPayload().getSummary());
+                update.setFinishTime(LocalDateTime.now());
+                update.setUpdatedAt(LocalDateTime.now());
+                LambdaUpdateWrapper<ResearchTaskDO> guard = finalStateGuard(
                         message.getTaskId(),
-                        message.getPayload().getSummary()
+                        expectedStatus,
+                        messageRetryCount
                 );
+                int updated = researchTaskMapper.update(
+                        update,
+                        guard
+                );
+                if (updated <= 0) {
+                    skipReason = "TASK_FINAL_STATE_UPDATE_SKIPPED";
+                    return;
+                }
                 taskTraceManager.finishWorkflow(workflowInstanceId, finalStage, finalStatus);
 
                 stringRedisTemplate.opsForValue().set(
@@ -174,12 +206,26 @@ public class AiTaskResultConsumer {
                 return;
             }
 
-            researchTaskMapper.updateTaskResult(
+            ResearchTaskDO update = new ResearchTaskDO();
+            update.setStatus(finalStatus);
+            update.setCurrentStage(finalStage);
+            update.setResultRef(message.getPayload().getResultRef());
+            update.setErrorMessage(null);
+            update.setFinishTime(LocalDateTime.now());
+            update.setUpdatedAt(LocalDateTime.now());
+            LambdaUpdateWrapper<ResearchTaskDO> guard = finalStateGuard(
                     message.getTaskId(),
-                    finalStatus,
-                    finalStage,
-                    message.getPayload().getResultRef()
+                    expectedStatus,
+                    messageRetryCount
             );
+            int updated = researchTaskMapper.update(
+                    update,
+                    guard
+            );
+            if (updated <= 0) {
+                skipReason = "TASK_FINAL_STATE_UPDATE_SKIPPED";
+                return;
+            }
 
             ResearchReportDO report = saveReport(message);
             aiResultDomainProjectionService.project(message, report);
@@ -232,6 +278,23 @@ public class AiTaskResultConsumer {
             return TaskStageEnum.FAILED.name();
         }
         return TaskStageEnum.FINISHED.name();
+    }
+
+    private LambdaUpdateWrapper<ResearchTaskDO> finalStateGuard(String taskId,
+                                                                String expectedStatus,
+                                                                int expectedRetryCount) {
+        LambdaUpdateWrapper<ResearchTaskDO> wrapper = new LambdaUpdateWrapper<ResearchTaskDO>()
+                .eq(ResearchTaskDO::getTaskId, taskId)
+                .eq(ResearchTaskDO::getStatus, expectedStatus)
+                .eq(ResearchTaskDO::getDeleted, 0);
+        if (expectedRetryCount == 0) {
+            wrapper.and(retry -> retry.eq(ResearchTaskDO::getRetryCount, 0)
+                    .or()
+                    .isNull(ResearchTaskDO::getRetryCount));
+        } else {
+            wrapper.eq(ResearchTaskDO::getRetryCount, expectedRetryCount);
+        }
+        return wrapper;
     }
 
     private void updateRetryLogStatus(AiTaskResultMessage message, String retryStatus) {
