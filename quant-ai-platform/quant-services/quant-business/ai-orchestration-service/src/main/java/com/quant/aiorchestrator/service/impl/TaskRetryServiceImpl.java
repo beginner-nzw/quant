@@ -57,7 +57,8 @@ public class TaskRetryServiceImpl implements TaskRetryService {
             throw new BizException("TASK_STATUS_INVALID", "仅失败任务允许重试");
         }
 
-        int nextRetryNo = (task.getRetryCount() == null ? 0 : task.getRetryCount()) + 1;
+        int currentRetryCount = task.getRetryCount() == null ? 0 : task.getRetryCount();
+        int nextRetryNo = currentRetryCount + 1;
 
         ResearchTaskRetryLogDO retryLog = new ResearchTaskRetryLogDO();
         retryLog.setTaskId(taskId);
@@ -69,12 +70,17 @@ public class TaskRetryServiceImpl implements TaskRetryService {
         retryLog.setDeleted(0);
         retryLogMapper.insert(retryLog);
 
-        researchTaskMapper.updateTaskRetryDispatched(
+        int updated = researchTaskMapper.updateTaskRetryDispatched(
                 taskId,
+                TaskStatusEnum.FAILED.name(),
+                currentRetryCount,
                 nextRetryNo,
                 TaskStatusEnum.DISPATCHED.name(),
                 TaskStageEnum.RETRY_DISPATCHED.name()
         );
+        if (updated != 1) {
+            throw new BizException("TASK_RETRY_STATE_CHANGED", "任务状态已变化，请刷新后重试");
+        }
 
         AiTaskDispatchMessage.AiTaskDispatchPayload payload = new AiTaskDispatchMessage.AiTaskDispatchPayload();
         payload.setTaskType(task.getTaskType());

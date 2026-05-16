@@ -46,8 +46,16 @@ public interface ResearchTaskMapper extends BaseMapper<ResearchTaskDO> {
             finish_time = null,
             updated_at = now()
         where task_id = #{taskId}
+          and status = #{expectedStatus}
+          and (
+                retry_count = #{expectedRetryCount}
+                or (retry_count is null and #{expectedRetryCount} = 0)
+              )
+          and deleted = 0
         """)
     int updateTaskRetryDispatched(@Param("taskId") String taskId,
+                                  @Param("expectedStatus") String expectedStatus,
+                                  @Param("expectedRetryCount") Integer expectedRetryCount,
                                   @Param("retryCount") Integer retryCount,
                                   @Param("status") String status,
                                   @Param("currentStage") String currentStage);
