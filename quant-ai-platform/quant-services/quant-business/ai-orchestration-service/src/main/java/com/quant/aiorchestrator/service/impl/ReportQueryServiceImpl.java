@@ -4,9 +4,11 @@ import com.quant.aiorchestrator.domain.dto.ReportCenterPageQueryDTO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterPageVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterStatsVO;
 import com.quant.aiorchestrator.domain.vo.ReportReviewStatsVO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportReviewLogVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportVO;
 import com.quant.aiorchestrator.service.ReportQueryService;
+import com.quant.aiorchestrator.service.ReportVersionService;
 import com.quant.aiorchestrator.service.TaskQueryService;
 import com.quant.aiorchestrator.service.TaskReportService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class ReportQueryServiceImpl implements ReportQueryService {
 
     private final TaskQueryService taskQueryService;
     private final TaskReportService taskReportService;
+    private final ReportVersionService reportVersionService;
 
     @Override
     public ReportCenterPageVO pageReportCenter(ReportCenterPageQueryDTO queryDTO) {
@@ -44,5 +47,15 @@ public class ReportQueryServiceImpl implements ReportQueryService {
     @Override
     public List<TaskReportReviewLogVO> listReviewLogs(String taskId) {
         return taskReportService.listReviewLogs(taskId);
+    }
+
+    @Override
+    public List<ReportVersionVO> listReportVersions(String taskId) {
+        return reportVersionService.listVersions(taskId);
+    }
+
+    @Override
+    public ReportVersionVO getReportVersion(String taskId, Integer versionNo) {
+        return reportVersionService.getVersion(taskId, versionNo);
     }
 }

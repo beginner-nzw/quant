@@ -4,6 +4,7 @@ import com.quant.aiorchestrator.domain.dto.ReportCenterPageQueryDTO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterPageVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterStatsVO;
 import com.quant.aiorchestrator.domain.vo.ReportReviewStatsVO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportReviewLogVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportVO;
 
@@ -19,4 +20,8 @@ public interface ReportQueryService {
     ReportReviewStatsVO getReportReviewStats();
 
     List<TaskReportReviewLogVO> listReviewLogs(String taskId);
+
+    List<ReportVersionVO> listReportVersions(String taskId);
+
+    ReportVersionVO getReportVersion(String taskId, Integer versionNo);
 }

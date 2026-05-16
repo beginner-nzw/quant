@@ -46,6 +46,7 @@ import com.quant.aiorchestrator.domain.vo.ModelAgentConfigCenterVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterPageVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterStatsVO;
 import com.quant.aiorchestrator.domain.vo.ReportReviewStatsVO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
 import com.quant.aiorchestrator.domain.vo.RoleAccessConfigItemVO;
 import com.quant.aiorchestrator.domain.vo.RiskWarningPageVO;
@@ -419,6 +420,17 @@ public class TaskQueryController {
     @GetMapping("/{taskId}/report")
     public Result<TaskReportVO> getTaskReport(@PathVariable("taskId") String taskId) {
         return Result.success(reportQueryService.getTaskReportOnly(taskId));
+    }
+
+    @GetMapping("/{taskId}/report/versions")
+    public Result<List<ReportVersionVO>> listReportVersions(@PathVariable("taskId") String taskId) {
+        return Result.success(reportQueryService.listReportVersions(taskId));
+    }
+
+    @GetMapping("/{taskId}/report/versions/{versionNo}")
+    public Result<ReportVersionVO> getReportVersion(@PathVariable("taskId") String taskId,
+                                                    @PathVariable("versionNo") Integer versionNo) {
+        return Result.success(reportQueryService.getReportVersion(taskId, versionNo));
     }
 
     @PostMapping("/{taskId}/report/review")

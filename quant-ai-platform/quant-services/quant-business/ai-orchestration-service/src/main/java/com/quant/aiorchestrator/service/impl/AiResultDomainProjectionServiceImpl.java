@@ -28,6 +28,7 @@ import com.quant.common.model.message.AiTaskResultMessage;
 import com.quant.common.redis.RedisKeyBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -53,6 +54,8 @@ public class AiResultDomainProjectionServiceImpl implements AiResultDomainProjec
     private final ResearchReportSectionMapper researchReportSectionMapper;
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate stringRedisTemplate;
+    @Autowired(required = false)
+    private ReportVersionService reportVersionService;
 
     public void project(AiTaskResultMessage message, ResearchReportDO report) {
         if (message == null || message.getPayload() == null || report == null) {
@@ -66,6 +69,9 @@ public class AiResultDomainProjectionServiceImpl implements AiResultDomainProjec
         saveStrategySignal(message, report);
         saveReportEvidenceRefs(message, report);
         saveReportSections(message, report);
+        if (reportVersionService != null) {
+            reportVersionService.createSnapshot(report, "AI_RESULT");
+        }
     }
 
     private void saveRiskWarning(AiTaskResultMessage message) {

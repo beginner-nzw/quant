@@ -14,6 +14,7 @@ import com.quant.aiorchestrator.mapper.HumanReviewRecordMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportReviewLogMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
+import com.quant.aiorchestrator.service.ReportVersionService;
 import com.quant.aiorchestrator.service.TaskReportService;
 import com.quant.common.core.exception.BizException;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
@@ -40,6 +41,7 @@ public class TaskReportServiceImpl implements TaskReportService {
     private final ResearchReportSectionMapper researchReportSectionMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final TaskCacheVersionManager taskCacheVersionManager;
+    private final ReportVersionService reportVersionService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -84,6 +86,7 @@ public class TaskReportServiceImpl implements TaskReportService {
             throw new RuntimeException(e);
         }
 
+        report.setVersionNo(resolveNextVersionNo(report.getVersionNo()));
         report.setReviewStatus(reviewStatus.name());
         report.setReviewedBy(dto.getReviewedBy());
         report.setReviewedAt(LocalDateTime.now());
@@ -110,6 +113,7 @@ public class TaskReportServiceImpl implements TaskReportService {
         researchReportReviewLogMapper.insert(log);
         updateReportSectionsReview(report, dto, reviewStatus, report.getReviewedAt(), revisedHighlightsJson, revisedRiskPointsJson);
         insertHumanReviewRecord(report, dto, reviewStatus, beforeSnapshotJson, revisedHighlightsJson, revisedRiskPointsJson);
+        reportVersionService.createSnapshot(report, "REPORT_REVIEW");
 
         stringRedisTemplate.delete(RedisKeyBuilder.taskFull(taskId));
         stringRedisTemplate.delete(RedisKeyBuilder.taskResult(taskId));
@@ -249,6 +253,13 @@ public class TaskReportServiceImpl implements TaskReportService {
 
     private int defaultVersionNo(Integer versionNo) {
         return versionNo == null || versionNo < 1 ? 1 : versionNo;
+    }
+
+    private int resolveNextVersionNo(Integer currentVersionNo) {
+        if (currentVersionNo == null || currentVersionNo < 1) {
+            return 2;
+        }
+        return currentVersionNo + 1;
     }
 
     private List<String> parseJsonArray(String json) {
