@@ -46,6 +46,7 @@ import com.quant.aiorchestrator.domain.vo.ModelAgentConfigCenterVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterPageVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterStatsVO;
 import com.quant.aiorchestrator.domain.vo.ReportReviewStatsVO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionCompareVO;
 import com.quant.aiorchestrator.domain.vo.ReportVersionVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
 import com.quant.aiorchestrator.domain.vo.RoleAccessConfigItemVO;
@@ -91,6 +92,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -425,6 +427,13 @@ public class TaskQueryController {
     @GetMapping("/{taskId}/report/versions")
     public Result<List<ReportVersionVO>> listReportVersions(@PathVariable("taskId") String taskId) {
         return Result.success(reportQueryService.listReportVersions(taskId));
+    }
+
+    @GetMapping("/{taskId}/report/versions/compare")
+    public Result<ReportVersionCompareVO> compareReportVersions(@PathVariable("taskId") String taskId,
+                                                                @RequestParam("fromVersionNo") Integer fromVersionNo,
+                                                                @RequestParam("toVersionNo") Integer toVersionNo) {
+        return Result.success(reportQueryService.compareReportVersions(taskId, fromVersionNo, toVersionNo));
     }
 
     @GetMapping("/{taskId}/report/versions/{versionNo}")

@@ -5,6 +5,7 @@ import com.quant.aiorchestrator.domain.entity.ReportEvidenceRefDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportSectionDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportVersionDO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionCompareVO;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportVersionMapper;
@@ -18,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -70,17 +74,76 @@ class ReportVersionServiceTests {
     @Test
     void getVersionReturnsHistoricalSnapshot() {
         TestDeps deps = new TestDeps();
-        ResearchReportVersionDO entity = new ResearchReportVersionDO();
-        entity.setVersionId("version-1");
-        entity.setReportId("report-1");
-        entity.setTaskId("task-1");
-        entity.setVersionNo(1);
-        entity.setSnapshotSource("AI_RESULT");
-        entity.setSnapshotPayload("{\"versionNo\":1}");
+        ResearchReportVersionDO entity = buildVersion(1, snapshotJson("summary v1", List.of("h1"), List.of("ref-1"), "PENDING"));
         when(deps.versionMapper.selectOne(any())).thenReturn(entity);
         ReportVersionService service = newService(deps);
 
         assertEquals(1, service.getVersion("task-1", 1).getSnapshot().get("versionNo"));
+    }
+
+    @Test
+    void compareVersionsReturnsDeterministicFieldDiff() {
+        TestDeps deps = new TestDeps();
+        when(deps.versionMapper.selectOne(any()))
+                .thenReturn(
+                        buildVersion(1, snapshotJson("summary v1", List.of("h1"), List.of("ref-1"), "PENDING")),
+                        buildVersion(2, snapshotJson("summary v2", List.of("h1", "h2"), List.of("ref-2"), "APPROVED"))
+                );
+        ReportVersionService service = newService(deps);
+
+        ReportVersionCompareVO compare = service.compareVersions("task-1", 1, 2);
+
+        assertFalse(compare.getSameVersion());
+        assertTrue(compare.getChanged());
+        assertEquals(1, compare.getReportFieldsChanged().size());
+        assertEquals("report.summary", compare.getReportFieldsChanged().get(0).getPath());
+        assertEquals(1, compare.getSectionsChanged().size());
+        assertEquals("sections[HIGHLIGHTS].sectionItems", compare.getSectionsChanged().get(0).getPath());
+        assertEquals(1, compare.getEvidenceRefsAdded().size());
+        assertEquals(1, compare.getEvidenceRefsRemoved().size());
+        assertEquals(1, compare.getReviewFieldsChanged().size());
+        assertEquals("report.review.reviewStatus", compare.getReviewFieldsChanged().get(0).getPath());
+    }
+
+    @Test
+    void compareSameVersionReturnsNoOpDiff() {
+        TestDeps deps = new TestDeps();
+        ResearchReportVersionDO version = buildVersion(1, snapshotJson("summary v1", List.of("h1"), List.of("ref-1"), "PENDING"));
+        when(deps.versionMapper.selectOne(any())).thenReturn(version).thenReturn(version);
+        ReportVersionService service = newService(deps);
+
+        ReportVersionCompareVO compare = service.compareVersions("task-1", 1, 1);
+
+        assertTrue(compare.getSameVersion());
+        assertFalse(compare.getChanged());
+        assertTrue(compare.getReportFieldsChanged().isEmpty());
+        assertTrue(compare.getSectionsChanged().isEmpty());
+        assertTrue(compare.getEvidenceRefsAdded().isEmpty());
+        assertTrue(compare.getEvidenceRefsRemoved().isEmpty());
+        assertTrue(compare.getReviewFieldsChanged().isEmpty());
+    }
+
+    @Test
+    void compareVersionsReturnsNullForMissingOrWrongTaskVersion() {
+        TestDeps deps = new TestDeps();
+        when(deps.versionMapper.selectOne(any()))
+                .thenReturn(buildVersion(1, snapshotJson("summary v1", List.of("h1"), List.of("ref-1"), "PENDING")))
+                .thenReturn(null);
+        ReportVersionService service = newService(deps);
+
+        assertNull(service.compareVersions("task-1", 1, 9));
+        assertNull(service.compareVersions("task-1", null, 2));
+    }
+
+    @Test
+    void listVersionsKeepsExistingSummaryReadShape() {
+        TestDeps deps = new TestDeps();
+        when(deps.versionMapper.selectList(any()))
+                .thenReturn(List.of(buildVersion(2, snapshotJson("summary v2", List.of("h2"), List.of("ref-2"), "APPROVED"))));
+        ReportVersionService service = newService(deps);
+
+        assertEquals(1, service.listVersions("task-1").size());
+        assertEquals(2, service.listVersions("task-1").get(0).getVersionNo());
     }
 
     private static ReportVersionService newService(TestDeps deps) {
@@ -129,6 +192,58 @@ class ReportVersionServiceTests {
         evidence.setEvidenceSummary("evidence summary");
         evidence.setDeleted(0);
         return evidence;
+    }
+
+    private static ResearchReportVersionDO buildVersion(int versionNo, String snapshotPayload) {
+        ResearchReportVersionDO entity = new ResearchReportVersionDO();
+        entity.setVersionId("version-" + versionNo);
+        entity.setReportId("report-1");
+        entity.setTaskId("task-1");
+        entity.setVersionNo(versionNo);
+        entity.setSnapshotSource(versionNo == 1 ? "AI_RESULT" : "REPORT_REVIEW");
+        entity.setSnapshotPayload(snapshotPayload);
+        return entity;
+    }
+
+    private static String snapshotJson(String summary,
+                                       List<String> highlights,
+                                       List<String> evidenceRefs,
+                                       String reviewStatus) {
+        try {
+            Map<String, Object> report = new java.util.LinkedHashMap<>();
+            report.put("reportId", "report-1");
+            report.put("taskId", "task-1");
+            report.put("versionNo", 1);
+            report.put("taskType", "RESEARCH");
+            report.put("finalStatus", "SUCCESS");
+            report.put("summary", summary);
+            report.put("reviewStatus", reviewStatus);
+
+            Map<String, Object> section = new java.util.LinkedHashMap<>();
+            section.put("sectionId", "section-1");
+            section.put("sectionCode", "HIGHLIGHTS");
+            section.put("sectionTitle", "Highlights");
+            section.put("sectionOrder", 20);
+            section.put("sectionItems", highlights);
+
+            List<Map<String, Object>> evidence = evidenceRefs.stream().map(ref -> {
+                Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("evidenceId", "evidence-" + ref);
+                item.put("sourceType", "REPORT_META");
+                item.put("sourceRefId", ref);
+                item.put("evidenceSummary", "summary " + ref);
+                return item;
+            }).toList();
+
+            Map<String, Object> snapshot = new java.util.LinkedHashMap<>();
+            snapshot.put("versionNo", 1);
+            snapshot.put("report", report);
+            snapshot.put("sections", List.of(section));
+            snapshot.put("evidenceRefs", evidence);
+            return new ObjectMapper().writeValueAsString(snapshot);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static final class TestDeps {

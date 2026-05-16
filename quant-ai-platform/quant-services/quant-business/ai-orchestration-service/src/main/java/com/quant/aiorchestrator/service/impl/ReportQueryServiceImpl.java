@@ -4,6 +4,7 @@ import com.quant.aiorchestrator.domain.dto.ReportCenterPageQueryDTO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterPageVO;
 import com.quant.aiorchestrator.domain.vo.ReportCenterStatsVO;
 import com.quant.aiorchestrator.domain.vo.ReportReviewStatsVO;
+import com.quant.aiorchestrator.domain.vo.ReportVersionCompareVO;
 import com.quant.aiorchestrator.domain.vo.ReportVersionVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportReviewLogVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportVO;
@@ -57,5 +58,10 @@ public class ReportQueryServiceImpl implements ReportQueryService {
     @Override
     public ReportVersionVO getReportVersion(String taskId, Integer versionNo) {
         return reportVersionService.getVersion(taskId, versionNo);
+    }
+
+    @Override
+    public ReportVersionCompareVO compareReportVersions(String taskId, Integer fromVersionNo, Integer toVersionNo) {
+        return reportVersionService.compareVersions(taskId, fromVersionNo, toVersionNo);
     }
 }
