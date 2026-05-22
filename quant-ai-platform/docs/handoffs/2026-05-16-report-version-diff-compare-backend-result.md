@@ -47,8 +47,11 @@ New backend-only compare API:
 - Response wrapper: existing `Result<ReportVersionCompareVO>`
 - Missing request query params use the existing Spring/controller missing-param
   error path.
-- Missing, invalid, or wrong-task versions follow the existing version-detail
-  service style and return `null` from the service response.
+- Missing, invalid, blank-task, non-positive, or wrong-task version access
+  follows the existing version-detail service style: the service returns
+  `null`, and the controller wraps that in `Result.success(null)`.
+- The compare read model remains owned by the AI Orchestration Service and does
+  not change report write-path behavior, schema, or snapshot persistence.
 
 `ReportVersionCompareVO` response fields:
 
@@ -76,13 +79,17 @@ JSON for both versions and produces a deterministic bounded field-level diff:
   - keyed by `sourceRefId`, then `evidenceId`, then canonical item value
   - added, removed, and field changes are reported separately
 
-Same-version compare returns `sameVersion=true`, `changed=false`, and empty
-diff buckets.
+Same-version compare is a no-op read:
+
+- `sameVersion=true`
+- `changed=false`
+- all diff buckets are empty
+- both version summaries are still returned for the requested versions
 
 Cross-task or wrong-report access is constrained by the existing
 `task_id + version_no + deleted=0` read. A version from another task is not
-selected and the compare response is `null`, matching the current version-detail
-not-found style.
+selected and the compare response is `null`, matching the current
+version-detail not-found style.
 
 ## 4. Changed Files
 
@@ -102,7 +109,7 @@ Focused tests added in `ReportVersionServiceTests` verify:
 - comparing two valid versions returns deterministic diff output for report
   fields, sections, evidence refs, and review fields;
 - comparing the same version returns no-op diff output;
-- missing or wrong-task version access returns `null`;
+- missing, invalid, or wrong-task version access returns `null`;
 - existing version list/detail read shape remains usable after the service
   changes.
 
@@ -175,6 +182,8 @@ Service test set passed.
   live MySQL integration tests.
 - Default forked Surefire verification is blocked on this machine by local
   memory/pagefile limits; no-fork verification passed.
+- The compare endpoint is intentionally read-only and does not retry, backfill,
+  or repair missing historical versions.
 
 ## 8. Commit
 

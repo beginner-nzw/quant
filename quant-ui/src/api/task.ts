@@ -20,6 +20,8 @@ import type {
   MarketIntelligencePageData,
   MarketIntelligenceStats,
   ModelAgentConfigCenterData,
+  ReportVersion,
+  ReportVersionCompare,
   ReportCenterPageData,
   ReportCenterStats,
   ReportReviewStats,
@@ -220,4 +222,19 @@ export function fetchReportReviewStats() {
 
 export function fetchTaskReportReviewLogs(taskId: string) {
   return get<TaskReportReviewLog[]>(`/api/tasks/${taskId}/report/review-logs`)
+}
+
+export function fetchTaskReportVersions(taskId: string) {
+  return get<ReportVersion[]>(`/api/tasks/${taskId}/report/versions`)
+}
+
+export function fetchTaskReportVersion(taskId: string, versionNo: number) {
+  return get<ReportVersion | null>(`/api/tasks/${taskId}/report/versions/${versionNo}`)
+}
+
+export function compareTaskReportVersions(taskId: string, fromVersionNo: number, toVersionNo: number) {
+  return get<ReportVersionCompare | null>(`/api/tasks/${taskId}/report/versions/compare`, {
+    fromVersionNo,
+    toVersionNo
+  })
 }

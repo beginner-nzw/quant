@@ -9,6 +9,7 @@ import {
 } from '../../api/task'
 import ReportEvidenceView from '../../components/report/ReportEvidenceView.vue'
 import ReportVersionComparison from '../../components/report/ReportVersionComparison.vue'
+import ReportVersionHistoryPanel from '../../components/report/ReportVersionHistoryPanel.vue'
 import type {
   TaskFullDetail,
   TaskReportContextSnapshot,
@@ -1122,6 +1123,8 @@ function resolveFollowUpTaskPriority(
             :current-label="text.currentVersion"
           />
         </el-card>
+
+        <ReportVersionHistoryPanel :task-id="detail.taskDetail.taskId" />
 
         <el-card style="margin-top: 16px;">
           <template #header>

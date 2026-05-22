@@ -575,6 +575,54 @@ export interface TaskReportReviewLog {
   createdAt?: string
 }
 
+export interface ReportVersion {
+  versionId: string
+  reportId: string
+  taskId: string
+  versionNo: number
+  snapshotSource?: string
+  snapshot?: Record<string, any> | null
+  createdAt?: string
+}
+
+export interface ReportVersionSummary {
+  versionId?: string
+  versionNo?: number
+  snapshotSource?: string
+  createdAt?: string
+}
+
+export interface ReportVersionFieldChange {
+  path?: string
+  field?: string
+  fromValue?: any
+  toValue?: any
+}
+
+export interface ReportVersionItemChange {
+  key?: string
+  value?: any
+}
+
+export interface ReportVersionCompare {
+  taskId?: string
+  reportId?: string
+  fromVersionNo?: number
+  toVersionNo?: number
+  sameVersion?: boolean
+  changed?: boolean
+  fromVersion?: ReportVersionSummary | null
+  toVersion?: ReportVersionSummary | null
+  reportFieldsChanged?: ReportVersionFieldChange[]
+  sectionsAdded?: ReportVersionItemChange[]
+  sectionsRemoved?: ReportVersionItemChange[]
+  sectionsChanged?: ReportVersionFieldChange[]
+  evidenceRefsAdded?: ReportVersionItemChange[]
+  evidenceRefsRemoved?: ReportVersionItemChange[]
+  evidenceRefsChanged?: ReportVersionFieldChange[]
+  reviewFieldsChanged?: ReportVersionFieldChange[]
+}
+
 export interface RiskWarningStats {
   totalCount: number
   highCount: number
