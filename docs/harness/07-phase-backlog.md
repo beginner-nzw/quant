@@ -26,17 +26,16 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 004
+## Next Steering Inputs After Phase 007
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003 and Phase 004 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
 - Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
-- Phase 007 - Frontend Consumer Authority Boundary Audit.
-- Phase 005 - Decide Service Split or Continue Modular Monolith.
+- Deferred: Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
 
@@ -236,6 +235,16 @@ Acceptance:
 
 ## Phase 007 - Frontend Consumer Authority Boundary Audit
 
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-007.md`
+- `docs/harness/handoffs/phase-007-architect.md`
+- `docs/harness/handoffs/phase-007-implementation.md`
+- `docs/harness/handoffs/phase-007-review.md`
+- `docs/harness/handoffs/phase-007-final.md`
+
 Goal:
 
 Keep frontend and display consumers from treating workbench aggregation, fallback provenance or legacy mixed-domain response data as business SoT.
@@ -249,9 +258,19 @@ Scope:
 
 Acceptance:
 
-- Frontend consumer authority boundaries are documented or guarded for the in-scope surfaces.
-- Workbench and fallback provenance remain display/audit metadata only.
-- No new product feature, URL change, backend contract change, DTO/VO/entity change, database schema change, Kafka change or business behavior change.
+- Completed with no intended user-visible business behavior change.
+- Frontend consumer authority boundaries are documented and guarded for the in-scope workbench and fallback provenance surfaces.
+- Workbench output remains display, navigation and existing task-create source-context prefill only.
+- Fallback provenance remains display/audit metadata only and is guarded away from frontend command/review authority.
+- Existing routes, API endpoint strings, HTTP methods, function names, call signatures, response envelopes and TypeScript shapes remained unchanged.
+- No new product feature, backend contract change, DTO/VO/entity change, database schema change, Kafka change, Java change, Python change, package/dependency change or build-config change.
+- `node scripts/authority-boundary-check.mjs` and `npm run build` passed from `quant-ui`.
+
+Residual scope:
+
+- The frontend static guard is a focused source check, not a full TypeScript AST policy engine.
+- Future workbench or fallback provenance surfaces must add equivalent non-authoritative guardrails.
+- Legacy non-task `/api/tasks/*` paths remain contract debt for Phase 006 consideration.
 
 ## Current Rule
 

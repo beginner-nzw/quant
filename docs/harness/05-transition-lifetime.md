@@ -86,6 +86,8 @@ Phase 003 documented Java-side display hydration boundaries but did not change P
 
 Phase 004 added in-scope fallback provenance for planner, intent, financial, risk, report and market fallback paths using existing Python dictionaries and `reportMeta.contextSnapshot` map metadata. Java production projection remains unchanged and must not use fallback provenance as business authority.
 
+Phase 007 documented current frontend fallback provenance consumers as display/audit metadata only and added a focused static guard so `contextSnapshot`, `reportMeta`, `generationMode`, `fallbackReason` and related provenance fields do not feed frontend command or review authority.
+
 Allowed because:
 
 - It keeps asynchronous workflows terminal and auditable.
@@ -96,7 +98,8 @@ Exit criteria:
 1. Completed in Phase 004 for in-scope fallback paths: fallback output carries fallback reason or equivalent audit signal.
 2. Completed in Phase 004 for existing result metadata: Java result projection preserves evidence of fallback path through raw/report metadata without using it as authority.
 3. Completed in Phase 004 for current Python tests: focused regression coverage detects missing fallback reason or provenance metadata.
-4. Pending: Any future fallback surface must carry equivalent non-authoritative provenance before it is accepted as transition behavior.
+4. Completed in Phase 007 for current frontend consumers: fallback provenance is documented and guarded as display/audit metadata only.
+5. Pending: Any future fallback surface must carry equivalent non-authoritative provenance before it is accepted as transition behavior.
 
 Forbidden:
 
@@ -113,6 +116,8 @@ Phase 002 moved workbench aggregation to `ResearchWorkbenchQueryServiceImpl` and
 
 Phase 003 documented the Java backend workbench service as display-only aggregation and added source-level tests so backend command/projection code cannot depend on workbench output as authority and workbench aggregation cannot write domain facts.
 
+Phase 007 documented current frontend workbench consumers as display-only aggregation and added a focused static guard so workbench output does not call retry, cancel, report review, strategy, market or config command APIs.
+
 Allowed because:
 
 - It is a useful product surface.
@@ -121,7 +126,8 @@ Exit criteria:
 
 1. Completed in Phase 003: Workbench clearly documented as display-only in contract-level tests/comments.
 2. Completed in Phase 003: No backend command/projection depends on workbench output as SoT, guarded by regression tests.
-3. Pending: No Python workflow uses workbench as the only authoritative source for domain facts.
+3. Completed in Phase 007: Current frontend consumers use workbench output only for display, navigation and existing task-create source-context prefill.
+4. Pending: No Python workflow uses workbench as the only authoritative source for domain facts.
 
 Forbidden:
 
