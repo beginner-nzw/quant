@@ -4,6 +4,7 @@
 *.docx
 *.pdf
 quant-ai-platform/docs/
+!docs/harness/**/*.md
 
 # Local/generated files
 .pycache_tmp/

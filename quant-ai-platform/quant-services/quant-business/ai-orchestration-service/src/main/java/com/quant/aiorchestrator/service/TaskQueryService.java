@@ -1,13 +1,16 @@
 package com.quant.aiorchestrator.service;
 
-import com.quant.aiorchestrator.domain.dto.MarketIntelligencePageQueryDTO;
-import com.quant.aiorchestrator.domain.dto.AuditCompliancePageQueryDTO;
-import com.quant.aiorchestrator.domain.dto.ResearchWorkbenchQueryDTO;
-import com.quant.aiorchestrator.domain.dto.ReportCenterPageQueryDTO;
-import com.quant.aiorchestrator.domain.dto.RiskWarningPageQueryDTO;
-import com.quant.aiorchestrator.domain.dto.StrategySignalPageQueryDTO;
 import com.quant.aiorchestrator.domain.dto.TaskPageQueryDTO;
-import com.quant.aiorchestrator.domain.vo.*;
+import com.quant.aiorchestrator.domain.vo.AgentExecutionVO;
+import com.quant.aiorchestrator.domain.vo.AuditRecordVO;
+import com.quant.aiorchestrator.domain.vo.TaskDetailVO;
+import com.quant.aiorchestrator.domain.vo.TaskFullDetailVO;
+import com.quant.aiorchestrator.domain.vo.TaskPageVO;
+import com.quant.aiorchestrator.domain.vo.TaskRetryLogVO;
+import com.quant.aiorchestrator.domain.vo.TaskStateVO;
+import com.quant.aiorchestrator.domain.vo.TaskStatsVO;
+import com.quant.aiorchestrator.domain.vo.TaskStepVO;
+import com.quant.aiorchestrator.domain.vo.WorkflowInstanceVO;
 
 import java.util.List;
 
@@ -31,32 +34,4 @@ public interface TaskQueryService {
     TaskFullDetailVO getTaskFullDetail(String taskId);
 
     TaskStatsVO getTaskStats();
-
-    RiskWarningPageVO pageRiskWarnings(RiskWarningPageQueryDTO queryDTO);
-
-    RiskWarningStatsVO getRiskWarningStats();
-
-    StrategySignalPageVO pageStrategySignals(StrategySignalPageQueryDTO queryDTO);
-
-    StrategySignalStatsVO getStrategySignalStats();
-
-    ReportCenterPageVO pageReportCenter(ReportCenterPageQueryDTO queryDTO);
-
-    ReportCenterStatsVO getReportCenterStats();
-
-    MarketIntelligencePageVO pageMarketIntelligence(MarketIntelligencePageQueryDTO queryDTO);
-
-    MarketIntelligenceStatsVO getMarketIntelligenceStats();
-
-    AuditCompliancePageVO pageAuditCompliance(AuditCompliancePageQueryDTO queryDTO);
-
-    AuditComplianceStatsVO getAuditComplianceStats();
-
-    ModelAgentConfigCenterVO getModelAgentConfigCenter();
-
-    ResearchWorkbenchVO getResearchWorkbench(ResearchWorkbenchQueryDTO queryDTO);
-
-    TaskReportVO getTaskReportOnly(String taskId);
-
-    ReportReviewStatsVO getReportReviewStats();
 }

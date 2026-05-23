@@ -10,6 +10,7 @@ import com.quant.aiorchestrator.domain.entity.RiskWarningDetailDO;
 import com.quant.aiorchestrator.domain.vo.RiskWarningPageVO;
 import com.quant.aiorchestrator.domain.vo.RiskWarningStatsVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
+import com.quant.aiorchestrator.domain.vo.TaskReportVO;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
@@ -35,7 +36,11 @@ import com.quant.aiorchestrator.service.ModelStrategyConfigService;
 import com.quant.aiorchestrator.service.PromptTemplateConfigService;
 import com.quant.aiorchestrator.service.RoleAccessConfigService;
 import com.quant.aiorchestrator.service.WorkflowConfigService;
-import com.quant.aiorchestrator.service.impl.TaskQueryServiceImpl;
+import com.quant.aiorchestrator.service.ReportVersionService;
+import com.quant.aiorchestrator.service.TaskReportService;
+import com.quant.aiorchestrator.service.impl.ReportQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.ResearchWorkbenchQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.RiskQueryServiceImpl;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
 import com.quant.common.model.enums.RiskLevelEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
@@ -121,7 +126,7 @@ class TaskQueryServiceRiskWarningTests {
         detail.setDetailDesc("负债率高于阈值");
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of(detail));
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -179,7 +184,7 @@ class TaskQueryServiceRiskWarningTests {
         )));
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of());
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -240,7 +245,7 @@ class TaskQueryServiceRiskWarningTests {
         )));
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of());
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -306,7 +311,7 @@ class TaskQueryServiceRiskWarningTests {
         detail.setDetailDesc("未来三个月存在集中偿付压力");
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of(detail));
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -388,7 +393,7 @@ class TaskQueryServiceRiskWarningTests {
         )));
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of());
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -440,7 +445,7 @@ class TaskQueryServiceRiskWarningTests {
         )));
         when(riskWarningDetailMapper.selectList(any())).thenReturn(List.of());
 
-        TaskQueryServiceImpl service = newService(
+        QueryServices service = newService(
                 researchTaskMapper,
                 researchReportMapper,
                 riskWarningMapper,
@@ -455,10 +460,10 @@ class TaskQueryServiceRiskWarningTests {
         assertTrue(result.getOriginalRiskPoints().contains("旧报表风险点"));
     }
 
-    private TaskQueryServiceImpl newService(ResearchTaskMapper researchTaskMapper,
-                                            ResearchReportMapper researchReportMapper,
-                                            RiskWarningMapper riskWarningMapper,
-                                            RiskWarningDetailMapper riskWarningDetailMapper) {
+    private QueryServices newService(ResearchTaskMapper researchTaskMapper,
+                                     ResearchReportMapper researchReportMapper,
+                                     RiskWarningMapper riskWarningMapper,
+                                     RiskWarningDetailMapper riskWarningDetailMapper) {
         return newService(
                 researchTaskMapper,
                 researchReportMapper,
@@ -468,40 +473,77 @@ class TaskQueryServiceRiskWarningTests {
         );
     }
 
-    private TaskQueryServiceImpl newService(ResearchTaskMapper researchTaskMapper,
-                                            ResearchReportMapper researchReportMapper,
-                                            RiskWarningMapper riskWarningMapper,
-                                            RiskWarningDetailMapper riskWarningDetailMapper,
-                                            StringRedisTemplate stringRedisTemplate) {
-        return new TaskQueryServiceImpl(
-                researchTaskMapper,
-                mock(ResearchTaskStepMapper.class),
-                mock(AiWorkflowInstanceMapper.class),
-                mock(AiAgentExecutionMapper.class),
-                mock(AuditRecordMapper.class),
-                stringRedisTemplate,
-                new ObjectMapper(),
-                mock(ResearchTaskRetryLogMapper.class),
-                mock(TaskCacheVersionManager.class),
-                researchReportMapper,
-                mock(AgentConfigService.class),
-                mock(ConfigChangeAuditService.class),
-                mock(EventAutoTriggerConfigService.class),
-                mock(MarketEventIngestHistoryService.class),
-                mock(EventSourceConfigService.class),
-                mock(ModelStrategyConfigService.class),
-                mock(PromptTemplateConfigService.class),
-                mock(WorkflowConfigService.class),
-                mock(RoleAccessConfigService.class),
-                riskWarningMapper,
-                riskWarningDetailMapper,
-                mock(StrategySignalMapper.class),
-                mock(StrategySignalFactorMapper.class),
-                mock(ReportEvidenceRefMapper.class),
-                mock(HumanReviewRecordMapper.class),
-                mock(ResearchReportSectionMapper.class),
-                new TaskStateManager()
+    private QueryServices newService(ResearchTaskMapper researchTaskMapper,
+                                     ResearchReportMapper researchReportMapper,
+                                     RiskWarningMapper riskWarningMapper,
+                                     RiskWarningDetailMapper riskWarningDetailMapper,
+                                     StringRedisTemplate stringRedisTemplate) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        StrategySignalMapper strategySignalMapper = mock(StrategySignalMapper.class);
+        StrategySignalFactorMapper strategySignalFactorMapper = mock(StrategySignalFactorMapper.class);
+        return new QueryServices(
+                new RiskQueryServiceImpl(
+                        researchTaskMapper,
+                        researchReportMapper,
+                        riskWarningMapper,
+                        riskWarningDetailMapper,
+                        strategySignalMapper,
+                        objectMapper
+                ),
+                new ResearchWorkbenchQueryServiceImpl(
+                        researchTaskMapper,
+                        researchReportMapper,
+                        riskWarningMapper,
+                        riskWarningDetailMapper,
+                        strategySignalMapper,
+                        strategySignalFactorMapper,
+                        objectMapper
+                ),
+                new ReportQueryServiceImpl(
+                        researchTaskMapper,
+                        researchReportMapper,
+                        stringRedisTemplate,
+                        objectMapper,
+                        riskWarningMapper,
+                        riskWarningDetailMapper,
+                        strategySignalMapper,
+                        mock(ReportEvidenceRefMapper.class),
+                        mock(HumanReviewRecordMapper.class),
+                        mock(ResearchReportSectionMapper.class),
+                        mock(TaskReportService.class),
+                        mock(ReportVersionService.class)
+                )
         );
+    }
+
+    private static final class QueryServices {
+        private final RiskQueryServiceImpl riskQueryService;
+        private final ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService;
+        private final ReportQueryServiceImpl reportQueryService;
+
+        private QueryServices(RiskQueryServiceImpl riskQueryService,
+                              ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService,
+                              ReportQueryServiceImpl reportQueryService) {
+            this.riskQueryService = riskQueryService;
+            this.researchWorkbenchQueryService = researchWorkbenchQueryService;
+            this.reportQueryService = reportQueryService;
+        }
+
+        private RiskWarningPageVO pageRiskWarnings(RiskWarningPageQueryDTO queryDTO) {
+            return riskQueryService.pageRiskWarnings(queryDTO);
+        }
+
+        private RiskWarningStatsVO getRiskWarningStats() {
+            return riskQueryService.getRiskWarningStats();
+        }
+
+        private ResearchWorkbenchVO getResearchWorkbench(ResearchWorkbenchQueryDTO queryDTO) {
+            return researchWorkbenchQueryService.getResearchWorkbench(queryDTO);
+        }
+
+        private TaskReportVO getTaskReportOnly(String taskId) {
+            return reportQueryService.getTaskReportOnly(taskId);
+        }
     }
 
     private ResearchTaskDO buildTask(String taskId,

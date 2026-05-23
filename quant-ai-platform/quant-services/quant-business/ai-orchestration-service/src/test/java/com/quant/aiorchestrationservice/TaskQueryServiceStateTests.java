@@ -28,6 +28,7 @@ import com.quant.aiorchestrator.service.EventSourceConfigService;
 import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
 import com.quant.aiorchestrator.service.ModelStrategyConfigService;
 import com.quant.aiorchestrator.service.PromptTemplateConfigService;
+import com.quant.aiorchestrator.service.ReportQueryService;
 import com.quant.aiorchestrator.service.RoleAccessConfigService;
 import com.quant.aiorchestrator.service.WorkflowConfigService;
 import com.quant.aiorchestrator.service.impl.TaskQueryServiceImpl;
@@ -134,23 +135,8 @@ class TaskQueryServiceStateTests {
                 mock(ResearchTaskRetryLogMapper.class),
                 mock(TaskCacheVersionManager.class),
                 mock(ResearchReportMapper.class),
-                mock(AgentConfigService.class),
-                mock(ConfigChangeAuditService.class),
-                mock(EventAutoTriggerConfigService.class),
-                mock(MarketEventIngestHistoryService.class),
-                mock(EventSourceConfigService.class),
-                mock(ModelStrategyConfigService.class),
-                mock(PromptTemplateConfigService.class),
-                mock(WorkflowConfigService.class),
-                mock(RoleAccessConfigService.class),
-                mock(RiskWarningMapper.class),
-                mock(RiskWarningDetailMapper.class),
-                mock(StrategySignalMapper.class),
-                mock(StrategySignalFactorMapper.class),
-                mock(ReportEvidenceRefMapper.class),
-                mock(HumanReviewRecordMapper.class),
-                mock(ResearchReportSectionMapper.class),
-                new TaskStateManager()
+                new TaskStateManager(),
+                mock(ReportQueryService.class)
         );
     }
 }

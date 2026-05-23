@@ -16,6 +16,7 @@ import com.quant.aiorchestrator.domain.entity.RiskWarningDetailDO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalDO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchInsightVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
+import com.quant.aiorchestrator.domain.vo.*;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
@@ -41,7 +42,15 @@ import com.quant.aiorchestrator.service.ModelStrategyConfigService;
 import com.quant.aiorchestrator.service.PromptTemplateConfigService;
 import com.quant.aiorchestrator.service.RoleAccessConfigService;
 import com.quant.aiorchestrator.service.WorkflowConfigService;
-import com.quant.aiorchestrator.service.impl.TaskQueryServiceImpl;
+import com.quant.aiorchestrator.service.MarketEventService;
+import com.quant.aiorchestrator.service.ReportVersionService;
+import com.quant.aiorchestrator.service.StrategySignalService;
+import com.quant.aiorchestrator.service.TaskReportService;
+import com.quant.aiorchestrator.service.impl.AuditComplianceQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.MarketQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.ReportQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.ResearchWorkbenchQueryServiceImpl;
+import com.quant.aiorchestrator.service.impl.StrategyQueryServiceImpl;
 import com.quant.common.model.enums.MarketIntelligenceTypeEnum;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
 import com.quant.common.model.enums.RiskLevelEnum;
@@ -93,7 +102,7 @@ class TaskQueryServiceRiskProjectionTests {
                 LocalDateTime.of(2026, 5, 7, 13, 6)
         )));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageReportCenter(new ReportCenterPageQueryDTO());
 
@@ -133,7 +142,7 @@ class TaskQueryServiceRiskProjectionTests {
         )));
         when(deps.riskWarningDetailMapper.selectList(any())).thenReturn(List.of(buildRiskWarningDetail("warning-2", "cash flow risk")));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageStrategySignals(new StrategySignalPageQueryDTO());
         var record = page.getRecords().get(0);
@@ -185,7 +194,7 @@ class TaskQueryServiceRiskProjectionTests {
         )));
         when(deps.riskWarningDetailMapper.selectList(any())).thenReturn(List.of(buildRiskWarningDetail("warning-3", "valuation stress")));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageStrategySignals(new StrategySignalPageQueryDTO());
         var record = page.getRecords().get(0);
@@ -235,7 +244,7 @@ class TaskQueryServiceRiskProjectionTests {
         when(deps.researchReportMapper.selectList(any())).thenReturn(List.of(domainReport, legacyReport));
         when(deps.strategySignalMapper.selectList(any())).thenReturn(List.of(domainSignal));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageStrategySignals(new StrategySignalPageQueryDTO());
 
@@ -277,7 +286,7 @@ class TaskQueryServiceRiskProjectionTests {
         when(deps.researchReportMapper.selectList(any())).thenReturn(List.of(report));
         when(deps.strategySignalMapper.selectList(any())).thenReturn(List.of(signal));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageStrategySignals(new StrategySignalPageQueryDTO());
 
@@ -318,7 +327,7 @@ class TaskQueryServiceRiskProjectionTests {
         )));
         when(deps.riskWarningDetailMapper.selectList(any())).thenReturn(List.of(buildRiskWarningDetail("warning-4", "supply chain pressure")));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageMarketIntelligence(new MarketIntelligencePageQueryDTO());
         var record = page.getRecords().get(0);
@@ -358,7 +367,7 @@ class TaskQueryServiceRiskProjectionTests {
         when(deps.researchReportMapper.selectList(any())).thenReturn(List.of(report));
         when(deps.strategySignalMapper.selectList(any())).thenReturn(List.of(signal));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageMarketIntelligence(new MarketIntelligencePageQueryDTO());
         var record = page.getRecords().get(0);
@@ -409,7 +418,7 @@ class TaskQueryServiceRiskProjectionTests {
         when(deps.researchReportMapper.selectList(any())).thenReturn(List.of(signalReport, fallbackReport));
         when(deps.strategySignalMapper.selectList(any())).thenReturn(List.of(signal));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         ResearchWorkbenchQueryDTO queryDTO = new ResearchWorkbenchQueryDTO();
         queryDTO.setTargetCode("600519");
@@ -453,7 +462,7 @@ class TaskQueryServiceRiskProjectionTests {
                 LocalDateTime.of(2026, 5, 7, 17, 6)
         )));
 
-        TaskQueryServiceImpl service = newService(deps);
+        QueryServices service = newService(deps);
 
         var page = service.pageAuditCompliance(new AuditCompliancePageQueryDTO());
         var record = page.getRecords().get(0);
@@ -462,36 +471,114 @@ class TaskQueryServiceRiskProjectionTests {
         assertEquals(Boolean.TRUE, record.getIntercepted());
     }
 
-    private TaskQueryServiceImpl newService(TestDeps deps) {
-        return new TaskQueryServiceImpl(
+    private QueryServices newService(TestDeps deps) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReportQueryServiceImpl reportQueryService = new ReportQueryServiceImpl(
                 deps.researchTaskMapper,
-                deps.researchTaskStepMapper,
-                deps.aiWorkflowInstanceMapper,
-                deps.aiAgentExecutionMapper,
-                deps.auditRecordMapper,
-                deps.stringRedisTemplate,
-                new ObjectMapper(),
-                deps.researchTaskRetryLogMapper,
-                mock(TaskCacheVersionManager.class),
                 deps.researchReportMapper,
-                mock(AgentConfigService.class),
-                mock(ConfigChangeAuditService.class),
-                mock(EventAutoTriggerConfigService.class),
-                mock(MarketEventIngestHistoryService.class),
-                mock(EventSourceConfigService.class),
-                mock(ModelStrategyConfigService.class),
-                mock(PromptTemplateConfigService.class),
-                mock(WorkflowConfigService.class),
-                mock(RoleAccessConfigService.class),
+                deps.stringRedisTemplate,
+                objectMapper,
+                deps.riskWarningMapper,
+                deps.riskWarningDetailMapper,
+                deps.strategySignalMapper,
+                mock(ReportEvidenceRefMapper.class),
+                mock(HumanReviewRecordMapper.class),
+                mock(ResearchReportSectionMapper.class),
+                mock(TaskReportService.class),
+                mock(ReportVersionService.class)
+        );
+        StrategyQueryServiceImpl strategyQueryService = new StrategyQueryServiceImpl(
+                deps.researchTaskMapper,
+                deps.researchReportMapper,
                 deps.riskWarningMapper,
                 deps.riskWarningDetailMapper,
                 deps.strategySignalMapper,
                 deps.strategySignalFactorMapper,
-                mock(ReportEvidenceRefMapper.class),
-                mock(HumanReviewRecordMapper.class),
-                mock(ResearchReportSectionMapper.class),
-                new TaskStateManager()
+                mock(StrategySignalService.class),
+                objectMapper
         );
+        MarketQueryServiceImpl marketQueryService = new MarketQueryServiceImpl(
+                mock(MarketEventService.class),
+                deps.researchTaskMapper,
+                deps.researchReportMapper,
+                deps.riskWarningMapper,
+                deps.riskWarningDetailMapper,
+                deps.strategySignalMapper,
+                objectMapper
+        );
+        AuditComplianceQueryServiceImpl auditComplianceQueryService = new AuditComplianceQueryServiceImpl(
+                deps.researchTaskMapper,
+                deps.researchReportMapper,
+                deps.aiWorkflowInstanceMapper,
+                deps.aiAgentExecutionMapper,
+                deps.auditRecordMapper,
+                deps.riskWarningMapper,
+                objectMapper
+        );
+        ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService = new ResearchWorkbenchQueryServiceImpl(
+                deps.researchTaskMapper,
+                deps.researchReportMapper,
+                deps.riskWarningMapper,
+                deps.riskWarningDetailMapper,
+                deps.strategySignalMapper,
+                deps.strategySignalFactorMapper,
+                objectMapper
+        );
+        return new QueryServices(
+                reportQueryService,
+                strategyQueryService,
+                marketQueryService,
+                auditComplianceQueryService,
+                researchWorkbenchQueryService
+        );
+    }
+
+    private static final class QueryServices {
+        private final ReportQueryServiceImpl reportQueryService;
+        private final StrategyQueryServiceImpl strategyQueryService;
+        private final MarketQueryServiceImpl marketQueryService;
+        private final AuditComplianceQueryServiceImpl auditComplianceQueryService;
+        private final ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService;
+
+        private QueryServices(ReportQueryServiceImpl reportQueryService,
+                              StrategyQueryServiceImpl strategyQueryService,
+                              MarketQueryServiceImpl marketQueryService,
+                              AuditComplianceQueryServiceImpl auditComplianceQueryService,
+                              ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService) {
+            this.reportQueryService = reportQueryService;
+            this.strategyQueryService = strategyQueryService;
+            this.marketQueryService = marketQueryService;
+            this.auditComplianceQueryService = auditComplianceQueryService;
+            this.researchWorkbenchQueryService = researchWorkbenchQueryService;
+        }
+
+        private ReportCenterPageVO pageReportCenter(ReportCenterPageQueryDTO queryDTO) {
+            return reportQueryService.pageReportCenter(queryDTO);
+        }
+
+        private ReportCenterStatsVO getReportCenterStats() {
+            return reportQueryService.getReportCenterStats();
+        }
+
+        private StrategySignalPageVO pageStrategySignals(StrategySignalPageQueryDTO queryDTO) {
+            return strategyQueryService.pageStrategySignals(queryDTO);
+        }
+
+        private StrategySignalStatsVO getStrategySignalStats() {
+            return strategyQueryService.getStrategySignalStats();
+        }
+
+        private MarketIntelligencePageVO pageMarketIntelligence(MarketIntelligencePageQueryDTO queryDTO) {
+            return marketQueryService.pageMarketIntelligence(queryDTO);
+        }
+
+        private ResearchWorkbenchVO getResearchWorkbench(ResearchWorkbenchQueryDTO queryDTO) {
+            return researchWorkbenchQueryService.getResearchWorkbench(queryDTO);
+        }
+
+        private AuditCompliancePageVO pageAuditCompliance(AuditCompliancePageQueryDTO queryDTO) {
+            return auditComplianceQueryService.pageAuditCompliance(queryDTO);
+        }
     }
 
     private static ResearchTaskDO buildTask(String taskId,
