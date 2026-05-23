@@ -39,7 +39,7 @@ class RiskReviewAgent:
             market_context=market_context,
             source_task_context=source_task_context,
         )
-        model_risk_result, llm_framework, model_name = self._generate_model_result(state, fallback_risk_result)
+        model_risk_result, llm_framework, model_name, fallback_reason = self._generate_model_result(state, fallback_risk_result)
         risk_result = {
             "riskLevel": self._resolve_enum(
                 model_risk_result.get("riskLevel") if model_risk_result else None,
@@ -59,6 +59,7 @@ class RiskReviewAgent:
                 bool(fallback_risk_result.get("needHumanReview")),
             ),
             "generationMode": "MODEL_ASSISTED" if model_risk_result else "RULE_FALLBACK",
+            "fallbackReason": fallback_reason,
             "llmFramework": llm_framework,
             "modelName": model_name,
         }
@@ -241,7 +242,8 @@ class RiskReviewAgent:
         self,
         state: dict[str, Any],
         fallback_result: dict[str, Any],
-    ) -> tuple[dict[str, Any] | None, str | None, str | None]:
+    ) -> tuple[dict[str, Any] | None, str | None, str | None, str | None]:
+        fallback_reasons: list[str] = []
         if self.langchain_risk_service.is_enabled():
             langchain_result = self.langchain_risk_service.generate_risk_result(
                 state=state,
@@ -252,10 +254,19 @@ class RiskReviewAgent:
                     langchain_result,
                     self.langchain_risk_service.framework_name(),
                     self.langchain_risk_service.model_name(),
+                    None,
                 )
+            fallback_reasons.append("LANGCHAIN_NO_RESULT")
+        else:
+            fallback_reasons.append(
+                self.langchain_risk_service.availability_reason() or "LANGCHAIN_DISABLED"
+            )
 
         if not self.model_client.is_enabled("risk"):
-            return None, None, None
+            fallback_reasons.append(
+                self.model_client.availability_reason("risk") or "CUSTOM_HTTP_DISABLED"
+            )
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
 
         system_prompt, user_prompt = self.prompt_builder_service.build_risk_prompts(
             state=state,
@@ -268,11 +279,13 @@ class RiskReviewAgent:
             trace_id=state.get("trace_id", ""),
         )
         if not isinstance(model_result, dict):
-            return None, None, None
+            fallback_reasons.append("CUSTOM_HTTP_NO_RESULT")
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
         if not self._normalize_text_list(model_result.get("riskPoints")):
             log_error(state.get("trace_id", ""), "[AI-ENGINE][MODEL] risk points missing, fallback applied")
-            return None, None, None
-        return model_result, "custom-http", self.model_client.model_name("risk")
+            fallback_reasons.append("CUSTOM_HTTP_EMPTY_RISK_POINTS")
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
+        return model_result, "custom-http", self.model_client.model_name("risk"), None
 
     def _normalize_text_list(self, value: Any) -> list[str]:
         if not isinstance(value, list):
@@ -320,6 +333,14 @@ class RiskReviewAgent:
                 if text:
                     return text
         return ""
+
+    def _join_fallback_reasons(self, reasons: list[str]) -> str:
+        normalized = []
+        for reason in reasons:
+            text = str(reason or "").strip()
+            if text and text not in normalized:
+                normalized.append(text)
+        return ";".join(normalized) or "RULE_FALLBACK"
 
     def _extract_priority_live_event_text(self, events: Any, highlights: Any) -> str:
         if isinstance(events, list):

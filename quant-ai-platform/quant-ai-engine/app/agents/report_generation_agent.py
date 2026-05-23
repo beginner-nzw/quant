@@ -169,6 +169,8 @@ class ReportGenerationAgent:
                 source_context=source_context,
                 plan_result=plan_result,
                 intent_result=intent_result,
+                financial_result=financial_result,
+                risk_result=risk_result,
                 generation_mode="MODEL_ASSISTED" if model_report else "RULE_FALLBACK",
                 model_name=model_name,
                 llm_framework=llm_framework,
@@ -546,6 +548,8 @@ class ReportGenerationAgent:
         source_context: dict[str, Any],
         plan_result: dict[str, Any],
         intent_result: dict[str, Any],
+        financial_result: dict[str, Any],
+        risk_result: dict[str, Any],
         generation_mode: str,
         model_name: str | None,
         llm_framework: str | None,
@@ -589,6 +593,7 @@ class ReportGenerationAgent:
         return {
             "taskContextSource": task_context.get("contextSource"),
             "marketDataSource": market_context.get("dataSource"),
+            "marketDataFallbackReason": self._resolve_market_data_fallback_reason(market_context),
             "taskSummary": task_context.get("summary") or {},
             "sourceTaskId": source_task_detail.get("taskId"),
             "sourceReportId": source_report.get("reportId"),
@@ -657,12 +662,22 @@ class ReportGenerationAgent:
             "intentModelName": intent_result.get("modelName"),
             "intentGenerationMode": intent_result.get("generationMode"),
             "intentFallbackReason": intent_result.get("fallbackReason"),
+            "financialGenerationMode": financial_result.get("generationMode"),
+            "financialFallbackReason": financial_result.get("fallbackReason"),
+            "riskGenerationMode": risk_result.get("generationMode"),
+            "riskFallbackReason": risk_result.get("fallbackReason"),
             "generationMode": generation_mode,
             "modelName": model_name,
             "llmFramework": llm_framework,
             "reportGenerationPath": generation_path,
             "reportFallbackReason": fallback_reason,
         }
+
+    def _resolve_market_data_fallback_reason(self, market_context: dict[str, Any]) -> str | None:
+        existing_reason = self._normalize_text(market_context.get("marketDataFallbackReason"))
+        if self._normalize_text(market_context.get("dataSource")).lower() == "fallback":
+            return existing_reason or "MARKET_DATA_FALLBACK_SNAPSHOT"
+        return existing_reason or None
 
     def _generate_model_report(
         self,

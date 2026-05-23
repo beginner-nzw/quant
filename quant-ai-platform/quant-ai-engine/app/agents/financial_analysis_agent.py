@@ -66,7 +66,7 @@ class FinancialAnalysisAgent:
                 source_task_context=state.get("source_task_context") or {},
             ),
         }
-        model_result, llm_framework, model_name = self._generate_model_result(state, fallback_result)
+        model_result, llm_framework, model_name, fallback_reason = self._generate_model_result(state, fallback_result)
         state["financial_result"] = {
             "revenueTrend": self._resolve_enum(
                 model_result.get("revenueTrend") if model_result else None,
@@ -91,6 +91,7 @@ class FinancialAnalysisAgent:
                 model_result.get("summary") if model_result else None
             ) or fallback_result["summary"],
             "generationMode": "MODEL_ASSISTED" if model_result else "RULE_FALLBACK",
+            "fallbackReason": fallback_reason,
             "llmFramework": llm_framework,
             "modelName": model_name,
         }
@@ -189,7 +190,8 @@ class FinancialAnalysisAgent:
         self,
         state: dict[str, Any],
         fallback_result: dict[str, Any],
-    ) -> tuple[dict[str, Any] | None, str | None, str | None]:
+    ) -> tuple[dict[str, Any] | None, str | None, str | None, str | None]:
+        fallback_reasons: list[str] = []
         if self.langchain_financial_service.is_enabled():
             langchain_result = self.langchain_financial_service.generate_financial_result(
                 state=state,
@@ -200,10 +202,19 @@ class FinancialAnalysisAgent:
                     langchain_result,
                     self.langchain_financial_service.framework_name(),
                     self.langchain_financial_service.model_name(),
+                    None,
                 )
+            fallback_reasons.append("LANGCHAIN_NO_RESULT")
+        else:
+            fallback_reasons.append(
+                self.langchain_financial_service.availability_reason() or "LANGCHAIN_DISABLED"
+            )
 
         if not self.model_client.is_enabled("financial"):
-            return None, None, None
+            fallback_reasons.append(
+                self.model_client.availability_reason("financial") or "CUSTOM_HTTP_DISABLED"
+            )
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
 
         system_prompt, user_prompt = self.prompt_builder_service.build_financial_prompts(
             state=state,
@@ -216,11 +227,13 @@ class FinancialAnalysisAgent:
             trace_id=state.get("trace_id", ""),
         )
         if not isinstance(model_result, dict):
-            return None, None, None
+            fallback_reasons.append("CUSTOM_HTTP_NO_RESULT")
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
         if not self._normalize_text(model_result.get("summary")):
             log_error(state.get("trace_id", ""), "[AI-ENGINE][MODEL] financial summary missing, fallback applied")
-            return None, None, None
-        return model_result, "custom-http", self.model_client.model_name("financial")
+            fallback_reasons.append("CUSTOM_HTTP_EMPTY_SUMMARY")
+            return None, None, None, self._join_fallback_reasons(fallback_reasons)
+        return model_result, "custom-http", self.model_client.model_name("financial"), None
 
     def _resolve_enum(self, preferred: Any, allowed: set[str], fallback: str) -> str:
         normalized = self._normalize_text(preferred).upper() if preferred is not None else ""
@@ -233,3 +246,11 @@ class FinancialAnalysisAgent:
             return ""
         normalized = str(value).strip()
         return normalized
+
+    def _join_fallback_reasons(self, reasons: list[str]) -> str:
+        normalized = []
+        for reason in reasons:
+            text = self._normalize_text(reason)
+            if text and text not in normalized:
+                normalized.append(text)
+        return ";".join(normalized) or "RULE_FALLBACK"
