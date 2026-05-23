@@ -26,16 +26,16 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 003
+## Next Steering Inputs After Phase 004
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002 and Phase 003 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003 and Phase 004 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Phase 004 - Python AI Workflow Contract Cleanup.
 - Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
+- Phase 007 - Frontend Consumer Authority Boundary Audit.
 - Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
@@ -165,6 +165,15 @@ Residual scope:
 
 ## Phase 004 - Python AI Workflow Contract Cleanup
 
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/phase-004-architect.md`
+- `docs/harness/handoffs/phase-004-implementation.md`
+- `docs/harness/handoffs/phase-004-review.md`
+- `docs/harness/handoffs/phase-004-final.md`
+
 Goal:
 
 Separate AI execution fallback from business truth.
@@ -177,8 +186,19 @@ Scope:
 
 Acceptance:
 
-- Python tests or compile checks pass.
-- Java projection can inspect fallback metadata.
+- Completed with no intended external behavior change.
+- Existing Kafka topics, URL paths, frontend contracts, DTO/VO/entity shapes, database schema and top-level Kafka payload fields remained unchanged.
+- Planner and intent fallback remain marked as `RULE_FALLBACK` with non-empty fallback reasons and are covered by focused Python tests.
+- Financial and risk rule fallback now expose non-empty fallback reasons in existing Python result dictionaries.
+- Report `contextSnapshot` now carries report, financial, risk and market fallback provenance as optional metadata.
+- Java production projection was not changed; it can inspect provenance through existing `reportMeta.contextSnapshot` / raw payload storage without using it as authority.
+- `python -m compileall app`, `python -m unittest discover -s tests` and `mvn -q test` passed during implementation and review.
+
+Residual scope:
+
+- `pytest` is not installed in the current environment.
+- Frontend consumer authority boundaries remain outside Phase 004.
+- Future fallback surfaces must preserve non-authoritative provenance metadata before they are treated as acceptable transition behavior.
 
 ## Phase 005 - Decide Service Split or Continue Modular Monolith
 
@@ -213,6 +233,25 @@ Acceptance:
 - Existing legacy paths remain stable and explicitly documented as approved transitional contracts.
 - Tests fail if non-task domain endpoints move, disappear or silently change controller ownership without an approved phase handoff.
 - No frontend, DTO/VO/entity, database schema, Kafka, Python or business behavior change.
+
+## Phase 007 - Frontend Consumer Authority Boundary Audit
+
+Goal:
+
+Keep frontend and display consumers from treating workbench aggregation, fallback provenance or legacy mixed-domain response data as business SoT.
+
+Scope:
+
+- Audit frontend API consumers for workbench, report, risk, strategy, market and AI result/fallback metadata surfaces.
+- Document which frontend surfaces are display-only consumers of Java projections or Python provenance metadata.
+- Add focused tests or static assertions where feasible to prevent frontend code from promoting display metadata into command, projection or source-of-truth behavior.
+- Preserve all existing URLs, response envelopes, route behavior and user-visible business behavior unless a later Window 0 decision explicitly approves otherwise.
+
+Acceptance:
+
+- Frontend consumer authority boundaries are documented or guarded for the in-scope surfaces.
+- Workbench and fallback provenance remain display/audit metadata only.
+- No new product feature, URL change, backend contract change, DTO/VO/entity change, database schema change, Kafka change or business behavior change.
 
 ## Current Rule
 

@@ -84,6 +84,8 @@ Python agents build fallback results when model calls fail, are disabled, or ret
 
 Phase 003 documented Java-side display hydration boundaries but did not change Python fallback execution or metadata.
 
+Phase 004 added in-scope fallback provenance for planner, intent, financial, risk, report and market fallback paths using existing Python dictionaries and `reportMeta.contextSnapshot` map metadata. Java production projection remains unchanged and must not use fallback provenance as business authority.
+
 Allowed because:
 
 - It keeps asynchronous workflows terminal and auditable.
@@ -91,9 +93,10 @@ Allowed because:
 
 Exit criteria:
 
-1. Every fallback output carries fallback reason or equivalent audit signal.
-2. Java result projection preserves evidence of fallback path.
-3. Eval checklist can detect missing fallback reason.
+1. Completed in Phase 004 for in-scope fallback paths: fallback output carries fallback reason or equivalent audit signal.
+2. Completed in Phase 004 for existing result metadata: Java result projection preserves evidence of fallback path through raw/report metadata without using it as authority.
+3. Completed in Phase 004 for current Python tests: focused regression coverage detects missing fallback reason or provenance metadata.
+4. Pending: Any future fallback surface must carry equivalent non-authoritative provenance before it is accepted as transition behavior.
 
 Forbidden:
 
