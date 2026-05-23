@@ -195,6 +195,7 @@ const contextItems = computed(() => {
   const snapshot = props.report?.contextSnapshot
   if (!snapshot) return []
 
+  // contextSnapshot is report provenance for display, not business truth.
   const taskSummary = snapshot.taskSummary || {}
   const items = [
     { label: text.taskContextSource, value: snapshot.taskContextSource },

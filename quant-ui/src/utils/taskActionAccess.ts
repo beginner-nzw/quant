@@ -96,6 +96,8 @@ export function resolveReportWorkbenchActionAccess(row: TaskListItem): ReportWor
   }
 }
 
+// Workbench aggregation can expose only display/prefill affordances.
+// Command eligibility must continue to come from domain read models and role config.
 export function resolveResearchWorkbenchActionAccess(data?: ResearchWorkbenchData | null): CenterActionAccess {
   return {
     showCreateTask: !!data && canCreateTasks()

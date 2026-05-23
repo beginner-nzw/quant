@@ -344,6 +344,7 @@ const contextItems = computed(() => {
   const snapshot = contextSnapshot.value
   if (!snapshot) return []
 
+  // contextSnapshot contains display/audit provenance only, not review authority.
   const taskSummary = snapshot.taskSummary || {}
   const items = [
     { label: text.taskContextSource, value: snapshot.taskContextSource },
@@ -874,6 +875,7 @@ function handleCreateTask() {
         targetName: task.targetName,
         priority: resolveFollowUpTaskPriority(report.reviewStatus, report.needHumanReview, task.priority),
         sourceTaskId: task.taskId,
+        // reportMeta.reportId is source-context prefill only.
         sourceReportId: report.reportId || report.reportMeta?.reportId,
         sourceEventId: task.sourceEventId,
         sourceDomain: 'TASK_REPORT',

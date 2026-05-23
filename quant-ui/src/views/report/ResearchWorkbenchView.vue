@@ -288,6 +288,7 @@ async function handleReset() {
 }
 
 function goCreateTask() {
+  // Workbench data is used only as navigation/prefill context here.
   router.push({
     path: '/tasks/create',
       query: buildTaskCreateQuery({

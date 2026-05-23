@@ -188,6 +188,7 @@ export function updateRoleAccessConfig(roleCode: string, data: Record<string, an
   return post<string>(`/api/tasks/model-agent-config/role-access/${roleCode}`, data)
 }
 
+// Display-only aggregation; callers must not use it as domain authority.
 export function fetchResearchWorkbench(params: Record<string, any>) {
   return get<ResearchWorkbenchData>('/api/tasks/research-workbench', params)
 }

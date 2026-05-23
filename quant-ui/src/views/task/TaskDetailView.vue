@@ -160,6 +160,7 @@ function handleCreateSimilarTask() {
       targetName: taskDetail.targetName,
       priority: taskDetail.priority,
       sourceTaskId: taskDetail.sourceTaskId || taskDetail.taskId,
+      // reportMeta.reportId is source-context prefill only.
       sourceReportId: taskDetail.sourceReportId || report?.reportId || report?.reportMeta?.reportId,
       sourceEventId: taskDetail.sourceEventId,
       sourceDomain: taskDetail.sourceDomain || 'TASK_DETAIL',

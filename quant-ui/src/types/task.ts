@@ -397,6 +397,11 @@ export interface TaskReportMeta {
   summary?: string
 }
 
+/**
+ * Display/audit metadata from report generation. The frontend may render these
+ * fields, but must not treat them as task, report, risk, signal, market, audit
+ * or model-truth authority.
+ */
 export interface TaskReportContextSnapshot {
   taskContextSource?: string
   marketDataSource?: string
@@ -978,6 +983,11 @@ export interface ResearchWorkbenchDispositionSummary {
   failedCount: number
 }
 
+/**
+ * Display-only aggregation returned by /api/tasks/research-workbench.
+ * It may support rendering, navigation and task-create prefill context, but it
+ * must not drive frontend command authority or replace domain read models.
+ */
 export interface ResearchWorkbenchData {
   targetCode?: string
   targetName?: string
