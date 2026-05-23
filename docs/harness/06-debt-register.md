@@ -4,7 +4,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | D001 | High | Service boundary | `ai-orchestration-service` hosts too many domains | Phase 001 split controller classes; Phase 002 split internal query service ownership, but the service host still contains multiple domains | Harden contracts and authority before deciding service extraction or modular-monolith permanence | Open - Phase 001 and Phase 002 partially mitigated |
 | D002 | High | Contract | Non-task domains exposed under `/api/tasks/*` | risk, strategy, market, report, config APIs keep legacy `/api/tasks/*` paths in split controllers | Document allowed legacy contract; later introduce domain URL groups only with explicit breaking-change approval | Open |
-| D003 | High | Authority | `research-workbench` can be mistaken as SoT | Phase 002 moved workbench display aggregation to `ResearchWorkbenchQueryServiceImpl` and removed copied domain read-model entrypoints; contract hardening is still pending | Add explicit display-only contract tests/comments around workbench and fallback consumers | Open - Phase 002 partially mitigated |
+| D003 | High | Authority | `research-workbench` can be mistaken as SoT | Phase 003 added Java backend display-only contract notes and boundary tests that keep workbench out of command/projection authority and guard it from domain writes; Python/frontend consumer boundaries remain outside Phase 003 | Finish Python fallback auditability and keep frontend as consumer only | Open - Phase 003 partially mitigated |
 | D004 | High | Read model | `TaskQueryServiceImpl` is too large and mixed | Phase 002 moved non-task read paths to internal domain query services and Window 3 approved after Fix Pass 1 | Keep boundary tests; do not reintroduce non-task methods into `TaskQueryServiceImpl` | Closed - Phase 002 completed |
 | D005 | Medium | AI workflow | LangGraph workflow is linear | `workflow_builder.py` | Defer complex branching until contracts are stable | Open |
 | D006 | Medium | Agent coverage | Missing planned agents | no event/industry/strategy/audit agent files | Add only after current workflow contract is frozen | Open |
@@ -21,6 +21,8 @@ Phase 001 completed the controller-surface part of D001 and reduced `TaskQueryCo
 
 Phase 002 completed the D004 internal read-model split and further reduced D001 by separating internal query service ownership inside `ai-orchestration-service`.
 
-Next work should still start with the remaining D001-D003 contract and authority risks, especially workbench/fallback authority hardening and the approved legacy `/api/tasks/*` contract debt.
+Phase 003 hardened D003 for the Java backend by documenting workbench display-only authority and adding source-level tests against backend command/projection use and domain writes.
+
+Next work should still start with the remaining D001-D003 contract and authority risks, especially Python fallback auditability, frontend consumer authority boundaries and the approved legacy `/api/tasks/*` contract debt.
 
 Do not begin large feature expansion until the remaining D001-D003 authority and contract risks have at least contract-level mitigation.

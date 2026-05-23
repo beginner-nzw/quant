@@ -26,16 +26,16 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 002
+## Next Steering Inputs After Phase 003
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001 and Phase 002 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002 and Phase 003 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Phase 003 - Contract Hardening for Workbench and Fallback.
 - Phase 004 - Python AI Workflow Contract Cleanup.
+- Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
 - Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
@@ -129,6 +129,15 @@ Residual scope:
 
 ## Phase 003 - Contract Hardening for Workbench and Fallback
 
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/phase-003-architect.md`
+- `docs/harness/handoffs/phase-003-implementation.md`
+- `docs/harness/handoffs/phase-003-review.md`
+- `docs/harness/handoffs/phase-003-final.md`
+
 Goal:
 
 Prevent `research-workbench` and fallback merges from becoming SoT.
@@ -141,8 +150,18 @@ Scope:
 
 Acceptance:
 
-- Tests fail if workbench is used as authority in backend command path.
-- Fallback paths remain observable.
+- Completed with no intended external behavior change.
+- `mvn -q test` passed from `quant-ai-platform/quant-services` during implementation and review.
+- Production Phase 003 changes were comments/Javadoc-style contract notes only.
+- Source-level backend boundary tests fail if workbench references move outside the display surface or if workbench aggregation starts writing domain facts or publishing events.
+- Workbench remains `GET /api/tasks/research-workbench` display-only aggregation with stable URL, request binding, response envelope and VO shape.
+- Existing preferred/fallback selection is documented as display hydration only.
+
+Residual scope:
+
+- Python fallback execution and reason propagation remain Phase 004 candidate work.
+- Frontend and Python consumers remain outside Phase 003 backend-only scope.
+- Legacy non-task `/api/tasks/*` paths remain contract debt.
 
 ## Phase 004 - Python AI Workflow Contract Cleanup
 
@@ -176,6 +195,24 @@ Options:
 5. Add gateway/auth first.
 
 Requires human approval.
+
+## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
+
+Goal:
+
+Declare and guard the approved legacy `/api/tasks/*` non-task domain contracts so D002 stops drifting while URL stability remains required.
+
+Scope:
+
+- Document which non-task domain surfaces are intentionally preserved under `/api/tasks/*`.
+- Add focused contract tests or mapping assertions that prevent accidental URL, method, permission, request binding or response-envelope drift.
+- Do not introduce new URL aliases or breaking route moves unless explicitly approved by the user in a future steering decision.
+
+Acceptance:
+
+- Existing legacy paths remain stable and explicitly documented as approved transitional contracts.
+- Tests fail if non-task domain endpoints move, disappear or silently change controller ownership without an approved phase handoff.
+- No frontend, DTO/VO/entity, database schema, Kafka, Python or business behavior change.
 
 ## Current Rule
 

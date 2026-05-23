@@ -82,6 +82,8 @@ Current:
 
 Python agents build fallback results when model calls fail, are disabled, or return incomplete output.
 
+Phase 003 documented Java-side display hydration boundaries but did not change Python fallback execution or metadata.
+
 Allowed because:
 
 - It keeps asynchronous workflows terminal and auditable.
@@ -106,14 +108,16 @@ Research workbench aggregates task, report, risk, strategy and market event info
 
 Phase 002 moved workbench aggregation to `ResearchWorkbenchQueryServiceImpl` and removed copied risk, strategy, report center and market-intelligence read-model entrypoints from the workbench host after review.
 
+Phase 003 documented the Java backend workbench service as display-only aggregation and added source-level tests so backend command/projection code cannot depend on workbench output as authority and workbench aggregation cannot write domain facts.
+
 Allowed because:
 
 - It is a useful product surface.
 
 Exit criteria:
 
-1. Pending: Workbench clearly documented as display-only in contract-level tests/comments.
-2. Pending: No backend command depends on workbench output as SoT, guarded by regression tests.
+1. Completed in Phase 003: Workbench clearly documented as display-only in contract-level tests/comments.
+2. Completed in Phase 003: No backend command/projection depends on workbench output as SoT, guarded by regression tests.
 3. Pending: No Python workflow uses workbench as the only authoritative source for domain facts.
 
 Forbidden:
