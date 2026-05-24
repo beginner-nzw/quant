@@ -26,15 +26,14 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 005
+## Next Steering Inputs After Phase 008
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007 and Phase 008 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Phase 008 - Transition Host Exit Criteria Inventory.
 - Report boundary readiness phase.
 - Market event and data-ingest ownership phase.
 - Risk/strategy projection ownership phase.
@@ -248,7 +247,15 @@ Residual scope:
 
 ## Phase 008 - Transition Host Exit Criteria Inventory
 
-Status: candidate input for Window 0.
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-008.md`
+- `docs/harness/handoffs/phase-008-architect.md`
+- `docs/harness/handoffs/phase-008-implementation.md`
+- `docs/harness/handoffs/phase-008-review.md`
+- `docs/harness/handoffs/phase-008-final.md`
 
 Goal:
 
@@ -262,10 +269,23 @@ Scope:
 - Preserve Phase 006 legacy `/api/tasks/*` contract freeze.
 - Do not choose or implement extraction.
 
-Acceptance candidate:
+Acceptance:
 
-- Produces exit criteria and readiness gates that Window 0 can use for later boundary phases.
-- No business code, URL, DTO/VO/entity, database schema, Kafka, frontend, Python, config, dependency or deployment change.
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/12-transition-host-exit-criteria.md` as the durable transition-host inventory.
+- Covered report, market, risk, strategy, audit, config and workbench responsibilities inside `ai-orchestration-service`.
+- Recorded per-domain SoT/read-model placement, command surfaces, aggregation/display surfaces, legacy route dependencies, storage/config/Kafka dependencies, frontend consumers, Python touchpoints, guardrails, extraction blockers, exit criteria and readiness gates.
+- Treated task runtime/control, AI status/result/audit consumers, `market.event.standardized` consumption and `AiResultDomainProjectionService` as context dependencies, not Phase 008 extraction targets.
+- Preserved Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze and Phase 003/004/007 workbench/fallback authority guardrails.
+- Did not choose service extraction, route migration, gateway/auth, config-store migration, data-ingest split, permanent modular-monolith status or new feature work.
+- No business code, URL, DTO/VO/entity, database schema, Kafka, frontend, Python, config, dependency, build-config or deployment change.
+- Window 3 reviewed and approved `phase-008-review.md`.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains.
+- Phase 008 created static governance inventory only; it did not add executable guards.
+- Later extraction, permanence, route migration, gateway/auth, config-store, data-ingest, frontend, Python, Kafka or database changes require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 

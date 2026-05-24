@@ -16,11 +16,13 @@ Phase 006 froze the approved legacy non-task `/api/tasks/*` contract inventory w
 
 Phase 005 selected continuing as a modular monolith inside `ai-orchestration-service` for the next governance horizon. This keeps the current transition host in place as policy, but it does not make the host final architecture and does not approve extraction, route migration or breaking contract changes.
 
+Phase 008 produced `docs/harness/12-transition-host-exit-criteria.md`, a static per-domain inventory of current transition-host responsibilities, SoT/read-model placement, command surfaces, legacy route dependencies, guardrails, extraction blockers, exit criteria and readiness gates for report, market, risk, strategy, audit, config and workbench. It does not approve extraction, route migration, permanence, gateway/auth, config-store migration, data-ingest split or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
 - Java business domain tables and UI already depend on this service.
-- Immediate microservice split would create too much churn before per-domain exit criteria and extraction readiness gates are defined.
+- Immediate microservice split would create too much churn before follow-up domain ownership, route, gateway/auth, config-store and data-ingest decisions are selected by Window 0 and approved by the user.
 
 Exit criteria:
 
@@ -28,8 +30,8 @@ Exit criteria:
 2. Completed in Phase 002: `TaskQueryServiceImpl` split into internal domain query services.
 3. Completed in Phase 006 for legacy paths: non-task `/api/tasks/*` contracts are documented and guarded for path, method, owner, response envelope, binding and permission drift.
 4. Completed in Phase 005 for the current governance horizon: continue as modular monolith without declaring final architecture.
-5. Pending: Each domain has clear SoT, read-model, command surface, route dependency and extraction blocker inventory.
-6. Pending: Only then decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth and route migration work.
+5. Completed in Phase 008: Each in-scope domain has clear SoT, read-model, command surface, route dependency, guardrail, extraction blocker, exit criteria and readiness-gate inventory.
+6. Pending: Use the Phase 008 inventory to decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -38,6 +40,7 @@ Forbidden:
 - Adding, moving, deleting or aliasing legacy non-task `/api/tasks/*` endpoints without updating the Phase 006 contract inventory through an approved phase.
 - Treating the current service layout as final architecture.
 - Treating Phase 005 as approval for service extraction, route migration, gateway/auth implementation or permanent modular-monolith architecture.
+- Treating Phase 008 as approval for service extraction, route migration, gateway/auth implementation, config-store migration, data-ingest split or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
