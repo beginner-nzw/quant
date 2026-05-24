@@ -26,15 +26,21 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 006
+## Next Steering Inputs After Phase 005
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 006 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Phase 005 - Decide Service Split or Continue Modular Monolith.
+- Phase 008 - Transition Host Exit Criteria Inventory.
+- Report boundary readiness phase.
+- Market event and data-ingest ownership phase.
+- Risk/strategy projection ownership phase.
+- Auth/gateway decision phase.
+- Legacy route migration decision phase.
+- Config store decision phase.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
 
@@ -200,6 +206,16 @@ Residual scope:
 
 ## Phase 005 - Decide Service Split or Continue Modular Monolith
 
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-005.md`
+- `docs/harness/handoffs/phase-005-architect.md`
+- `docs/harness/handoffs/phase-005-implementation.md`
+- `docs/harness/handoffs/phase-005-review.md`
+- `docs/harness/handoffs/phase-005-final.md`
+
 Goal:
 
 After internal boundaries stabilize, decide whether to extract domain services.
@@ -213,6 +229,43 @@ Options:
 5. Add gateway/auth first.
 
 Requires human approval.
+
+Acceptance:
+
+- Completed as docs-only architecture/policy work with no business code, test, script, dependency, frontend, Python, Java, database, Kafka, config or deployment change.
+- Selected Option 1: continue as a modular monolith inside `ai-orchestration-service` for the next governance horizon.
+- Did not reclassify `ai-orchestration-service` as final architecture.
+- Did not reclassify legacy non-task `/api/tasks/*` paths as final architecture.
+- Preserved all current URLs, HTTP methods, request/response contracts, frontend routes, Kafka topics, database schema and runtime behavior.
+- Preserved Phase 006 legacy `/api/tasks/*` contract freeze and Phase 007 frontend authority guardrails.
+- Window 3 reviewed and approved `phase-005-review.md`.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains.
+- The modular-monolith policy is limited to the next governance horizon and must be revisited through later phases.
+- Future extraction, route migration, gateway/auth work, config-store migration, data-ingest split, service discovery or feature work requires a separate Window 0 decision and human approval.
+
+## Phase 008 - Transition Host Exit Criteria Inventory
+
+Status: candidate input for Window 0.
+
+Goal:
+
+Define per-domain exit gates for report, market, risk, strategy, audit, config and workbench responsibilities inside `ai-orchestration-service`.
+
+Scope:
+
+- Inventory current transition-host responsibilities by domain.
+- Record SoT/read-model placement, command surfaces, legacy route dependencies and extraction blockers.
+- Preserve Phase 005 modular-monolith policy for the current horizon.
+- Preserve Phase 006 legacy `/api/tasks/*` contract freeze.
+- Do not choose or implement extraction.
+
+Acceptance candidate:
+
+- Produces exit criteria and readiness gates that Window 0 can use for later boundary phases.
+- No business code, URL, DTO/VO/entity, database schema, Kafka, frontend, Python, config, dependency or deployment change.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 

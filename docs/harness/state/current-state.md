@@ -10,21 +10,25 @@ This file is the starting state for Window 0.
 
 None approved.
 
-Latest frozen phase: Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
+Latest frozen phase: Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 ## Current Phase Status
 
-No active phase is approved.
+Phase 005 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-005-review.md`.
 
-Phase 006 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-006-review-fix-3.md`.
+Window 4 froze the result in `docs/harness/handoffs/phase-005-final.md`.
+
+Phase 005 selected the conservative architecture policy: continue as a modular monolith inside `ai-orchestration-service` for the next governance horizon. This is not a permanent final-architecture declaration, does not approve service extraction, and does not approve route migration or breaking contract changes.
+
+Phase 006 remains completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-006-review-fix-3.md`.
 
 Phase 007 remains completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-007-review.md`.
 
-Window 0 must recover from this file and `docs/harness/handoffs/phase-006-final.md`. The user does not need to manually summarize Phase 006.
+Window 0 must recover from this file and `docs/harness/handoffs/phase-005-final.md`. The user does not need to manually summarize Phase 005.
 
 ## Last Completed Phase
 
-Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
+Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 ## Open Blockers
 
@@ -73,6 +77,22 @@ None registered.
 - `python -m compileall app`, `python -m unittest discover -s tests` and `mvn -q test` passed.
 - `python -m pytest` was unavailable because `pytest` is not installed in the current environment.
 
+## Completed Phase 005 Constraints
+
+- No breaking changes.
+- URL paths and HTTP methods remained stable.
+- No business behavior change.
+- No new feature work.
+- Docs-only architecture/policy implementation.
+- Selected option: continue as a modular monolith inside `ai-orchestration-service` for the next governance horizon.
+- `ai-orchestration-service` remains a transition host, not final architecture.
+- Legacy non-task `/api/tasks/*` paths remain frozen transitional contracts under Phase 006, not final architecture.
+- No service extraction, route migration, route alias, endpoint rename, gateway/auth implementation, config-store migration, data-ingest split or feature work was approved.
+- No Java, Python, frontend, database, Kafka, `ai-config`, dependency, build-config or deployment file changed.
+- Phase 003, Phase 004, Phase 006 and Phase 007 guardrails remain in force.
+- Window 3 reviewed and approved `phase-005-review.md`.
+- Maven, npm and Python verification were not required because Phase 005 changed documentation only.
+
 ## Completed Phase 006 Constraints
 
 - No breaking changes.
@@ -106,7 +126,7 @@ None registered.
 
 ## Open Architecture Drift
 
-- `ai-orchestration-service` is a transition host for multiple domains originally planned as separate services.
+- `ai-orchestration-service` remains a transition host for multiple domains originally planned as separate services. Phase 005 keeps this as the next-governance-horizon modular-monolith policy, not final architecture.
 - Gateway/auth/config/service discovery architecture from the original plan is not implemented.
 
 ## Open Authority Drift
@@ -114,6 +134,7 @@ None registered.
 - Phase 002 moved risk, strategy, report, market-intelligence, audit, config dashboard and workbench read paths out of `TaskQueryServiceImpl` into internal domain query services.
 - Phase 003 documented and tested Java backend workbench boundaries: workbench remains display-only aggregation, must not write domain facts, and must not feed backend command/projection authority.
 - Phase 004 made in-scope Python fallback provenance auditable for planner, intent, financial, risk, report and market fallback paths using existing metadata surfaces.
+- Phase 005 preserved current source-of-truth placement and did not move runtime authority.
 - Phase 007 documented and guarded frontend consumer boundaries for current workbench aggregation and fallback provenance surfaces.
 - Fallback metadata remains provenance only and must not become model-generated truth or business SoT.
 - Future frontend, backend or Python surfaces that expose workbench or fallback metadata must keep equivalent non-authoritative provenance guardrails.
@@ -124,6 +145,7 @@ None registered.
 - Non-task domain endpoints still keep legacy `/api/tasks/*` paths by approved Phase 001 constraint.
 - Workbench Java backend display-only contract is guarded by Phase 003 tests/comments.
 - Phase 004 preserved Kafka topics, top-level payload fields, URL paths, frontend contracts, DTO/VO/entity shapes and database schema while adding optional fallback provenance inside existing map metadata.
+- Phase 005 preserved all current URLs, HTTP methods, request/response contracts, frontend routes, Kafka topics, database schema and runtime behavior.
 - Phase 006 froze the approved legacy non-task `/api/tasks/*` endpoint inventory with backend contract tests. The legacy namespace remains a transition contract and must not drift without an approved phase handoff.
 - Phase 007 preserved existing frontend routes, API endpoint strings, HTTP methods, function names, call signatures, response envelopes and TypeScript shapes.
 - Legacy non-task `/api/tasks/*` paths remain transition debt, but the current approved inventory is documented and guarded.
@@ -131,7 +153,7 @@ None registered.
 
 ## Active Transition Hosts
 
-- `ai-orchestration-service`
+- `ai-orchestration-service`, continued by Phase 005 as the next-governance-horizon modular monolith and still not final architecture
 - Internal domain query services inside `ai-orchestration-service`
 - Legacy `/api/tasks/*` paths for non-task domain surfaces, now frozen as approved transitional contracts by Phase 006
 - Research workbench display aggregation
@@ -141,12 +163,33 @@ None registered.
 
 ## Candidate Next Phases
 
-- Phase 005 - Decide Service Split or Continue Modular Monolith.
-- Phase 001, Phase 002, Phase 003, Phase 004, Phase 006 and Phase 007 are no longer candidates because they are completed and frozen by Window 4.
+No active candidate is approved.
 
-Window 0 may propose a different bounded candidate only if it follows `docs/harness/10-steering-state-machine.md`, records the reason, and waits for human approval.
+Recommended candidate inputs for Window 0 evaluation:
+
+- Phase 008 - Transition Host Exit Criteria Inventory.
+- Report boundary readiness phase.
+- Market event and data-ingest ownership phase.
+- Risk/strategy projection ownership phase.
+- Auth/gateway decision phase.
+- Legacy route migration decision phase.
+- Config store decision phase.
+
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006 and Phase 007 are no longer candidates because they are completed and frozen by Window 4.
+
+Window 0 must score candidates using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval.
 
 ## Human Approval Status
+
+Phase 005 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-005.md`, planned by Window 1, implemented by Window 2 as docs-only architecture/policy work, reviewed and approved by Window 3, and frozen by Window 4 as completed with residual risk.
+
+Phase 005 approval constraints:
+
+- No breaking changes.
+- URL paths must remain stable.
+- No business behavior change.
+- No new feature work.
+- Expected Window 2 type was docs-only architecture/policy work.
 
 Phase 001 was approved by the user, implemented by Window 2, reviewed by Window 3 and frozen by Window 4 as completed with residual risk.
 
@@ -160,4 +203,4 @@ Phase 007 was approved by the user after Window 0 steering decision in `docs/har
 
 Phase 006 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-006.md`, planned by Window 1, implemented by Window 2 with three fix passes, reviewed and approved by Window 3 Review Fix 3, and frozen by Window 4 as completed with residual risk.
 
-Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-006-final.md`, discover the matching Phase 006 steering, architect, implementation, fix implementation, review and review-fix handoffs, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.
+Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-005-final.md`, discover the matching Phase 005 steering, architect, implementation and review handoffs, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.

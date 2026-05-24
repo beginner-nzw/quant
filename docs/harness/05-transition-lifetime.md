@@ -14,19 +14,22 @@ Phase 002 split non-task read paths out of `TaskQueryServiceImpl` into internal 
 
 Phase 006 froze the approved legacy non-task `/api/tasks/*` contract inventory with backend tests. URL paths were intentionally preserved, and the legacy namespace remains transitional rather than final architecture.
 
+Phase 005 selected continuing as a modular monolith inside `ai-orchestration-service` for the next governance horizon. This keeps the current transition host in place as policy, but it does not make the host final architecture and does not approve extraction, route migration or breaking contract changes.
+
 Allowed because:
 
 - Current project is still in convergence phase.
 - Java business domain tables and UI already depend on this service.
-- Immediate microservice split would create too much churn before authority and contract are frozen.
+- Immediate microservice split would create too much churn before per-domain exit criteria and extraction readiness gates are defined.
 
 Exit criteria:
 
 1. Completed in Phase 001: `TaskQueryController` split into domain-specific controllers inside the same service.
 2. Completed in Phase 002: `TaskQueryServiceImpl` split into internal domain query services.
 3. Completed in Phase 006 for legacy paths: non-task `/api/tasks/*` contracts are documented and guarded for path, method, owner, response envelope, binding and permission drift.
-4. Pending: Each domain has clear SoT and read-model.
-5. Pending: Only then decide whether to extract independent microservices.
+4. Completed in Phase 005 for the current governance horizon: continue as modular monolith without declaring final architecture.
+5. Pending: Each domain has clear SoT, read-model, command surface, route dependency and extraction blocker inventory.
+6. Pending: Only then decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth and route migration work.
 
 Forbidden:
 
@@ -34,6 +37,7 @@ Forbidden:
 - Adding new unrelated domains into the Phase 001 split controllers without updating the contract map and phase handoff.
 - Adding, moving, deleting or aliasing legacy non-task `/api/tasks/*` endpoints without updating the Phase 006 contract inventory through an approved phase.
 - Treating the current service layout as final architecture.
+- Treating Phase 005 as approval for service extraction, route migration, gateway/auth implementation or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
