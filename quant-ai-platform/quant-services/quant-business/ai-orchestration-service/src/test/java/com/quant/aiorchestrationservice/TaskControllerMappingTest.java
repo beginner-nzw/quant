@@ -10,11 +10,17 @@ import com.quant.aiorchestrator.controller.RiskWarningController;
 import com.quant.aiorchestrator.controller.StrategySignalController;
 import com.quant.aiorchestrator.controller.TaskQueryController;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -99,39 +105,97 @@ class TaskControllerMappingTest {
 
     private static Set<String> mappingsFor(Class<?> controllerClass) {
         RequestMapping requestMapping = controllerClass.getAnnotation(RequestMapping.class);
-        String basePath = firstPath(requestMapping.value(), requestMapping.path());
+        List<String> basePaths = pathsOf(requestMapping.value(), requestMapping.path());
         String controllerName = controllerClass.getSimpleName();
 
         Set<String> mappings = new TreeSet<>();
         for (Method method : controllerClass.getDeclaredMethods()) {
             GetMapping getMapping = method.getAnnotation(GetMapping.class);
             if (getMapping != null) {
-                mappings.add("GET " + joinPath(basePath, firstPath(getMapping.value(), getMapping.path()))
-                        + " -> " + controllerName);
+                addMappings(mappings, "GET", basePaths, getMapping.value(), getMapping.path(), controllerName);
             }
             PostMapping postMapping = method.getAnnotation(PostMapping.class);
             if (postMapping != null) {
-                mappings.add("POST " + joinPath(basePath, firstPath(postMapping.value(), postMapping.path()))
-                        + " -> " + controllerName);
+                addMappings(mappings, "POST", basePaths, postMapping.value(), postMapping.path(), controllerName);
+            }
+            PutMapping putMapping = method.getAnnotation(PutMapping.class);
+            if (putMapping != null) {
+                addMappings(mappings, "PUT", basePaths, putMapping.value(), putMapping.path(), controllerName);
+            }
+            DeleteMapping deleteMapping = method.getAnnotation(DeleteMapping.class);
+            if (deleteMapping != null) {
+                addMappings(mappings, "DELETE", basePaths, deleteMapping.value(), deleteMapping.path(), controllerName);
+            }
+            PatchMapping patchMapping = method.getAnnotation(PatchMapping.class);
+            if (patchMapping != null) {
+                addMappings(mappings, "PATCH", basePaths, patchMapping.value(), patchMapping.path(), controllerName);
+            }
+            RequestMapping methodRequestMapping = method.getAnnotation(RequestMapping.class);
+            if (methodRequestMapping != null) {
+                RequestMethod[] requestMethods = methodRequestMapping.method();
+                if (requestMethods.length == 0) {
+                    addMappings(mappings, "ANY", basePaths,
+                            methodRequestMapping.value(), methodRequestMapping.path(), controllerName);
+                } else {
+                    for (RequestMethod requestMethod : requestMethods) {
+                        addMappings(mappings, requestMethod.name(), basePaths,
+                                methodRequestMapping.value(), methodRequestMapping.path(), controllerName);
+                    }
+                }
             }
         }
         return mappings;
     }
 
-    private static String firstPath(String[] values, String[] paths) {
-        if (values.length > 0) {
-            return values[0];
+    private static List<String> pathsOf(String[] values, String[] paths) {
+        String[] source = values.length > 0 ? values : paths;
+        if (source.length == 0) {
+            return List.of("");
         }
-        if (paths.length > 0) {
-            return paths[0];
+
+        List<String> result = new ArrayList<>();
+        for (String path : source) {
+            result.add(path);
         }
-        return "";
+        return result;
+    }
+
+    private static void addMappings(Set<String> mappings,
+                                    String httpMethod,
+                                    List<String> basePaths,
+                                    String[] values,
+                                    String[] paths,
+                                    String controllerName) {
+        for (String basePath : basePaths) {
+            for (String methodPath : pathsOf(values, paths)) {
+                mappings.add(httpMethod + " " + joinPath(basePath, methodPath) + " -> " + controllerName);
+            }
+        }
     }
 
     private static String joinPath(String basePath, String methodPath) {
-        if (methodPath == null || methodPath.isBlank()) {
-            return basePath;
+        String base = normalizePathPart(basePath);
+        String method = normalizePathPart(methodPath);
+        if (base.isEmpty() || base.equals("/")) {
+            return method;
         }
-        return basePath + methodPath;
+        if (method.isEmpty() || method.equals("/")) {
+            return base;
+        }
+        return base + "/" + method.substring(1);
+    }
+
+    private static String normalizePathPart(String path) {
+        if (path == null || path.isBlank()) {
+            return "";
+        }
+        String normalized = path.trim();
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        while (normalized.length() > 1 && normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 }

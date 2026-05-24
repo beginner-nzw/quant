@@ -452,21 +452,30 @@ class LegacyTaskApiContractFreezeTest {
 
     private static void assertPermissionCall(EndpointContract contract, Method method) throws Exception {
         String methodBody = methodBody(contract.controller(), method.getName());
-        Pattern permissionPattern = Pattern.compile("requirePermission\\s*\\(\\s*RoleAccessConfigService\\."
-                + "(PERMISSION_[A-Z0-9_]+)\\s*\\)");
-        Matcher matcher = permissionPattern.matcher(methodBody);
-        List<String> actualPermissions = new ArrayList<>();
-        while (matcher.find()) {
-            actualPermissions.add(matcher.group(1));
-        }
+        List<String> actualPermissionArguments = requirePermissionArguments(methodBody);
 
         if (contract.permission() == null) {
-            assertTrue(actualPermissions.isEmpty(),
+            assertTrue(actualPermissionArguments.isEmpty(),
                     contract.inventoryKey() + " must keep absence of explicit permission checks");
         } else {
-            assertEquals(List.of(permissionConstantName(contract.permission())), actualPermissions,
-                    contract.inventoryKey() + " must keep explicit permission behavior");
+            assertEquals(1, actualPermissionArguments.size(),
+                    contract.inventoryKey() + " must keep exactly one explicit permission check");
+            String expectedPermissionReference = "RoleAccessConfigService."
+                    + permissionConstantName(contract.permission());
+            assertTrue(actualPermissionArguments.get(0).contains(expectedPermissionReference),
+                    contract.inventoryKey() + " must keep explicit permission behavior: "
+                            + actualPermissionArguments);
         }
+    }
+
+    private static List<String> requirePermissionArguments(String methodBody) {
+        Pattern permissionPattern = Pattern.compile("\\brequirePermission\\s*\\((.*?)\\)", Pattern.DOTALL);
+        Matcher matcher = permissionPattern.matcher(methodBody);
+        List<String> arguments = new ArrayList<>();
+        while (matcher.find()) {
+            arguments.add(matcher.group(1).replaceAll("\\s+", " ").trim());
+        }
+        return arguments;
     }
 
     private static String methodBody(Class<?> controllerClass, String methodName) throws Exception {
@@ -593,15 +602,34 @@ class LegacyTaskApiContractFreezeTest {
     }
 
     private static String joinPath(String basePath, String methodPath) {
-        if (methodPath == null || methodPath.isBlank()) {
-            return basePath;
+        String base = normalizePathPart(basePath);
+        String method = normalizePathPart(methodPath);
+        if (base.isEmpty() || base.equals("/")) {
+            return method;
         }
-        return basePath + methodPath;
+        if (method.isEmpty() || method.equals("/")) {
+            return base;
+        }
+        return base + "/" + method.substring(1);
     }
 
     private static boolean isApiTasksPath(String path) {
-        String normalizedPath = path.startsWith("/") ? path : "/" + path;
+        String normalizedPath = normalizePathPart(path);
         return normalizedPath.equals("/api/tasks") || normalizedPath.startsWith("/api/tasks/");
+    }
+
+    private static String normalizePathPart(String path) {
+        if (path == null || path.isBlank()) {
+            return "";
+        }
+        String normalized = path.trim();
+        if (!normalized.startsWith("/")) {
+            normalized = "/" + normalized;
+        }
+        while (normalized.length() > 1 && normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private static String nameOf(String value, String name) {
