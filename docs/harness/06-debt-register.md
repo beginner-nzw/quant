@@ -3,7 +3,7 @@
 | ID | Severity | Area | Debt | Evidence | Recommended Next Action | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | D001 | High | Service boundary | `ai-orchestration-service` hosts too many domains | Phase 001 split controller classes; Phase 002 split internal query service ownership, but the service host still contains multiple domains | Harden contracts and authority before deciding service extraction or modular-monolith permanence | Open - Phase 001 and Phase 002 partially mitigated |
-| D002 | High | Contract | Non-task domains exposed under `/api/tasks/*` | risk, strategy, market, report, config APIs keep legacy `/api/tasks/*` paths in split controllers | Document allowed legacy contract; later introduce domain URL groups only with explicit breaking-change approval | Open |
+| D002 | High | Contract | Non-task domains exposed under `/api/tasks/*` | risk, strategy, market, report, config APIs keep legacy `/api/tasks/*` paths in split controllers; Phase 006 froze the approved transitional inventory with focused backend contract tests | Later introduce domain URL groups only with explicit breaking-change approval; until then keep the Phase 006 inventory and guards in sync with any approved contract change | Open - Phase 006 mitigated drift, legacy namespace remains transition debt |
 | D003 | Medium | Authority | Future `research-workbench` or fallback metadata surfaces can be mistaken as SoT | Phase 003 added Java backend display-only contract notes and boundary tests that keep workbench out of command/projection authority and guard it from domain writes; Phase 004 added Python fallback provenance for planner, intent, financial, risk, report and market fallback paths; Phase 007 added frontend authority notes and a focused static guard for current workbench/fallback consumers | Keep fallback/workbench metadata display-only, extend equivalent guardrails to future surfaces, and do not promote provenance into command or projection authority | Open - current known backend, Python and frontend surfaces mitigated |
 | D004 | High | Read model | `TaskQueryServiceImpl` is too large and mixed | Phase 002 moved non-task read paths to internal domain query services and Window 3 approved after Fix Pass 1 | Keep boundary tests; do not reintroduce non-task methods into `TaskQueryServiceImpl` | Closed - Phase 002 completed |
 | D005 | Medium | AI workflow | LangGraph workflow is linear | `workflow_builder.py` | Defer complex branching until contracts are stable | Open |
@@ -13,7 +13,7 @@
 | D009 | Medium | Ingestion | No independent data-ingest-service | mock/source sync under ai-orchestration-service | Mark mock as test/demo; define ingestion ownership | Open |
 | D010 | Medium | Deployment | Docker compose lacks gateway/Nacos/Sentinel/service containers | compose has MySQL/Redis/Kafka/Zookeeper only | Defer until architecture boundary is stable | Open |
 | D011 | Medium | Eval | Limited frontend tests; Python pytest unavailable in current env | Phase 004 added Python unittest fallback provenance coverage; Phase 007 added a focused frontend static guard and `npm run build` passed; `pytest` is unavailable | Add broader frontend/e2e coverage and install or replace pytest path when that becomes a phase goal | Open |
-| D012 | Low | Namespace | Report/review/config APIs mixed with task namespace | `/api/tasks/...` | Do not add new mixed endpoints without contract update | Open |
+| D012 | Low | Namespace | Report/review/config APIs mixed with task namespace | `/api/tasks/...`; Phase 006 guards the approved mixed-namespace inventory | Do not add new mixed endpoints without approved phase handoff and contract inventory update | Open - guarded by Phase 006 |
 
 ## Debt Priority
 
@@ -27,6 +27,8 @@ Phase 004 hardened D003 for Python fallback auditability by preserving fallback 
 
 Phase 007 hardened D003 for current frontend consumer boundaries by documenting workbench/fallback provenance as display-only metadata and adding a focused static guard against command-authority usage.
 
-Next work should still start with the remaining D001-D002 service-boundary and legacy contract risks, especially the approved legacy `/api/tasks/*` contract debt.
+Phase 006 hardened D002 by freezing the approved legacy non-task `/api/tasks/*` endpoint inventory with backend tests for path, method, owner, response envelope, request binding and permission behavior. The legacy namespace remains transition debt because Phase 006 preserved paths rather than migrating them.
 
-Do not begin large feature expansion until the remaining D001-D002 contract and transition-host risks have at least contract-level mitigation.
+Next work should start with the remaining D001 service-boundary and transition-host decision risk, while preserving the Phase 006 legacy contract freeze.
+
+Do not begin large feature expansion until the remaining D001 transition-host risk has an approved architecture decision and any later D002 route migration is explicitly approved as a breaking-change phase.

@@ -26,16 +26,15 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 007
+## Next Steering Inputs After Phase 006
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 006 and Phase 007 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
-- Deferred: Phase 005 - Decide Service Split or Continue Modular Monolith.
+- Phase 005 - Decide Service Split or Continue Modular Monolith.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
 
@@ -217,6 +216,22 @@ Requires human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-006.md`
+- `docs/harness/handoffs/phase-006-architect.md`
+- `docs/harness/handoffs/phase-006-implementation.md`
+- `docs/harness/handoffs/phase-006-review.md`
+- `docs/harness/handoffs/phase-006-fix-1-implementation.md`
+- `docs/harness/handoffs/phase-006-review-fix-1.md`
+- `docs/harness/handoffs/phase-006-fix-2-implementation.md`
+- `docs/harness/handoffs/phase-006-review-fix-2.md`
+- `docs/harness/handoffs/phase-006-fix-3-implementation.md`
+- `docs/harness/handoffs/phase-006-review-fix-3.md`
+- `docs/harness/handoffs/phase-006-final.md`
+
 Goal:
 
 Declare and guard the approved legacy `/api/tasks/*` non-task domain contracts so D002 stops drifting while URL stability remains required.
@@ -229,9 +244,18 @@ Scope:
 
 Acceptance:
 
+- Completed with no runtime or user-visible behavior change.
 - Existing legacy paths remain stable and explicitly documented as approved transitional contracts.
-- Tests fail if non-task domain endpoints move, disappear or silently change controller ownership without an approved phase handoff.
-- No frontend, DTO/VO/entity, database schema, Kafka, Python or business behavior change.
+- Backend tests fail if non-task domain endpoints move, disappear, change HTTP method, change controller ownership, change `Result<T>` response envelope or declared generic response type, drift request binding, drift permission behavior or appear without updating the approved inventory.
+- Tests guard `/api/tasks` mappings across current controller mapping shapes, including GET, POST, PUT, DELETE, PATCH, method-level `@RequestMapping`, full method-level paths and normalized base/method path combinations.
+- No Java production, frontend, DTO/VO/entity, database schema, Kafka, Python, `ai-config`, dependency or business behavior change.
+- `mvn -q test` passed from `quant-ai-platform/quant-services` during implementation/fix passes and final review; output included the existing simulated `kafka down` warning stack trace.
+
+Residual scope:
+
+- Legacy non-task `/api/tasks/*` paths remain transitional namespace debt, though the current approved inventory is now frozen.
+- Source-level permission and mapping guards rely on current controller package/source conventions.
+- Any later approved endpoint declaration or permission style change must deliberately update the Phase 006 inventory and tests.
 
 ## Phase 007 - Frontend Consumer Authority Boundary Audit
 
@@ -270,7 +294,7 @@ Residual scope:
 
 - The frontend static guard is a focused source check, not a full TypeScript AST policy engine.
 - Future workbench or fallback provenance surfaces must add equivalent non-authoritative guardrails.
-- Legacy non-task `/api/tasks/*` paths remain contract debt for Phase 006 consideration.
+- Legacy non-task `/api/tasks/*` paths are now guarded by Phase 006 but remain transition debt until a later explicit route migration or architecture decision.
 
 ## Current Rule
 

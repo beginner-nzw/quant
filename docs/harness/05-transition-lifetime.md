@@ -12,6 +12,8 @@ Phase 001 split the former multi-domain `TaskQueryController` surface into domai
 
 Phase 002 split non-task read paths out of `TaskQueryServiceImpl` into internal domain query services inside this same transition host. External contracts and legacy URL paths were intentionally preserved.
 
+Phase 006 froze the approved legacy non-task `/api/tasks/*` contract inventory with backend tests. URL paths were intentionally preserved, and the legacy namespace remains transitional rather than final architecture.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -22,7 +24,7 @@ Exit criteria:
 
 1. Completed in Phase 001: `TaskQueryController` split into domain-specific controllers inside the same service.
 2. Completed in Phase 002: `TaskQueryServiceImpl` split into internal domain query services.
-3. Pending: Contract map stable for task/report/risk/strategy/market/audit/config.
+3. Completed in Phase 006 for legacy paths: non-task `/api/tasks/*` contracts are documented and guarded for path, method, owner, response envelope, binding and permission drift.
 4. Pending: Each domain has clear SoT and read-model.
 5. Pending: Only then decide whether to extract independent microservices.
 
@@ -30,6 +32,7 @@ Forbidden:
 
 - Adding new unrelated domains into `TaskQueryController`.
 - Adding new unrelated domains into the Phase 001 split controllers without updating the contract map and phase handoff.
+- Adding, moving, deleting or aliasing legacy non-task `/api/tasks/*` endpoints without updating the Phase 006 contract inventory through an approved phase.
 - Treating the current service layout as final architecture.
 
 ## T2: JSON Config as Runtime Configuration Store

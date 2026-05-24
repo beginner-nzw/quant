@@ -10,19 +10,21 @@ This file is the starting state for Window 0.
 
 None approved.
 
-Latest frozen phase: Phase 007 - Frontend Consumer Authority Boundary Audit.
+Latest frozen phase: Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
 
 ## Current Phase Status
 
 No active phase is approved.
 
-Phase 007 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-007-review.md`.
+Phase 006 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-006-review-fix-3.md`.
 
-Window 0 must recover from this file and `docs/harness/handoffs/phase-007-final.md`. The user does not need to manually summarize Phase 007.
+Phase 007 remains completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-007-review.md`.
+
+Window 0 must recover from this file and `docs/harness/handoffs/phase-006-final.md`. The user does not need to manually summarize Phase 006.
 
 ## Last Completed Phase
 
-Phase 007 - Frontend Consumer Authority Boundary Audit.
+Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
 
 ## Open Blockers
 
@@ -71,6 +73,21 @@ None registered.
 - `python -m compileall app`, `python -m unittest discover -s tests` and `mvn -q test` passed.
 - `python -m pytest` was unavailable because `pytest` is not installed in the current environment.
 
+## Completed Phase 006 Constraints
+
+- No breaking changes.
+- URL paths and HTTP methods remained stable.
+- No business behavior change.
+- No new feature work.
+- Backend-focused contract/test implementation only.
+- Java production code, controller runtime annotations and executable behavior remained unchanged.
+- No frontend, Python, DTO/VO/entity, mapper, database schema, Kafka, `ai-config`, dependency or build-config file changed.
+- The approved non-task legacy `/api/tasks/*` endpoint inventory is documented and guarded in backend tests.
+- Focused tests guard endpoint path, HTTP method, controller owner, `Result<T>` response envelope, declared generic response type, request binding shape, request-param required/default behavior, explicit permission calls and intentional absence of explicit permission calls.
+- Focused tests guard against unapproved `/api/tasks` endpoint additions across controller mapping shapes, including GET, POST, PUT, DELETE, PATCH and method-level `@RequestMapping`.
+- Window 3 required three fix passes, then approved `phase-006-review-fix-3.md`.
+- `mvn -q test` passed from `quant-ai-platform/quant-services`; output included the existing simulated `kafka down` warning stack trace from `TaskOutboxPublisherServiceTests.publishPendingOnceShouldMarkFailedWhenKafkaSendFails`.
+
 ## Completed Phase 007 Constraints
 
 - No breaking changes.
@@ -107,15 +124,16 @@ None registered.
 - Non-task domain endpoints still keep legacy `/api/tasks/*` paths by approved Phase 001 constraint.
 - Workbench Java backend display-only contract is guarded by Phase 003 tests/comments.
 - Phase 004 preserved Kafka topics, top-level payload fields, URL paths, frontend contracts, DTO/VO/entity shapes and database schema while adding optional fallback provenance inside existing map metadata.
+- Phase 006 froze the approved legacy non-task `/api/tasks/*` endpoint inventory with backend contract tests. The legacy namespace remains a transition contract and must not drift without an approved phase handoff.
 - Phase 007 preserved existing frontend routes, API endpoint strings, HTTP methods, function names, call signatures, response envelopes and TypeScript shapes.
-- Legacy non-task `/api/tasks/*` paths remain contract debt.
+- Legacy non-task `/api/tasks/*` paths remain transition debt, but the current approved inventory is documented and guarded.
 - Future fallback surfaces must continue preserving fallback provenance as non-authoritative metadata.
 
 ## Active Transition Hosts
 
 - `ai-orchestration-service`
 - Internal domain query services inside `ai-orchestration-service`
-- Legacy `/api/tasks/*` paths for non-task domain surfaces
+- Legacy `/api/tasks/*` paths for non-task domain surfaces, now frozen as approved transitional contracts by Phase 006
 - Research workbench display aggregation
 - JSON files under `quant-ai-platform/ai-config`
 - Mock/demo ingest paths
@@ -123,9 +141,8 @@ None registered.
 
 ## Candidate Next Phases
 
-- Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains.
-- Deferred: Phase 005 - Decide Service Split or Continue Modular Monolith.
-- Phase 001, Phase 002, Phase 003, Phase 004 and Phase 007 are no longer candidates because they are completed and frozen by Window 4.
+- Phase 005 - Decide Service Split or Continue Modular Monolith.
+- Phase 001, Phase 002, Phase 003, Phase 004, Phase 006 and Phase 007 are no longer candidates because they are completed and frozen by Window 4.
 
 Window 0 may propose a different bounded candidate only if it follows `docs/harness/10-steering-state-machine.md`, records the reason, and waits for human approval.
 
@@ -141,4 +158,6 @@ Phase 004 was approved by the user after Window 0 steering decision in `docs/har
 
 Phase 007 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-007.md`, planned by Window 1, implemented by Window 2, reviewed and approved by Window 3, and frozen by Window 4 as completed with residual risk.
 
-Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-007-final.md`, discover the matching Phase 007 steering, architect, implementation and review handoffs, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.
+Phase 006 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-006.md`, planned by Window 1, implemented by Window 2 with three fix passes, reviewed and approved by Window 3 Review Fix 3, and frozen by Window 4 as completed with residual risk.
+
+Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-006-final.md`, discover the matching Phase 006 steering, architect, implementation, fix implementation, review and review-fix handoffs, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.
