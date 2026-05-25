@@ -26,20 +26,20 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 008
+## Next Steering Inputs After Phase 009
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007 and Phase 008 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008 and Phase 009 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Report boundary readiness phase.
 - Market event and data-ingest ownership phase.
 - Risk/strategy projection ownership phase.
 - Auth/gateway decision phase.
 - Legacy route migration decision phase.
 - Config store decision phase.
+- Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
 
@@ -286,6 +286,48 @@ Residual scope:
 - D001 remains open because `ai-orchestration-service` still hosts multiple domains.
 - Phase 008 created static governance inventory only; it did not add executable guards.
 - Later extraction, permanence, route migration, gateway/auth, config-store, data-ingest, frontend, Python, Kafka or database changes require a new Window 0 decision and human approval.
+
+## Phase 009 - Report Boundary Readiness
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-009.md`
+- `docs/harness/handoffs/phase-009-architect.md`
+- `docs/harness/handoffs/phase-009-implementation.md`
+- `docs/harness/handoffs/phase-009-review.md`
+- `docs/harness/handoffs/phase-009-final.md`
+
+Goal:
+
+Apply the Phase 008 readiness template to the report domain before any later report-service extraction, route migration, permanence decision or report contract reshaping is considered.
+
+Scope:
+
+- Produce `docs/harness/13-report-boundary-readiness.md` as the durable report-domain readiness artifact.
+- Clarify report belongs, authority objects, read-model surfaces, command surfaces, version/evidence/review-audit inventories, AI projection dependency, frontend consumers, Python/fallback provenance touchpoints and related display-only surfaces.
+- Preserve Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails and Phase 008 transition-host readiness template.
+- Do not choose or implement report extraction, route migration, endpoint aliases, gateway/auth, config-store migration, Python behavior change, frontend reshaping, Kafka/database changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/13-report-boundary-readiness.md` as the durable report boundary readiness artifact.
+- Recorded stable report authority objects: `research_report`, `research_report_version`, `research_report_section`, `report_evidence_ref`, `research_report_review_log` and `human_review_record`.
+- Recorded that `reportMeta`, raw payload, `contextSnapshot`, fallback provenance, workbench latest insight and frontend display fields are not report SoT.
+- Treated `AiResultDomainProjectionService` as a current projection dependency, not a moved or redesigned owner.
+- Preserved all report URLs, HTTP methods, request bindings, response envelopes, permission behavior, frontend routes, frontend API functions and TypeScript shapes.
+- No Java, Python, frontend, database, Kafka, `ai-config`, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-009-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 009 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains.
+- D002 remains open because report and other non-task domain surfaces still use frozen legacy `/api/tasks/*` routes.
+- Phase 009 created static report governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
+- Later report extraction, route migration, projection split, auth/gateway work, config-store migration, frontend/Python reshaping, Kafka/database changes, permanent modular-monolith decisions or new report features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 

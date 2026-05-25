@@ -18,6 +18,8 @@ Phase 005 selected continuing as a modular monolith inside `ai-orchestration-ser
 
 Phase 008 produced `docs/harness/12-transition-host-exit-criteria.md`, a static per-domain inventory of current transition-host responsibilities, SoT/read-model placement, command surfaces, legacy route dependencies, guardrails, extraction blockers, exit criteria and readiness gates for report, market, risk, strategy, audit, config and workbench. It does not approve extraction, route migration, permanence, gateway/auth, config-store migration, data-ingest split or behavior change.
 
+Phase 009 produced `docs/harness/13-report-boundary-readiness.md`, a static report-domain readiness artifact that applies the Phase 008 template to report facts, evidence, versions, review commands, review audit, AI projection dependency, fallback provenance metadata and frontend report consumers. It does not approve report-service extraction, route migration, endpoint aliases, gateway/auth, config-store migration, frontend/Python reshaping, Kafka/database changes, permanence or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -31,7 +33,8 @@ Exit criteria:
 3. Completed in Phase 006 for legacy paths: non-task `/api/tasks/*` contracts are documented and guarded for path, method, owner, response envelope, binding and permission drift.
 4. Completed in Phase 005 for the current governance horizon: continue as modular monolith without declaring final architecture.
 5. Completed in Phase 008: Each in-scope domain has clear SoT, read-model, command surface, route dependency, guardrail, extraction blocker, exit criteria and readiness-gate inventory.
-6. Pending: Use the Phase 008 inventory to decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store and route migration work through later Window 0 decisions and human approval.
+6. Completed in Phase 009 for the report domain: Report-specific belongs, authority objects, read-model and command surfaces, version/evidence/review-audit records, AI projection dependency, fallback provenance, frontend consumers, blockers and readiness gates are documented.
+7. Pending: Use the Phase 008 inventory and Phase 009 report readiness artifact to decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -41,6 +44,7 @@ Forbidden:
 - Treating the current service layout as final architecture.
 - Treating Phase 005 as approval for service extraction, route migration, gateway/auth implementation or permanent modular-monolith architecture.
 - Treating Phase 008 as approval for service extraction, route migration, gateway/auth implementation, config-store migration, data-ingest split or permanent modular-monolith architecture.
+- Treating Phase 009 as approval for report-service extraction, report route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Kafka/database changes or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
