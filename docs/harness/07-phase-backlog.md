@@ -26,20 +26,20 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 009
+## Next Steering Inputs After Phase 010
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008 and Phase 009 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009 and Phase 010 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Market event and data-ingest ownership phase.
 - Risk/strategy projection ownership phase.
 - Auth/gateway decision phase.
 - Legacy route migration decision phase.
 - Config store decision phase.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
+- Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
 
 Window 4 does not select the next phase. Window 0 must score and propose exactly one primary candidate and one fallback candidate.
 
@@ -328,6 +328,51 @@ Residual scope:
 - D002 remains open because report and other non-task domain surfaces still use frozen legacy `/api/tasks/*` routes.
 - Phase 009 created static report governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
 - Later report extraction, route migration, projection split, auth/gateway work, config-store migration, frontend/Python reshaping, Kafka/database changes, permanent modular-monolith decisions or new report features require a new Window 0 decision and human approval.
+
+## Phase 010 - Market Event and Data-Ingest Ownership Boundary
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-010.md`
+- `docs/harness/handoffs/phase-010-architect.md`
+- `docs/harness/handoffs/phase-010-implementation.md`
+- `docs/harness/handoffs/phase-010-review.md`
+- `docs/harness/handoffs/phase-010-final.md`
+
+Goal:
+
+Apply the Phase 008 readiness template to the market event and data-ingest boundary before any later market-service extraction, data-ingest-service extraction, route migration, config-store migration, Kafka/database change, frontend reshaping, Python behavior change or permanence decision is considered.
+
+Scope:
+
+- Produce `docs/harness/14-market-data-ingest-boundary-readiness.md` as the durable market/data-ingest boundary readiness artifact.
+- Clarify market/data-ingest belongs, authority objects, read-model surfaces, command surfaces, event source config and ingest history facts, source sync/preview/diagnose, CNINFO proxy, mock/demo ingest, market intelligence, Kafka context, auto-trigger dependencies, frontend market consumers and Python market context/fallback provenance.
+- Preserve Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails, Phase 008 transition-host readiness template and Phase 009 report readiness gates.
+- Do not choose or implement market-service extraction, data-ingest-service extraction, route migration, endpoint aliases, gateway/auth, config-store migration, Python behavior change, frontend reshaping, Kafka/database changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/14-market-data-ingest-boundary-readiness.md` as the durable market/data-ingest boundary readiness artifact.
+- Recorded stable market/data-ingest authority objects: `market_event`, `market_event_relation`, `market_event_analysis`, `event-source-configs.json` and `event-ingest-histories.json`.
+- Recorded that market intelligence, source preview/diagnose output, CNINFO proxy output, mock/demo source payloads, Python fallback snapshots, workbench fields and frontend display/import-preview state are not market SoT unless selected data is persisted through existing approved market authority paths.
+- Treated `market.event.standardized`, `MarketEventStandardizedPublisherService`, `MarketEventStandardizedConsumer` and market event auto-trigger behavior as current context dependencies, not moved or redesigned owners.
+- Preserved all market URLs, HTTP methods, request bindings, response envelopes, permission behavior, frontend routes, frontend API functions, TypeScript shapes, JSON config/file facts, Kafka context and Python backend-client paths.
+- No Java, Python, frontend, database, Kafka, `ai-config`, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-010-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 010 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains.
+- D002 remains open because market and other non-task domain surfaces still use frozen legacy `/api/tasks/*` routes.
+- D003 remains open for future workbench/fallback/preview/display metadata surfaces.
+- D007 remains open because event source, ingest history and auto-trigger files remain JSON/file-backed transition facts.
+- D009 remains open because no independent data-ingest-service exists and no ownership move or split was approved.
+- Phase 010 created static market/data-ingest governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
+- Later market-service extraction, data-ingest-service extraction, route migration, config-store migration, source adapter/CNINFO proxy redesign, auth/gateway work, frontend/Python reshaping, Kafka/database changes, permanent modular-monolith decisions or new market features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
