@@ -10,9 +10,11 @@ This file is the starting state for Window 0.
 
 None approved.
 
-Latest frozen phase: Phase 010 - Market Event and Data-Ingest Ownership Boundary.
+Latest frozen phase: Phase 011 - Risk/Strategy Projection Ownership Boundary.
 
 ## Current Phase Status
+
+No active phase is approved.
 
 Phase 005 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-005-review.md`.
 
@@ -50,9 +52,17 @@ Phase 010 produced the durable market/data-ingest boundary readiness artifact in
 
 Phase 010 was docs-only governance work. It did not approve market-service extraction, data-ingest-service extraction, route migration, route aliases, endpoint rename/deletion/consolidation, gateway/auth, config-store migration, database/schema changes, Kafka changes, frontend reshaping, Python behavior change, permanent modular-monolith status, business behavior change or new feature work.
 
+Phase 011 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-011-review.md`.
+
+Window 4 froze the result in `docs/harness/handoffs/phase-011-final.md`.
+
+Phase 011 produced the durable risk/strategy projection boundary readiness artifact in `docs/harness/15-risk-strategy-projection-boundary-readiness.md`. It applies the Phase 008 readiness template to risk warning and strategy signal responsibilities and clarifies risk facts, risk details, strategy facts, strategy factors, read models, strategy commands, `AiResultDomainProjectionService`, generated risk/strategy event publication, frontend consumers and Python risk/strategy context before any later risk-service extraction, strategy-service extraction, projection split, route migration, Kafka redesign or permanence decision is considered.
+
+Phase 011 was docs-only governance work. It did not approve risk-service extraction, strategy-service extraction, projection splitting, route migration, route aliases, endpoint rename/deletion/consolidation, gateway/auth, config-store migration, database/schema changes, Redis changes, Kafka topic/payload changes, frontend reshaping, Python behavior change, permanent modular-monolith status, business behavior change or new feature work.
+
 ## Last Completed Phase
 
-Phase 010 - Market Event and Data-Ingest Ownership Boundary.
+Phase 011 - Risk/Strategy Projection Ownership Boundary.
 
 ## Open Blockers
 
@@ -197,12 +207,32 @@ None registered.
 - Window 3 reviewed and approved `phase-010-review.md`.
 - `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 010 changed documentation only.
 
+## Completed Phase 011 Constraints
+
+- No breaking changes.
+- URL paths and frontend routes remained stable.
+- No business behavior change.
+- No new feature work.
+- Docs-only architecture/governance implementation.
+- `docs/harness/15-risk-strategy-projection-boundary-readiness.md` is now the durable risk/strategy projection ownership boundary readiness artifact.
+- The artifact records risk/strategy belongs, authority objects, read-model surfaces, strategy command surfaces, AI result projection dependency, generated domain-event publication, frontend risk/strategy consumers, Python risk/strategy context and fallback provenance, stable URL/API contracts, inherited guardrails, blockers, readiness gates, deferred decisions and stop rules.
+- Stable risk authority objects remain `risk_warning` and `risk_warning_detail`.
+- Stable strategy authority objects remain `strategy_signal` and `strategy_signal_factor`.
+- `AiResultDomainProjectionService` remains the current shared projection dependency for report, evidence, risk and strategy, and was not split, moved, renamed or redesigned.
+- `TaskDomainEventPublisherService`, `risk.warning.generated` and `strategy.signal.generated` remain current generated-event dependencies and were not redesigned or promoted to source of truth.
+- Report risk points, report highlights, workbench summaries, market intelligence rows, Python risk/strategy context, fallback provenance, generated Kafka messages, frontend local state and dashboard cards remain context/display/provenance unless selected data is persisted through existing approved projection or command paths.
+- Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails, Phase 008 transition-host readiness template, Phase 009 report readiness gates and Phase 010 market/data-ingest readiness gates remain in force.
+- No Java, Python, frontend, database, Redis, Kafka, `ai-config`, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-011-review.md`.
+- `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 011 changed documentation only.
+
 ## Open Architecture Drift
 
 - `ai-orchestration-service` remains a transition host for multiple domains originally planned as separate services. Phase 005 keeps this as the next-governance-horizon modular-monolith policy, not final architecture.
 - Phase 008 now documents per-domain exit criteria and readiness gates for the current transition-host responsibilities, but it does not close D001 or approve an ownership move.
 - Phase 009 now documents report-specific readiness gates and blockers, but it does not close D001 or approve report ownership movement, extraction, route migration or permanence.
 - Phase 010 now documents market/data-ingest-specific readiness gates and blockers, but it does not close D001, D009 or approve market ownership movement, data-ingest ownership movement, extraction, route migration, config-store migration or permanence.
+- Phase 011 now documents risk/strategy-specific readiness gates and blockers, but it does not close D001 or approve risk ownership movement, strategy ownership movement, projection split, extraction, route migration, Kafka redesign, config-store migration or permanence.
 - Gateway/auth/config/service discovery architecture from the original plan is not implemented.
 
 ## Open Authority Drift
@@ -215,6 +245,7 @@ None registered.
 - Phase 008 documented per-domain SoT, read-model, command and aggregation boundaries for report, market, risk, strategy, audit, config and workbench transition responsibilities without moving authority.
 - Phase 009 documented report-specific authority objects, projection dependencies, review/audit records, fallback provenance boundaries and frontend report consumer limits without moving authority.
 - Phase 010 documented market/data-ingest authority objects, source/config/ingest history facts, market read-model and command boundaries, mock/demo ingest limits, source preview/diagnose/CNINFO limits, Kafka context dependencies, frontend market consumer limits and Python market fallback provenance without moving authority.
+- Phase 011 documented risk/strategy authority objects, read-model and command boundaries, shared projection dependency, generated-event dependencies, frontend risk/strategy consumer limits and Python risk/strategy context/fallback provenance without moving authority.
 - Fallback metadata remains provenance only and must not become model-generated truth or business SoT.
 - Future frontend, backend or Python surfaces that expose workbench or fallback metadata must keep equivalent non-authoritative provenance guardrails.
 
@@ -230,18 +261,20 @@ None registered.
 - Phase 008 preserved all runtime contracts and recorded legacy route dependencies in the transition-host inventory without adding route aliases, migrations or endpoint changes.
 - Phase 009 preserved all report runtime contracts and recorded the stable report URL/API inventory, frontend route/API inventory, permission behavior and response-shape boundaries without adding route aliases, migrations or endpoint changes.
 - Phase 010 preserved all market/data-ingest runtime contracts and recorded stable market URL/API inventory, frontend route/API inventory, permission behavior, response-shape boundaries, Kafka context, JSON config/file facts and Python backend-client paths without adding route aliases, migrations or endpoint changes.
+- Phase 011 preserved all risk/strategy runtime contracts and recorded stable risk/strategy URL/API inventory, frontend route/API inventory, permission behavior, response-shape boundaries, Kafka generated-event context, Redis cache context and Python backend-client paths without adding route aliases, migrations or endpoint changes.
 - Legacy non-task `/api/tasks/*` paths remain transition debt, but the current approved inventory is documented and guarded.
 - Future fallback surfaces must continue preserving fallback provenance as non-authoritative metadata.
 
 ## Active Transition Hosts
 
-- `ai-orchestration-service`, continued by Phase 005 as the next-governance-horizon modular monolith, inventoried by Phase 008, refined for report readiness by Phase 009, refined for market/data-ingest readiness by Phase 010 and still not final architecture
+- `ai-orchestration-service`, continued by Phase 005 as the next-governance-horizon modular monolith, inventoried by Phase 008, refined for report readiness by Phase 009, refined for market/data-ingest readiness by Phase 010, refined for risk/strategy readiness by Phase 011 and still not final architecture
 - Internal domain query services inside `ai-orchestration-service`
+- `AiResultDomainProjectionService`, retained by Phase 011 as the current shared report/evidence/risk/strategy projection dependency and not final architecture
 - Legacy `/api/tasks/*` paths for non-task domain surfaces, now frozen as approved transitional contracts by Phase 006
 - Research workbench display aggregation
 - JSON files under `quant-ai-platform/ai-config`
 - Mock/demo ingest paths, source preview/diagnose, CNINFO proxy and market source mechanisms, now documented by Phase 010 as transition/demo/source mechanisms rather than production data-ingest architecture
-- Python fallback path, now audited for Phase 004 in-scope provenance, Phase 007 current frontend consumers and Phase 010 market context/fallback consumers but still a transition mechanism
+- Python fallback path, now audited for Phase 004 in-scope provenance, Phase 007 current frontend consumers, Phase 010 market context/fallback consumers and Phase 011 risk/strategy context/fallback consumers but still a transition mechanism
 
 ## Candidate Next Phases
 
@@ -249,18 +282,30 @@ No active candidate is approved.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Risk/strategy projection ownership phase.
+- Config Store Decision Boundary.
 - Auth/gateway decision phase.
 - Legacy route migration decision phase.
-- Config store decision phase.
+- Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 - Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009 and Phase 010 are no longer candidates because they are completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010 and Phase 011 are no longer candidates because they are completed and frozen by Window 4.
 
 Window 0 must score candidates using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval.
 
 ## Human Approval Status
+
+Phase 011 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-011.md`.
+
+Phase 011 approval constraints:
+
+- No breaking changes.
+- URL paths must remain stable.
+- No business behavior change.
+- No new feature work.
+- Expected Window 2 type is docs-only by default, unless Window 1 justifies a narrow backend/static guard scope and the user approves it.
+
+Phase 011 was planned by Window 1, implemented by Window 2 as docs-only architecture/governance work, reviewed and approved by Window 3, and frozen by Window 4 as completed with residual risk.
 
 Phase 010 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-010.md`.
 
@@ -320,4 +365,4 @@ Phase 007 was approved by the user after Window 0 steering decision in `docs/har
 
 Phase 006 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-006.md`, planned by Window 1, implemented by Window 2 with three fix passes, reviewed and approved by Window 3 Review Fix 3, and frozen by Window 4 as completed with residual risk.
 
-Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-010-final.md`, discover the matching Phase 010 steering, architect, implementation and review handoffs, consume `docs/harness/14-market-data-ingest-boundary-readiness.md` together with the durable Phase 008/009 artifacts, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.
+Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-011-final.md`, discover the matching Phase 011 steering, architect, implementation and review handoffs, consume `docs/harness/15-risk-strategy-projection-boundary-readiness.md` together with the durable Phase 008/009/010 artifacts, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.

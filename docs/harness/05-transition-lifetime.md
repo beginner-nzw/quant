@@ -22,6 +22,8 @@ Phase 009 produced `docs/harness/13-report-boundary-readiness.md`, a static repo
 
 Phase 010 produced `docs/harness/14-market-data-ingest-boundary-readiness.md`, a static market/data-ingest readiness artifact that applies the Phase 008 template to market facts, relations, analysis, event source config, ingest history, market read models and commands, source sync, source preview/diagnose, CNINFO proxy, mock/demo ingest, market intelligence, Kafka `market.event.standardized`, auto-trigger context, frontend market consumers and Python market context/fallback provenance. It does not approve market-service extraction, data-ingest-service extraction, route migration, endpoint aliases, gateway/auth, config-store migration, frontend/Python reshaping, Kafka/database changes, permanence or behavior change.
 
+Phase 011 produced `docs/harness/15-risk-strategy-projection-boundary-readiness.md`, a static risk/strategy projection ownership readiness artifact that applies the Phase 008 template to risk warning facts, risk details, strategy signal facts, strategy factors, risk/strategy read models, strategy commands, `AiResultDomainProjectionService`, generated `risk.warning.generated` and `strategy.signal.generated` publication, frontend risk/strategy consumers and Python risk/strategy context/fallback provenance. It does not approve risk-service extraction, strategy-service extraction, projection splitting, route migration, endpoint aliases, gateway/auth, config-store migration, frontend/Python reshaping, Redis changes, Kafka/database changes, permanence or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -37,7 +39,8 @@ Exit criteria:
 5. Completed in Phase 008: Each in-scope domain has clear SoT, read-model, command surface, route dependency, guardrail, extraction blocker, exit criteria and readiness-gate inventory.
 6. Completed in Phase 009 for the report domain: Report-specific belongs, authority objects, read-model and command surfaces, version/evidence/review-audit records, AI projection dependency, fallback provenance, frontend consumers, blockers and readiness gates are documented.
 7. Completed in Phase 010 for the market/data-ingest boundary: Market/data-ingest-specific belongs, authority objects, event source config, ingest history, read-model and command surfaces, mock/demo ingest, source sync/preview/diagnose, CNINFO proxy, market intelligence, Kafka context, auto-trigger context, frontend consumers, Python market context/fallback provenance, blockers and readiness gates are documented.
-8. Pending: Use the Phase 008 inventory and Phase 009/010 readiness artifacts to decide whether to extract independent microservices, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store and route migration work through later Window 0 decisions and human approval.
+8. Completed in Phase 011 for the risk/strategy boundary: Risk/strategy-specific belongs, authority objects, read-model and command surfaces, shared projection dependency, generated-event publication, frontend consumers, Python risk/strategy context/fallback provenance, blockers and readiness gates are documented.
+9. Pending: Use the Phase 008 inventory and Phase 009/010/011 readiness artifacts to decide whether to extract independent microservices, split projection ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store, Kafka and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -49,6 +52,7 @@ Forbidden:
 - Treating Phase 008 as approval for service extraction, route migration, gateway/auth implementation, config-store migration, data-ingest split or permanent modular-monolith architecture.
 - Treating Phase 009 as approval for report-service extraction, report route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Kafka/database changes or permanent modular-monolith architecture.
 - Treating Phase 010 as approval for market-service extraction, data-ingest-service extraction, market route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Kafka/database changes, source adapter/CNINFO proxy redesign or permanent modular-monolith architecture.
+- Treating Phase 011 as approval for risk-service extraction, strategy-service extraction, projection splitting, risk/strategy route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Redis changes, Kafka/database changes or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
@@ -111,6 +115,8 @@ Phase 007 documented current frontend fallback provenance consumers as display/a
 
 Phase 010 documented Python market context, backend overlays, `dataSource: fallback`, fallback market snapshots, `liveMarketEvents`, `marketIntelligence` and market fallback provenance as execution/display/provenance context only, not market data SoT.
 
+Phase 011 documented Python risk/strategy context, `riskWarnings`, `strategySignals`, `latestRiskWarningSummary`, `latestStrategySignalSummary`, risk fallback output and fallback provenance as execution/display/provenance context only, not risk or strategy data SoT.
+
 Allowed because:
 
 - It keeps asynchronous workflows terminal and auditable.
@@ -123,7 +129,8 @@ Exit criteria:
 3. Completed in Phase 004 for current Python tests: focused regression coverage detects missing fallback reason or provenance metadata.
 4. Completed in Phase 007 for current frontend consumers: fallback provenance is documented and guarded as display/audit metadata only.
 5. Completed in Phase 010 for market context docs: Python market fallback and backend overlay surfaces are documented as non-authoritative context.
-6. Pending: Any future fallback surface must carry equivalent non-authoritative provenance before it is accepted as transition behavior.
+6. Completed in Phase 011 for risk/strategy context docs: Python risk/strategy fallback, backend client context and generated result surfaces are documented as non-authoritative context.
+7. Pending: Any future fallback surface must carry equivalent non-authoritative provenance before it is accepted as transition behavior.
 
 Forbidden:
 

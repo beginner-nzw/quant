@@ -26,18 +26,18 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 010
+## Next Steering Inputs After Phase 011
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009 and Phase 010 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010 and Phase 011 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Risk/strategy projection ownership phase.
+- Config Store Decision Boundary.
 - Auth/gateway decision phase.
 - Legacy route migration decision phase.
-- Config store decision phase.
+- Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 - Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
 
@@ -373,6 +373,53 @@ Residual scope:
 - D009 remains open because no independent data-ingest-service exists and no ownership move or split was approved.
 - Phase 010 created static market/data-ingest governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
 - Later market-service extraction, data-ingest-service extraction, route migration, config-store migration, source adapter/CNINFO proxy redesign, auth/gateway work, frontend/Python reshaping, Kafka/database changes, permanent modular-monolith decisions or new market features require a new Window 0 decision and human approval.
+
+## Phase 011 - Risk/Strategy Projection Ownership Boundary
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-011.md`
+- `docs/harness/handoffs/phase-011-architect.md`
+- `docs/harness/handoffs/phase-011-implementation.md`
+- `docs/harness/handoffs/phase-011-review.md`
+- `docs/harness/handoffs/phase-011-final.md`
+
+Goal:
+
+Apply the Phase 008 readiness template to risk warning and strategy signal responsibilities before any later risk-service extraction, strategy-service extraction, projection split, route migration, Kafka downstream redesign, gateway/auth change, config-store migration, frontend/Python reshaping, database change or permanence decision is considered.
+
+Scope:
+
+- Produce `docs/harness/15-risk-strategy-projection-boundary-readiness.md` as the durable risk/strategy projection ownership boundary readiness artifact.
+- Clarify risk/strategy belongs, authority objects, read-model surfaces, strategy command surfaces, `AiResultDomainProjectionService`, generated domain-event publication, frontend risk/strategy consumers and Python risk/strategy context/fallback provenance.
+- Preserve Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails, Phase 008 transition-host readiness template, Phase 009 report readiness gates and Phase 010 market/data-ingest readiness gates.
+- Do not choose or implement risk-service extraction, strategy-service extraction, projection splitting, route migration, endpoint aliases, gateway/auth, config-store migration, Python behavior change, frontend reshaping, Kafka/database changes, Redis changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/15-risk-strategy-projection-boundary-readiness.md` as the durable risk/strategy projection ownership boundary readiness artifact.
+- Recorded stable risk authority objects: `risk_warning` and `risk_warning_detail`.
+- Recorded stable strategy authority objects: `strategy_signal` and `strategy_signal_factor`.
+- Recorded that report risk points, report highlights, workbench summaries, market intelligence rows, Python risk/strategy context, fallback provenance, generated Kafka messages, frontend local state and dashboard cards are not risk/strategy SoT unless selected data is persisted through existing approved projection or command paths.
+- Treated `AiResultDomainProjectionService` as a current shared projection dependency, not a moved, split, renamed or redesigned owner.
+- Treated `TaskDomainEventPublisherService`, `risk.warning.generated` and `strategy.signal.generated` as current generated-event dependencies, not redesigned downstream architecture and not replacement source of truth.
+- Preserved all risk/strategy URLs, HTTP methods, request bindings, response envelopes, response types, permission behavior, frontend routes, frontend API functions, TypeScript shapes, Redis context, Kafka generated-event context and Python backend-client paths.
+- No Java, Python, frontend, database, Redis, Kafka, `ai-config`, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-011-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 011 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains.
+- D002 remains open because risk/strategy and other non-task domain surfaces still use frozen legacy `/api/tasks/*` routes.
+- D003 remains open for future workbench/fallback/preview/display/generated-event metadata surfaces.
+- D007 remains open because JSON-backed config remains a transition fact used by related permission/config decisions.
+- D008 remains open because header-based demo auth remains a transition fact and current strategy command permission still depends on current role-access behavior.
+- Phase 011 created static risk/strategy governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
+- Later risk-service extraction, strategy-service extraction, projection split, route migration, Kafka downstream redesign, gateway/auth work, config-store migration, frontend/Python reshaping, database/Redis changes, permanent modular-monolith decisions or new risk/strategy features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
