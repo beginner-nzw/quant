@@ -24,6 +24,8 @@ Phase 010 produced `docs/harness/14-market-data-ingest-boundary-readiness.md`, a
 
 Phase 011 produced `docs/harness/15-risk-strategy-projection-boundary-readiness.md`, a static risk/strategy projection ownership readiness artifact that applies the Phase 008 template to risk warning facts, risk details, strategy signal facts, strategy factors, risk/strategy read models, strategy commands, `AiResultDomainProjectionService`, generated `risk.warning.generated` and `strategy.signal.generated` publication, frontend risk/strategy consumers and Python risk/strategy context/fallback provenance. It does not approve risk-service extraction, strategy-service extraction, projection splitting, route migration, endpoint aliases, gateway/auth, config-store migration, frontend/Python reshaping, Redis changes, Kafka/database changes, permanence or behavior change.
 
+Phase 012 produced `docs/harness/16-config-store-decision-boundary.md`, a static config-store decision boundary artifact that applies the governance template to agent config, workflow config, model strategy config, prompt templates, event source config, event auto-trigger config, role access config, config change audit, event ingest history, Java/Python readers, frontend config consumers, role-access/header demo auth, stable config contracts, blockers and future gates. It does not approve config-store migration, config mutation, DB/Nacos/hybrid adoption, gateway/auth, service extraction, route migration, endpoint aliases, frontend/Python reshaping, Kafka/database/Redis changes, permanence or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -40,7 +42,8 @@ Exit criteria:
 6. Completed in Phase 009 for the report domain: Report-specific belongs, authority objects, read-model and command surfaces, version/evidence/review-audit records, AI projection dependency, fallback provenance, frontend consumers, blockers and readiness gates are documented.
 7. Completed in Phase 010 for the market/data-ingest boundary: Market/data-ingest-specific belongs, authority objects, event source config, ingest history, read-model and command surfaces, mock/demo ingest, source sync/preview/diagnose, CNINFO proxy, market intelligence, Kafka context, auto-trigger context, frontend consumers, Python market context/fallback provenance, blockers and readiness gates are documented.
 8. Completed in Phase 011 for the risk/strategy boundary: Risk/strategy-specific belongs, authority objects, read-model and command surfaces, shared projection dependency, generated-event publication, frontend consumers, Python risk/strategy context/fallback provenance, blockers and readiness gates are documented.
-9. Pending: Use the Phase 008 inventory and Phase 009/010/011 readiness artifacts to decide whether to extract independent microservices, split projection ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store, Kafka and route migration work through later Window 0 decisions and human approval.
+9. Completed in Phase 012 for the config-store boundary: Config-specific belongs, authority objects, prompt-template storage, role-access/header demo auth boundaries, config audit, ingest history, Java/Python readers, frontend config consumers, stable config contracts, blockers and readiness gates are documented.
+10. Pending: Use the Phase 008 inventory and Phase 009/010/011/012 readiness artifacts to decide whether to extract independent microservices, split projection or config ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store migration, Kafka and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -53,28 +56,40 @@ Forbidden:
 - Treating Phase 009 as approval for report-service extraction, report route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Kafka/database changes or permanent modular-monolith architecture.
 - Treating Phase 010 as approval for market-service extraction, data-ingest-service extraction, market route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Kafka/database changes, source adapter/CNINFO proxy redesign or permanent modular-monolith architecture.
 - Treating Phase 011 as approval for risk-service extraction, strategy-service extraction, projection splitting, risk/strategy route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Redis changes, Kafka/database changes or permanent modular-monolith architecture.
+- Treating Phase 012 as approval for config-store migration, config mutation, DB/Nacos/hybrid adoption, config-service extraction, config route migration, endpoint aliases, gateway/auth implementation, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
 Current:
 
-Agent, workflow, model strategy, prompt template, event source, auto trigger and role access configs are JSON files under `ai-config`.
+Agent, workflow, model strategy, event source, auto trigger and role access configs are JSON files under `ai-config`.
+
+Prompt templates are files under `prompt-templates`.
+
+Config change audit and event ingest history are file-backed transition facts under `ai-config`.
+
+Phase 012 produced `docs/harness/16-config-store-decision-boundary.md` and selected the conservative next-governance-horizon decision: JSON config files and prompt template files remain the current runtime transition stores. DB, Nacos and hybrid stores are deferred future migration targets only, requiring later Window 0 selection and human approval.
 
 Allowed because:
 
 - It keeps demo and local iteration lightweight.
 - Both Java and Python already read these files.
+- Current frontend, Java service and Python reader contracts depend on these file-backed stores.
 
 Exit criteria:
 
-1. Config change audit is stable.
-2. Config schema is documented.
-3. Decide whether target store is DB, Nacos, or hybrid.
+1. Completed in Phase 012 for current governance docs: config belongs, authority objects, Java/Python readers, frontend consumers, role-access/header demo auth, config audit, ingest history and stable config contracts are documented.
+2. Completed in Phase 012 for the next governance horizon: JSON config files and prompt template files remain current runtime transition stores; DB, Nacos and hybrid are deferred future targets only.
+3. Pending: Define schema/versioning, single-writer rules, audit retention, rollback, Java/Python cutover behavior, prompt-template rollout, role/auth ownership interaction and event-source/ingest-history ownership before any store migration.
+4. Pending: Choose any DB, Nacos, hybrid or config-service migration target only through a later Window 0 decision and human approval.
 
 Forbidden:
 
 - Silent config mutation without audit.
 - Letting frontend defaults become config truth.
+- Treating JSON config files or prompt template files as final config architecture.
+- Treating DB, Nacos or hybrid storage as current runtime authority before an approved migration phase.
+- Starting config-store migration, dual-write, migration runner, rollback runner, config-service extraction, route migration or gateway/auth work from Phase 012 alone.
 
 ## T3: Mock Ingest
 

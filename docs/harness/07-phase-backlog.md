@@ -26,17 +26,17 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 011
+## Next Steering Inputs After Phase 012
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010 and Phase 011 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011 and Phase 012 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Config Store Decision Boundary.
 - Auth/gateway decision phase.
 - Legacy route migration decision phase.
+- Config-store migration target/scoping, audit/rollback planning, DB/Nacos/hybrid readiness or config schema/versioning work only if Window 0 and the user explicitly choose to act on Phase 012 readiness gates.
 - Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 - Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
@@ -420,6 +420,51 @@ Residual scope:
 - D008 remains open because header-based demo auth remains a transition fact and current strategy command permission still depends on current role-access behavior.
 - Phase 011 created static risk/strategy governance/readiness documentation only; it did not add executable guardrails beyond relying on existing Phase 006 and Phase 007 guards.
 - Later risk-service extraction, strategy-service extraction, projection split, route migration, Kafka downstream redesign, gateway/auth work, config-store migration, frontend/Python reshaping, database/Redis changes, permanent modular-monolith decisions or new risk/strategy features require a new Window 0 decision and human approval.
+
+## Phase 012 - Config Store Decision Boundary
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-012.md`
+- `docs/harness/handoffs/phase-012-architect.md`
+- `docs/harness/handoffs/phase-012-implementation.md`
+- `docs/harness/handoffs/phase-012-review.md`
+- `docs/harness/handoffs/phase-012-final.md`
+
+Goal:
+
+Clarify current config belongs, authority, contract and behavior boundaries for JSON-backed runtime config before any config-store migration, gateway/auth work, service extraction, route migration or permanent architecture decision is considered.
+
+Scope:
+
+- Produce `docs/harness/16-config-store-decision-boundary.md` as the durable config-store decision boundary artifact.
+- Inventory agent config, workflow config, model strategy config, prompt templates, event source config, event auto-trigger config, role access config, config change audit and event ingest history.
+- Classify Java config APIs/services, `research-task-service` role-access reader, Python config readers, frontend config consumers, role-access/header demo auth, audit rows and ingest history rows.
+- Record the next-governance-horizon store decision: JSON config files and prompt template files remain current runtime transition stores; DB, Nacos and hybrid remain deferred future migration targets requiring later Window 0 selection and human approval.
+- Preserve Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails, Phase 008 transition-host inventory, Phase 009 report readiness gates, Phase 010 market/data-ingest readiness gates and Phase 011 risk/strategy readiness gates.
+- Do not choose or implement config-store migration, config mutation, DB/Nacos/hybrid adoption, gateway/auth/JWT, service extraction, route migration, endpoint aliases, frontend/Python reshaping, Kafka/database/Redis changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/16-config-store-decision-boundary.md` as the durable config-store decision boundary artifact.
+- Recorded stable config authority objects: `agent-configs.json`, `workflow-configs.json`, `model-strategies.json`, `prompt-templates/*.txt`, `event-source-configs.json`, `event-auto-trigger-configs.json`, `role-access-configs.json`, `config-change-audits.json` and `event-ingest-histories.json`.
+- Recorded that frontend defaults/localStorage, request headers, Python fallbacks/defaults, config read models, config audit rows and ingest history rows do not become replacement config source of truth.
+- Preserved all config URLs, HTTP methods, request bindings, response envelopes, response types, permission behavior, frontend routes, frontend API functions, TypeScript shapes, Java path-resolution/file-backed audit behavior and Python reader paths.
+- No Java, Python, frontend, database, Redis, Kafka, `ai-config`, prompt-template, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-012-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 012 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains and remains a transition host.
+- D002 remains open because config and other non-task domain surfaces still use frozen legacy `/api/tasks/*` routes.
+- D003 remains open for future workbench/fallback/preview/display/generated-event/config-display metadata surfaces.
+- D007 remains open because JSON config and prompt template files remain current runtime transition stores, not final config architecture.
+- D008 remains open because header-based demo auth and role access headers remain transition permission inputs, not production auth architecture.
+- Later config-store migration, DB/Nacos/hybrid target selection, schema/versioning, audit/rollback planning, gateway/auth work, route migration, service extraction, frontend/Python reshaping, database/Redis/Kafka changes, permanent modular-monolith decisions or new config features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
