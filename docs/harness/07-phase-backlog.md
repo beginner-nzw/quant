@@ -26,17 +26,17 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 012
+## Next Steering Inputs After Phase 013
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011 and Phase 012 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011, Phase 012 and Phase 013 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Auth/gateway decision phase.
-- Legacy route migration decision phase.
-- Config-store migration target/scoping, audit/rollback planning, DB/Nacos/hybrid readiness or config schema/versioning work only if Window 0 and the user explicitly choose to act on Phase 012 readiness gates.
+- Production auth/gateway/JWT target scoping, identity/role authority selection, service-to-service propagation planning or demo-header retirement planning only if Window 0 and the user explicitly choose to act on Phase 013 readiness gates.
+- Config-store migration target/scoping, audit/rollback planning, DB/Nacos/hybrid readiness or config schema/versioning work only if Window 0 and the user explicitly choose to act on Phase 012 and Phase 013 readiness gates.
+- Legacy route migration decision phase only after Window 0 accounts for the Phase 006 contract freeze and Phase 013 auth/gateway permission compatibility gates.
 - Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 - Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
@@ -465,6 +465,53 @@ Residual scope:
 - D007 remains open because JSON config and prompt template files remain current runtime transition stores, not final config architecture.
 - D008 remains open because header-based demo auth and role access headers remain transition permission inputs, not production auth architecture.
 - Later config-store migration, DB/Nacos/hybrid target selection, schema/versioning, audit/rollback planning, gateway/auth work, route migration, service extraction, frontend/Python reshaping, database/Redis/Kafka changes, permanent modular-monolith decisions or new config features require a new Window 0 decision and human approval.
+
+## Phase 013 - Auth/Gateway Permission Authority Boundary
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-013.md`
+- `docs/harness/handoffs/phase-013-architect.md`
+- `docs/harness/handoffs/phase-013-implementation.md`
+- `docs/harness/handoffs/phase-013-review.md`
+- `docs/harness/handoffs/phase-013-final.md`
+
+Goal:
+
+Clarify current permission belongs, authority, contract and behavior boundaries before any gateway/auth/JWT, route migration, service extraction, config-store migration or production security work is considered.
+
+Scope:
+
+- Produce `docs/harness/17-auth-gateway-permission-boundary.md` as the durable auth/gateway permission boundary artifact.
+- Inventory request headers, backend request context, role-access config, backend permission services, explicit permission checks, intentional no-explicit-permission read surfaces, `research-task-service` task-create permission behavior and frontend role/header/menu/action consumers.
+- Record the next-governance-horizon decision: header-based demo auth and `role-access-configs.json` remain current transition permission inputs, while production gateway/auth/JWT, auth-service, user-service, role-store and login/session work remain deferred future decisions.
+- Preserve Phase 005 modular-monolith horizon policy, Phase 006 legacy `/api/tasks/*` contract freeze, Phase 007 frontend authority guardrails, Phase 008 transition-host inventory, Phase 009 report readiness gates, Phase 010 market/data-ingest readiness gates, Phase 011 risk/strategy readiness gates and Phase 012 config-store boundary.
+- Do not choose or implement gateway/auth/JWT, auth-service, user-service, role DB, login/session, route migration, endpoint aliases, permission behavior change, config mutation, config-store migration, role-store migration, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/17-auth-gateway-permission-boundary.md` as the durable auth/gateway permission boundary artifact.
+- Recorded `role-access-configs.json` as the current role/menu/permission config input under the Phase 012 JSON transition-store policy.
+- Recorded `X-User-Id` and `X-User-Role` as demo/runtime request inputs, not production identity or production role authority.
+- Recorded the current default backend request context: `guest` and `USER`.
+- Recorded current coarse access-role and business-role mappings without changing them.
+- Inventoried backend explicit permission checks, intentional no-explicit-permission read surfaces, task-create permission behavior and frontend route/menu/action gating.
+- Preserved all URLs, HTTP methods, request bindings, response envelopes, response types, permission keys, explicit permission checks, no-explicit-permission read surfaces, frontend routes, frontend API functions, TypeScript shapes, localStorage behavior, request-header behavior, menu gating and action gating.
+- No Java, Python, frontend, database, Redis, Kafka, `ai-config`, prompt-template, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-013-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 013 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains and remains a transition host.
+- D002 remains open because non-task domain surfaces still use frozen legacy `/api/tasks/*` routes and Phase 013 did not migrate or alias routes.
+- D003 remains open for future workbench/fallback/preview/display/generated-event/config-display/permission-display metadata surfaces.
+- D007 remains open because `role-access-configs.json` remains a JSON transition config input, not final role-store or config architecture.
+- D008 remains open because header-based demo auth remains transition behavior only, not production security.
+- Later production gateway/auth/JWT, auth-service/user-service/role-service creation, identity/role authority selection, demo-header retirement, service-to-service propagation, role-store migration, route migration, service extraction, frontend/Python reshaping, database/Redis/Kafka changes, permanent modular-monolith decisions or new auth/security features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
