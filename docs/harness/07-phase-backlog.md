@@ -26,20 +26,20 @@ Goal:
 
 No business code changes.
 
-## Next Steering Inputs After Phase 015
+## Next Steering Inputs After Phase 016
 
 Window 0 should evaluate the candidate phases below using `10-steering-state-machine.md`.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011, Phase 012, Phase 013, Phase 014 and Phase 015 are no longer candidates. They were completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011, Phase 012, Phase 013, Phase 014, Phase 015 and Phase 016 are no longer candidates. They were completed and frozen by Window 4.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Production identity issuer selection, such as auth-service, user-service, external IdP/directory or another backend-owned issuer, only if Window 0 and the user explicitly choose to act on Phase 015 issuer deferral gates.
-- Production role authority selection, such as DB role store, config-store-backed role source, auth/user-service ownership or external role claims, only if Window 0 and the user explicitly choose to act on Phase 014 role-authority gates, Phase 015 validator placement and Phase 012 config-store constraints.
-- Gateway/JWT implementation design with demo-header compatibility policy only if Window 0 and the user explicitly choose to act on Phase 014 target-scope gates and Phase 015 selected validator placement.
-- Service-to-service propagation and audit identity semantics for AI callbacks, event auto task dispatch and future extracted services only if Window 0 and the user explicitly choose to act on Phase 014 propagation gates and Phase 015 service-principal/audit identity requirements.
-- Config-store migration target/scoping, audit/rollback planning, DB/Nacos/hybrid readiness or config schema/versioning work only if Window 0 and the user explicitly choose to act on Phase 012 and Phase 014/015 role/config-store dependency gates.
-- Legacy route migration decision phase only after Window 0 accounts for the Phase 006 contract freeze and Phase 014/015 auth/gateway compatibility gates.
+- Production role authority selection, such as DB role store, config-store-backed role source, auth/user-service ownership, external IdP/directory claims or another backend-owned role authority, only if Window 0 and the user explicitly choose to act on Phase 014 role-authority gates, Phase 015 validator placement, Phase 016 issuer direction and Phase 012 config-store constraints.
+- Gateway/JWT implementation design with demo-header compatibility policy only if Window 0 and the user explicitly choose to act on Phase 014 target-scope gates, Phase 015 selected validator placement and Phase 016 external issuer direction.
+- User profile source selection, such as external directory claims, user-service, auth-service profile store, synchronized profile read model or another backend-owned source, only if Window 0 and the user explicitly choose to act on Phase 016 profile-source deferral gates.
+- Service-to-service propagation and audit identity semantics for AI callbacks, event auto task dispatch and future extracted services only if Window 0 and the user explicitly choose to act on Phase 014 propagation gates and Phase 015/016 service-principal/audit identity requirements.
+- Config-store migration target/scoping, audit/rollback planning, DB/Nacos/hybrid readiness or config schema/versioning work only if Window 0 and the user explicitly choose to act on Phase 012 and Phase 014/015/016 role/config-store dependency gates.
+- Legacy route migration decision phase only after Window 0 accounts for the Phase 006 contract freeze and Phase 014/015/016 auth/gateway/issuer compatibility gates.
 - Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
 - Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
 - Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
@@ -612,6 +612,55 @@ Residual scope:
 - D007 remains open because `role-access-configs.json` remains a JSON transition config input, not final role-store or config architecture.
 - D008 remains open because header-based demo auth remains local/demo transition behavior only, not production security.
 - Later production identity issuer selection, production role authority selection, gateway/JWT implementation, auth-service/user-service/role-service creation, service-to-service propagation implementation, audit identity changes, demo-header retirement, role-store migration, route migration, service extraction, frontend/Python reshaping, database/Redis/Kafka changes, permanent modular-monolith decisions or new auth/security features require a new Window 0 decision and human approval.
+
+## Phase 016 - Production Identity Issuer Selection Boundary
+
+Status: completed with residual risk.
+
+Completed in:
+
+- `docs/harness/handoffs/steering-decision-phase-016.md`
+- `docs/harness/handoffs/phase-016-architect.md`
+- `docs/harness/handoffs/phase-016-implementation.md`
+- `docs/harness/handoffs/phase-016-review.md`
+- `docs/harness/handoffs/phase-016-final.md`
+
+Goal:
+
+Clarify the preferred future production identity issuer direction before any gateway/JWT implementation, external IdP integration, auth/user/role service creation, route migration, role-store migration, config-store migration, service extraction or production security work is considered.
+
+Scope:
+
+- Produce `docs/harness/20-production-identity-issuer-boundary.md` as the durable production identity issuer boundary artifact.
+- Select or explicitly defer, at governance level only, the future production identity issuer direction.
+- Preserve Phase 015 validator placement: backend-owned ingress/gateway JWT validation remains the preferred future validator placement.
+- Compare external IdP or enterprise directory, internal auth-service issuer, user-service profile owner with separate issuer, another backend-owned issuer and continued deferral.
+- Define future user profile source, token claim/session, role authority, service-principal, service-to-service identity handoff, audit identity, demo-header compatibility, route migration, config-store and role-store dependencies.
+- Preserve `X-User-Id` and `X-User-Role` as current local/demo compatibility inputs only.
+- Do not implement gateway/auth/JWT, auth-service, user-service, role-service, login/session, OAuth, SSO, external IdP integration, route migration, endpoint aliases, permission behavior changes, config mutation, config-store migration, role-store migration, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or new feature work.
+
+Acceptance:
+
+- Completed as docs-only architecture/governance work with no runtime behavior change.
+- Produced `docs/harness/20-production-identity-issuer-boundary.md` as the durable production identity issuer boundary artifact.
+- Selected external IdP or enterprise directory as the preferred future production identity issuer direction, future-only.
+- Preserved backend-owned ingress/gateway JWT validation as the preferred future validator placement from Phase 015.
+- Deferred concrete external issuer vendor/product, token/session semantics, claim mapping, user profile source and production role authority to later Window 0 decisions and human approval.
+- Preserved demo-header compatibility and kept `X-User-Id` and `X-User-Role` as local/demo inputs only.
+- Recorded token/session, service-principal, service-to-service identity handoff, audit identity, role-authority, gateway/JWT, route migration, config-store and role-store readiness gates.
+- Preserved all URLs, HTTP methods, request bindings, response envelopes, response types, permission keys, menu keys, role codes, header names/defaults, frontend routes, frontend API functions, TypeScript shapes, localStorage behavior, request-header behavior, menu gating and action gating.
+- No Java, Python, frontend, database, Redis, Kafka, `ai-config`, prompt-template, dependency, build-config, deployment or business runtime file changed.
+- Window 3 reviewed and approved `phase-016-review.md`.
+- Existing `node scripts/authority-boundary-check.mjs` passed from `quant-ui`; Maven, npm build and Python runtime verification were not required because Phase 016 changed documentation only.
+
+Residual scope:
+
+- D001 remains open because `ai-orchestration-service` still hosts multiple domains and remains a transition host.
+- D002 remains open because non-task domain surfaces still use frozen legacy `/api/tasks/*` routes and Phase 016 did not migrate or alias routes.
+- D003 remains open for future workbench/fallback/preview/display/generated-event/config-display/permission-display/service-propagation/identity/issuer/profile metadata surfaces.
+- D007 remains open because `role-access-configs.json` remains a JSON transition config input, not final role-store or config architecture.
+- D008 remains open because header-based demo auth remains local/demo transition behavior only, not production security.
+- Later production role authority selection, user profile source selection, gateway/JWT implementation, external IdP integration, auth-service/user-service/role-service creation, service-to-service propagation implementation, audit identity changes, demo-header retirement, role-store migration, route migration, service extraction, frontend/Python reshaping, database/Redis/Kafka changes, permanent modular-monolith decisions or new auth/security features require a new Window 0 decision and human approval.
 
 ## Phase 006 - Legacy `/api/tasks/*` Contract Freeze for Non-Task Domains
 
