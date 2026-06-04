@@ -8,7 +8,7 @@ This file is the starting state for Window 0.
 
 ## Current Phase
 
-None approved.
+Phase 016 - Production Identity Issuer Selection Boundary is approved for Window 1 architecture planning.
 
 Latest frozen phase: Phase 015 - Production Identity Issuer/Validator Selection Boundary.
 
@@ -405,7 +405,9 @@ None registered.
 
 ## Candidate Next Phases
 
-No active candidate is approved.
+Phase 016 - Production Identity Issuer Selection Boundary is approved as the active candidate for Window 1 architecture planning.
+
+Fallback candidate from Window 0 remains Production Role Authority Selection Boundary if the user later redirects before Window 1 starts.
 
 Recommended candidate inputs for Window 0 evaluation:
 
@@ -424,6 +426,23 @@ Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Pha
 Window 0 must score candidates using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval.
 
 ## Human Approval Status
+
+Phase 016 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-016.md`.
+
+Phase 016 approval constraints:
+
+- No breaking changes.
+- URL paths must remain stable.
+- Frontend routes must remain stable.
+- No permission behavior change.
+- No business behavior change.
+- No new feature work.
+- No gateway/auth/JWT implementation.
+- No auth-service, user-service, role-service, login/session, OAuth, SSO or external IdP implementation.
+- No config mutation.
+- Expected Window 2 type is docs-only by default after Window 1 planning is separately approved.
+
+Phase 016 is approved only for Window 1 architecture planning. No implementation is approved.
 
 Phase 015 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-015.md`.
 
@@ -555,4 +574,4 @@ Phase 007 was approved by the user after Window 0 steering decision in `docs/har
 
 Phase 006 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-006.md`, planned by Window 1, implemented by Window 2 with three fix passes, reviewed and approved by Window 3 Review Fix 3, and frozen by Window 4 as completed with residual risk.
 
-Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-015-final.md`, discover the matching Phase 015 steering, architect, implementation and review handoffs, consume `docs/harness/19-production-identity-issuer-validator-boundary.md` together with the durable Phase 008/009/010/011/012/013/014 artifacts, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts.
+Next step must be Window 1. Window 1 must read `docs/harness/handoffs/steering-decision-phase-016.md`, the current harness state, Phase 015 final handoff, `docs/harness/19-production-identity-issuer-validator-boundary.md` and the durable Phase 008/009/010/011/012/013/014 artifacts, then produce `docs/harness/handoffs/phase-016-architect.md`. Window 1 must define belongs, authority, contract, behavior, allowed file scope, forbidden changes, verification commands and stop rules for Phase 016, then wait for human approval before any Window 2 implementation starts.
