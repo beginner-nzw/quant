@@ -28,6 +28,8 @@ Phase 012 produced `docs/harness/16-config-store-decision-boundary.md`, a static
 
 Phase 013 produced `docs/harness/17-auth-gateway-permission-boundary.md`, a static auth/gateway permission boundary artifact that applies the governance template to request headers, backend request context, role-access config, backend permission services, explicit permission checks, intentional no-explicit-permission read surfaces, `research-task-service` task-create permission behavior, frontend role/header/menu/action consumers, stable permission contracts, blockers and future gates. It does not approve gateway/auth/JWT implementation, auth-service, user-service, role-store migration, route migration, endpoint aliases, permission behavior change, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes, permanence or behavior change.
 
+Phase 014 produced `docs/harness/18-production-auth-gateway-target-scope.md`, a static production auth/gateway target-scope artifact that scopes future identity authority through a backend-owned ingress/auth boundary, identifies gateway/JWT as the preferred future target shape, requires future production role authority to be backend-owned, preserves demo headers as local/demo compatibility inputs, and records service-to-service propagation, audit identity, route migration and config/role-store dependencies as future requirements. It does not approve gateway/auth/JWT implementation, auth-service, user-service, role-service, role-store migration, route migration, endpoint aliases, permission behavior change, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes, permanence or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -46,7 +48,8 @@ Exit criteria:
 8. Completed in Phase 011 for the risk/strategy boundary: Risk/strategy-specific belongs, authority objects, read-model and command surfaces, shared projection dependency, generated-event publication, frontend consumers, Python risk/strategy context/fallback provenance, blockers and readiness gates are documented.
 9. Completed in Phase 012 for the config-store boundary: Config-specific belongs, authority objects, prompt-template storage, role-access/header demo auth boundaries, config audit, ingest history, Java/Python readers, frontend config consumers, stable config contracts, blockers and readiness gates are documented.
 10. Completed in Phase 013 for the auth/gateway permission boundary: Request headers, backend request context, role-access config, backend permission services, explicit permission checks, intentional no-explicit-permission read surfaces, task-create permission behavior, frontend permission consumers, stable permission contracts, blockers and readiness gates are documented.
-11. Pending: Use the Phase 008 inventory and Phase 009/010/011/012/013 readiness artifacts to decide whether to extract independent microservices, split projection, config or permission ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store migration, Kafka and route migration work through later Window 0 decisions and human approval.
+11. Completed in Phase 014 for production auth/gateway target scoping: Future identity authority direction, future role authority direction, demo-header compatibility rules, service-to-service propagation requirements, audit identity semantics and route/config/role-store dependencies are documented.
+12. Pending: Use the Phase 008 inventory and Phase 009/010/011/012/013 readiness artifacts plus the Phase 014 target-scope artifact to decide whether to extract independent microservices, split projection, config or permission ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store migration, Kafka and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -61,6 +64,7 @@ Forbidden:
 - Treating Phase 011 as approval for risk-service extraction, strategy-service extraction, projection splitting, risk/strategy route migration, endpoint aliases, gateway/auth implementation, config-store migration, frontend/Python reshaping, Redis changes, Kafka/database changes or permanent modular-monolith architecture.
 - Treating Phase 012 as approval for config-store migration, config mutation, DB/Nacos/hybrid adoption, config-service extraction, config route migration, endpoint aliases, gateway/auth implementation, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 - Treating Phase 013 as approval for gateway/auth/JWT implementation, auth-service, user-service, role-store migration, permission behavior change, route migration, endpoint aliases, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
+- Treating Phase 014 as approval for gateway/auth/JWT implementation, auth-service, user-service, role-service, role-store migration, permission behavior change, route migration, endpoint aliases, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
@@ -76,6 +80,8 @@ Phase 012 produced `docs/harness/16-config-store-decision-boundary.md` and selec
 
 Phase 013 recorded `role-access-configs.json` as the current role/menu/permission config input under the Phase 012 JSON transition-store policy. It did not approve role-store migration, role DB adoption, config mutation or config-store migration.
 
+Phase 014 kept `role-access-configs.json` as the current transition role/menu/permission input while scoping future production role authority as backend-owned. It did not approve role-store migration, role DB adoption, config mutation or config-store migration.
+
 Allowed because:
 
 - It keeps demo and local iteration lightweight.
@@ -87,8 +93,9 @@ Exit criteria:
 1. Completed in Phase 012 for current governance docs: config belongs, authority objects, Java/Python readers, frontend consumers, role-access/header demo auth, config audit, ingest history and stable config contracts are documented.
 2. Completed in Phase 012 for the next governance horizon: JSON config files and prompt template files remain current runtime transition stores; DB, Nacos and hybrid are deferred future targets only.
 3. Completed in Phase 013 for role-access interaction: `role-access-configs.json` is documented as the current permission config input, not final role-store architecture.
-4. Pending: Define schema/versioning, single-writer rules, audit retention, rollback, Java/Python cutover behavior, prompt-template rollout, role/auth ownership interaction and event-source/ingest-history ownership before any store migration.
-5. Pending: Choose any DB, Nacos, hybrid or config-service migration target only through a later Window 0 decision and human approval.
+4. Completed in Phase 014 for role-authority interaction: future production role authority must be backend-owned, while `role-access-configs.json` remains the current transition input until a later approved migration.
+5. Pending: Define schema/versioning, single-writer rules, audit retention, rollback, Java/Python cutover behavior, prompt-template rollout, role/auth ownership interaction and event-source/ingest-history ownership before any store migration.
+6. Pending: Choose any DB, Nacos, hybrid, role-store or config-service migration target only through a later Window 0 decision and human approval.
 
 Forbidden:
 
@@ -196,6 +203,8 @@ Phase 012 documented `role-access-configs.json`, request headers, frontend role 
 
 Phase 013 produced `docs/harness/17-auth-gateway-permission-boundary.md` and selected the conservative next-governance-horizon decision: header-based demo auth remains the current transition permission input mechanism, `role-access-configs.json` remains the current role/menu/permission config input, backend explicit `requirePermission` checks remain current enforcement points for checked endpoints, and frontend route/menu/action gating remains UI affordance only.
 
+Phase 014 produced `docs/harness/18-production-auth-gateway-target-scope.md` and selected a future-only target direction: production identity should be accepted through a backend-owned ingress/auth boundary, gateway/JWT is the preferred target shape, production role authority must be backend-owned, and demo headers remain local/demo compatibility inputs until a later approved compatibility or retirement phase changes them.
+
 Allowed because:
 
 - It keeps current demo flow simple.
@@ -203,10 +212,12 @@ Allowed because:
 Exit criteria:
 
 1. Completed in Phase 013 for current governance docs: request headers, backend request context, role-access config, backend permission services, explicit permission checks, intentional no-explicit-permission read surfaces, task-create permission behavior, frontend permission consumers, stable permission contracts, blockers and readiness gates are documented.
-2. Pending: Decide whether to implement gateway/auth/JWT, auth-service, user-service, role-service or session service.
-3. Pending: Decide production identity authority and production role authority.
-4. Pending: Define service-to-service user/role propagation, demo-header compatibility or retirement, audit identity semantics and frontend/backend enforcement interaction.
-5. Pending: Add real login/session flow if production-grade access is required and explicitly approved.
+2. Completed in Phase 014 for target scoping: future production identity authority direction, future production role authority direction, service-to-service propagation requirements, demo-header compatibility rules and audit identity semantics are documented.
+3. Pending: Decide whether to implement gateway/auth/JWT, auth-service, user-service, role-service or session service.
+4. Pending: Select the concrete production identity issuer or validator.
+5. Pending: Select the concrete production role authority and any role-store migration path.
+6. Pending: Implement service-to-service user/role propagation, demo-header compatibility or retirement, audit identity semantics and frontend/backend enforcement interaction only after later Window 0 selection and human approval.
+7. Pending: Add real login/session flow if production-grade access is required and explicitly approved.
 
 Forbidden:
 
@@ -214,3 +225,4 @@ Forbidden:
 - Treating request headers, frontend localStorage, frontend route/menu/action gating or role-access cache as production permission authority.
 - Treating `role-access-configs.json` as final role-store architecture.
 - Implementing gateway/auth/JWT, auth-service, user-service, role DB, login/session, demo-header retirement or permission behavior changes from Phase 013 alone.
+- Implementing gateway/auth/JWT, auth-service, user-service, role-service, role DB, login/session, OAuth, SSO, external IdP integration, demo-header retirement, service-to-service propagation or permission behavior changes from Phase 014 alone.
