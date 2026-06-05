@@ -36,6 +36,8 @@ Phase 016 produced `docs/harness/20-production-identity-issuer-boundary.md`, a s
 
 Phase 017 produced `docs/harness/21-production-role-authority-boundary.md`, a static production role authority boundary artifact that selects backend-owned application role authority as the preferred future direction for production role assignment, role-permission mapping and menu mapping, keeps external IdP or enterprise directory groups/claims as future inputs only pending later approved mapping, preserves `role-access-configs.json` as the current transition role/menu/permission input, and records user profile, token/session, claim mapping, service-principal, service-to-service role handoff, audit identity, route migration, config-store and role-store dependencies as future requirements. It does not approve concrete role authority host creation, external group/claim mapping, gateway/auth/JWT implementation, external IdP integration, auth-service, user-service, role-service, login/session, OAuth, SSO, role-store migration, route migration, endpoint aliases, permission behavior change, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes, permanence or behavior change.
 
+Phase 018 produced `docs/harness/22-remaining-governance-closure.md`, a static remaining-governance closure artifact that consolidates future-only or deferred gates for concrete role authority host family and mapping, user profile source, service-to-service propagation, audit identity semantics, gateway/JWT prerequisites, demo-header compatibility, config-store and role-store migration readiness, route migration readiness and future implementation sequencing. It does not approve gateway/auth/JWT implementation, external IdP integration, directory integration, concrete role authority host creation, user profile source implementation, service-to-service propagation implementation, audit field changes, route migration, endpoint aliases, permission behavior change, config mutation, role-store migration, config-store migration, service extraction, frontend/Python reshaping, Kafka/database/Redis changes, permanence or behavior change.
+
 Allowed because:
 
 - Current project is still in convergence phase.
@@ -58,7 +60,8 @@ Exit criteria:
 12. Completed in Phase 015 for production identity issuer/validator scoping: Future validator placement, issuer deferral, user profile deferral, token/session readiness, service-principal requirements, service-to-service identity handoff requirements, audit identity requirements, gateway compatibility, route migration compatibility and rollback constraints are documented.
 13. Completed in Phase 016 for production identity issuer selection: External IdP or enterprise directory is selected as the preferred future production identity issuer direction, while concrete vendor/product, token/session semantics, claim mapping, user profile source and production role authority remain deferred.
 14. Completed in Phase 017 for production role authority selection: Backend-owned application role authority is selected as the preferred future role direction, while concrete role authority host, external group/claim mapping, user profile source, role-store migration and config-store migration remain deferred.
-15. Pending: Use the Phase 008 inventory and Phase 009/010/011/012/013 readiness artifacts plus the Phase 014 target-scope artifact, Phase 015 identity issuer/validator artifact, Phase 016 identity issuer artifact and Phase 017 role authority artifact to decide whether to extract independent microservices, split projection, config or permission ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store migration, role-store migration, Kafka and route migration work through later Window 0 decisions and human approval.
+15. Completed in Phase 018 for remaining governance closure: Role-host, profile-source, service-propagation, audit-identity, gateway/JWT, demo-header compatibility, config-store/role-store migration, route migration and later implementation sequencing gates are consolidated as future-only or deferred requirements.
+16. Pending: Use the Phase 008 inventory and Phase 009/010/011/012/013 readiness artifacts plus the Phase 014 target-scope artifact, Phase 015 identity issuer/validator artifact, Phase 016 identity issuer artifact, Phase 017 role authority artifact and Phase 018 remaining-governance closure artifact to decide whether to extract independent microservices, split projection, config or permission ownership, keep modular-monolith permanence, or sequence gateway/auth, data-ingest, config-store migration, role-store migration, Kafka and route migration work through later Window 0 decisions and human approval.
 
 Forbidden:
 
@@ -77,6 +80,7 @@ Forbidden:
 - Treating Phase 015 as approval for gateway/auth/JWT implementation, auth-service, user-service, role-service, login/session, OAuth, SSO, external IdP integration, role-store migration, permission behavior change, route migration, endpoint aliases, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 - Treating Phase 016 as approval for external IdP integration, gateway/auth/JWT implementation, auth-service, user-service, role-service, login/session, OAuth, SSO, role-store migration, permission behavior change, route migration, endpoint aliases, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 - Treating Phase 017 as approval for concrete role authority host creation, external group/claim mapping, gateway/auth/JWT implementation, external IdP integration, auth-service, user-service, role-service, login/session, OAuth, SSO, role-store migration, config-store migration, permission behavior change, route migration, endpoint aliases, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
+- Treating Phase 018 as approval for gateway/auth/JWT implementation, external IdP integration, directory integration, concrete role authority host creation, user profile source implementation, service-to-service propagation implementation, audit field changes, demo-header retirement, role-store migration, config-store migration, route migration, endpoint aliases, permission behavior change, config mutation, service extraction, frontend/Python reshaping, Kafka/database/Redis changes or permanent modular-monolith architecture.
 
 ## T2: JSON Config as Runtime Configuration Store
 
@@ -100,6 +104,8 @@ Phase 016 selected external IdP or enterprise directory as the preferred future 
 
 Phase 017 selected backend-owned application role authority as the preferred future production role direction, but it did not select a concrete role authority host or migration path. `role-access-configs.json` remains the current transition role/menu/permission input and no role-store migration, role DB adoption, config mutation or config-store migration is approved.
 
+Phase 018 consolidated config-store and role-store migration readiness gates, including target host selection, schema/versioning, single-writer rules, audit retention, rollback, Java/Python/frontend compatibility, role/menu/permission compatibility and migration validation. It did not select a target store, approve dual-read/dual-write, mutate JSON config, create a role store or config store, or approve migration.
+
 Allowed because:
 
 - It keeps demo and local iteration lightweight.
@@ -115,8 +121,9 @@ Exit criteria:
 5. Completed in Phase 015 for identity interaction: backend-owned ingress/gateway JWT validation is the preferred future validator placement, but role authority remains deferred and `role-access-configs.json` remains the current transition input.
 6. Completed in Phase 016 for issuer interaction: external IdP or enterprise directory is the preferred future issuer direction, but role authority remains deferred and `role-access-configs.json` remains the current transition input.
 7. Completed in Phase 017 for role-authority interaction: backend-owned application role authority is the preferred future role direction, but the concrete host and migration path remain deferred and `role-access-configs.json` remains the current transition input.
-8. Pending: Define schema/versioning, single-writer rules, audit retention, rollback, Java/Python cutover behavior, prompt-template rollout, role/auth ownership interaction and event-source/ingest-history ownership before any store migration.
+8. Completed in Phase 018 for remaining-governance docs: schema/versioning, single-writer, audit retention, rollback, Java/Python/frontend compatibility, role/menu/permission compatibility and migration validation gates are consolidated as future requirements.
 9. Pending: Choose any DB, Nacos, hybrid, role-store or config-service migration target only through a later Window 0 decision and human approval.
+10. Pending: Implement any config-store or role-store migration only after target selection, compatibility rules, validation and rollback are approved by a later phase.
 
 Forbidden:
 
@@ -232,6 +239,8 @@ Phase 016 produced `docs/harness/20-production-identity-issuer-boundary.md` and 
 
 Phase 017 produced `docs/harness/21-production-role-authority-boundary.md` and selected backend-owned application role authority as the preferred future production role direction. Concrete role authority host, external group/claim mapping, user profile source, role-store migration and config-store migration remain deferred, and demo headers remain local/demo compatibility inputs only.
 
+Phase 018 produced `docs/harness/22-remaining-governance-closure.md` and consolidated the future gateway/JWT prerequisites, demo-header compatibility policy shape, user profile source boundary, service-principal semantics, service-to-service identity/role handoff, audit identity semantics, route migration gates and role/config-store migration gates. Demo headers remain local/demo compatibility inputs only, and no gateway/auth/JWT, demo-header retirement, service-to-service propagation or audit identity implementation is approved.
+
 Allowed because:
 
 - It keeps current demo flow simple.
@@ -243,12 +252,13 @@ Exit criteria:
 3. Completed in Phase 015 for issuer/validator boundary: backend-owned ingress/gateway JWT validation is selected as preferred future validator placement, while concrete issuer, user profile source and production role authority remain deferred.
 4. Completed in Phase 016 for issuer direction: external IdP or enterprise directory is selected as the preferred future production identity issuer direction, future-only.
 5. Completed in Phase 017 for role-authority direction: backend-owned application role authority is selected as the preferred future production role direction, future-only.
-6. Pending: Decide whether to implement gateway/auth/JWT, auth-service, user-service, role-service or session service.
-7. Pending: Select the concrete external issuer vendor/product and token/session/claim semantics.
-8. Pending: Select the user profile source.
-9. Pending: Select the concrete production role authority host, external group/claim mapping contract and any role-store migration path.
-10. Pending: Implement service-to-service user/role propagation, demo-header compatibility or retirement, audit identity semantics and frontend/backend enforcement interaction only after later Window 0 selection and human approval.
-11. Pending: Add real login/session flow if production-grade access is required and explicitly approved.
+6. Completed in Phase 018 for remaining-governance docs: Gateway/JWT prerequisites, demo-header compatibility policy shape, user profile source boundary, service-principal semantics, service-to-service handoff, audit identity semantics, route migration gates and role/config-store migration gates are consolidated as future-only or deferred requirements.
+7. Pending: Decide whether to implement gateway/auth/JWT, auth-service, user-service, role-service or session service.
+8. Pending: Select the concrete external issuer vendor/product and token/session/claim semantics.
+9. Pending: Select the user profile source.
+10. Pending: Select the concrete production role authority host, external group/claim mapping contract and any role-store migration path.
+11. Pending: Implement service-to-service user/role propagation, demo-header compatibility or retirement, audit identity semantics and frontend/backend enforcement interaction only after later Window 0 selection and human approval.
+12. Pending: Add real login/session flow if production-grade access is required and explicitly approved.
 
 Forbidden:
 
@@ -260,3 +270,4 @@ Forbidden:
 - Implementing gateway/auth/JWT, auth-service, user-service, role-service, role DB, login/session, OAuth, SSO, external IdP integration, demo-header retirement, service-to-service propagation, issuer integration, token/session behavior, audit field changes or permission behavior changes from Phase 015 alone.
 - Implementing gateway/auth/JWT, auth-service, user-service, role-service, role DB, login/session, OAuth, SSO, external IdP integration, demo-header retirement, service-to-service propagation, issuer integration, token/session behavior, claim mapping, user profile integration, audit field changes or permission behavior changes from Phase 016 alone.
 - Implementing concrete role authority host creation, external group/claim mapping, gateway/auth/JWT, auth-service, user-service, role-service, role DB, login/session, OAuth, SSO, external IdP integration, demo-header retirement, service-to-service propagation, issuer integration, token/session behavior, user profile integration, role-store migration, config-store migration, audit field changes or permission behavior changes from Phase 017 alone.
+- Implementing gateway/auth/JWT, auth-service, user-service, role-service, role DB, login/session, OAuth, SSO, external IdP integration, directory integration, concrete role authority host creation, user profile integration, demo-header retirement, service-to-service propagation, token/session behavior, claim mapping, route migration, role-store migration, config-store migration, audit field changes or permission behavior changes from Phase 018 alone.

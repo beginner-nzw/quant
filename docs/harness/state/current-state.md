@@ -8,11 +8,21 @@ This file is the starting state for Window 0.
 
 ## Current Phase
 
-None approved.
+None. Next step is Window 0 steering.
 
-Latest frozen phase: Phase 017 - Production Role Authority Selection Boundary.
+Latest frozen phase: Phase 018 - Consolidated Remaining Governance Closure.
 
 ## Current Phase Status
+
+Phase 018 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-018-review.md`.
+
+Window 4 froze the result in `docs/harness/handoffs/phase-018-final.md`.
+
+Phase 018 produced the durable remaining governance closure artifact in `docs/harness/22-remaining-governance-closure.md`. It consolidates the remaining pre-implementation governance decisions after Phase 012 through Phase 017, including role authority host-family boundaries, user profile source boundaries, service-to-service propagation and audit identity semantics, gateway/JWT prerequisites and demo-header compatibility policy shape, config-store and role-store migration gates, route migration gates and future implementation sequencing.
+
+Phase 018 was docs-only governance work. It did not implement or approve gateway/auth/JWT, external IdP integration, directory integration, auth-service, user-service, role-service, login/session, OAuth, SSO, route migration, endpoint aliases, permission behavior changes, DTO/VO/entity/schema changes, Redis changes, Kafka changes, frontend changes, Python changes, config mutation, config-store migration, role-store migration, business behavior changes, service extraction, permanent modular-monolith status or new feature work.
+
+Phase 018 preserves `role-access-configs.json` as the current transition role/menu/permission input, preserves `X-User-Id`, `X-User-Role`, `X-Trace-Id`, `guest`, `USER`, `UserContext`, backend `requirePermission` checks, intentional no-explicit-permission read surfaces and frontend route/menu/action gating as current compatibility boundaries, and records that any future implementation candidate still requires a later Window 0 decision and human approval.
 
 Phase 017 is completed with residual risk after Window 3 approved `docs/harness/handoffs/phase-017-review.md`.
 
@@ -114,7 +124,7 @@ Phase 011 was docs-only governance work. It did not approve risk-service extract
 
 ## Last Completed Phase
 
-Phase 017 - Production Role Authority Selection Boundary.
+Phase 018 - Consolidated Remaining Governance Closure.
 
 ## Open Blockers
 
@@ -470,25 +480,43 @@ None registered.
 
 ## Candidate Next Phases
 
-No active candidate is approved.
+No current phase is approved.
 
 Recommended candidate inputs for Window 0 evaluation:
 
-- Concrete production role authority host and mapping boundary, such as DB role store, auth-service/user-service/role-service ownership, config-store-backed mapping or external group/claim synchronization, only if Window 0 and the user explicitly choose to act on Phase 017 backend-owned application role authority direction and Phase 012/014/015/016 constraints.
-- Gateway/JWT implementation design with demo-header compatibility policy only if Window 0 and the user explicitly choose to act on Phase 014 target-scope gates, Phase 015 selected validator placement, Phase 016 external issuer direction and Phase 017 backend-owned role authority direction.
-- User profile source selection, such as external directory claims, user-service, auth-service profile store, synchronized profile read model or another backend-owned source, only if Window 0 and the user explicitly choose to act on Phase 016 profile-source deferral gates and Phase 017 role/profile separation rules.
-- Service-to-service propagation and audit identity semantics for AI callbacks, event auto task dispatch and future extracted services only if Window 0 and the user explicitly choose to act on Phase 014 propagation gates and Phase 015/016 service-principal/audit identity requirements plus Phase 017 role handoff requirements.
-- Config-store or role-store migration target/scoping, DB/Nacos/hybrid readiness, config schema/versioning or config audit/rollback planning only if Window 0 and the user explicitly choose to act on Phase 012 and Phase 017 role/config-store dependency gates.
-- Legacy route migration decision phase only after Window 0 accounts for Phase 006 contract freeze and Phase 014/015/016/017 auth/gateway/issuer/role compatibility gates.
-- Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates.
-- Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates.
-- Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates.
+- Gateway/JWT implementation design with demo-header compatibility policy, only if Window 0 and the user explicitly choose to act on Phase 014 target-scope gates, Phase 015 selected validator placement, Phase 016 external issuer direction, Phase 017 backend-owned role authority direction and Phase 018 compatibility policy shape.
+- Concrete production role authority host and mapping implementation plan, such as DB role store, auth-service/user-service/role-service ownership, backend-owned config mapping or external group/claim synchronization, only if Window 0 and the user explicitly choose to act on Phase 017 role direction and Phase 018 role-host/mapping gates.
+- User profile source selection, such as external directory claims, user-service, auth-service profile store, synchronized profile read model or another backend-owned source, only if Window 0 and the user explicitly choose to act on Phase 016 profile-source deferral gates and Phase 018 profile boundary rules.
+- Service-to-service propagation and audit identity implementation design for AI callbacks, event auto task dispatch and future extracted services, only if Window 0 and the user explicitly choose to act on Phase 014 propagation gates and Phase 018 service-principal/audit semantics.
+- Config-store or role-store migration planning, DB/Nacos/hybrid readiness, schema/versioning, audit retention, rollback or single-writer rules, only if Window 0 and the user explicitly choose to act on Phase 012 transition-store policy and Phase 018 migration gates.
+- Legacy route migration planning only after Window 0 accounts for Phase 006 contract freeze and Phase 018 route migration/breaking-change prerequisites.
+- Risk-service extraction, strategy-service extraction, projection-split planning, risk/strategy route migration or risk/strategy Kafka downstream planning only if Window 0 and the user explicitly choose to act on Phase 011 readiness gates plus Phase 018 auth, route, role and propagation prerequisites.
+- Report extraction or report route-migration planning only if Window 0 and the user explicitly choose to act on Phase 009 readiness gates plus Phase 018 auth, route, role and propagation prerequisites.
+- Market-service extraction, data-ingest-service extraction, market route migration or market config-store planning only if Window 0 and the user explicitly choose to act on Phase 010 readiness gates plus Phase 018 auth, route, role, config and propagation prerequisites.
 
-Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011, Phase 012, Phase 013, Phase 014, Phase 015, Phase 016 and Phase 017 are no longer candidates because they are completed and frozen by Window 4.
+Phase 001, Phase 002, Phase 003, Phase 004, Phase 005, Phase 006, Phase 007, Phase 008, Phase 009, Phase 010, Phase 011, Phase 012, Phase 013, Phase 014, Phase 015, Phase 016, Phase 017 and Phase 018 are no longer candidates because they are completed and frozen by Window 4.
 
 Window 0 must score candidates using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval.
 
 ## Human Approval Status
+
+Phase 018 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-018.md`.
+
+Phase 018 approval constraints:
+
+- No breaking changes.
+- URL paths must remain stable.
+- Frontend routes must remain stable.
+- No permission behavior change.
+- No business behavior change.
+- No new feature work.
+- No gateway/auth/JWT implementation.
+- No auth-service, user-service, role-service, login/session, OAuth, SSO or external IdP implementation.
+- No config mutation.
+- No role-store or config-store migration.
+- Expected Window 2 type is docs-only by default after Window 1 planning is separately approved.
+
+Phase 018 was planned by Window 1, implemented by Window 2 as docs-only governance closure work, reviewed and approved by Window 3, and frozen by Window 4 as completed with residual risk.
 
 Phase 017 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-017.md`.
 
@@ -655,4 +683,4 @@ Phase 007 was approved by the user after Window 0 steering decision in `docs/har
 
 Phase 006 was approved by the user after Window 0 steering decision in `docs/harness/handoffs/steering-decision-phase-006.md`, planned by Window 1, implemented by Window 2 with three fix passes, reviewed and approved by Window 3 Review Fix 3, and frozen by Window 4 as completed with residual risk.
 
-Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-017-final.md`, discover the matching Phase 017 steering, architect, implementation and review handoffs, consume `docs/harness/21-production-role-authority-boundary.md` together with the durable Phase 008/009/010/011/012/013/014/015/016 artifacts, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts. Window 0 must not ask the user to summarize Phase 017 manually.
+Next step must be Window 0. Window 0 must read `docs/harness/handoffs/phase-018-final.md`, discover the matching Phase 018 steering, architect, implementation and review handoffs, consume `docs/harness/22-remaining-governance-closure.md` together with the durable Phase 008/009/010/011/012/013/014/015/016/017 artifacts, score candidate next phases using `docs/harness/10-steering-state-machine.md`, propose exactly one primary candidate and one fallback candidate, and wait for human approval before Window 1 starts. Window 0 must not ask the user to summarize Phase 018 manually.
