@@ -36,3 +36,10 @@ spring:
     sentinel:
       transport:
         dashboard: nacos:8848
+
+quant:
+  security:
+    service-actor:
+      secret: ${QUANT_SERVICE_ACTOR_SECRET:local-dev-service-actor-secret}
+  ai:
+    research-task-service-base-url: http://research-task-service:8081

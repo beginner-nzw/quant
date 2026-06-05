@@ -39,6 +39,11 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level traceId=%X{traceId} %logger{36} - %msg%n"
 
 quant:
+  security:
+    auth:
+      mode: DEMO
+    service-actor:
+      secret: local-dev-service-actor-secret
   ai:
     prompt-template-dir: ../../../prompt-templates
     model-strategy-config: ../../../ai-config/model-strategies.json
@@ -47,6 +52,11 @@ quant:
     event-auto-trigger-config: ../../../ai-config/event-auto-trigger-configs.json
     event-source-config: ../../../ai-config/event-source-configs.json
     event-ingest-history: ../../../ai-config/event-ingest-histories.json
+    mock-ingest:
+      enabled: true
+    data-ingest:
+      max-attempts: 3
+      raw-payload-dir: ../../../ai-config/raw-payloads
     config-audit: ../../../ai-config/config-change-audits.json
     role-access-config: ../../../ai-config/role-access-configs.json
     research-task-service-base-url: http://127.0.0.1:8081

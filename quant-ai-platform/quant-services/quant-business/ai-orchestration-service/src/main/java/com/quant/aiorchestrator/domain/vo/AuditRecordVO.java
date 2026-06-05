@@ -12,6 +12,11 @@ public class AuditRecordVO {
     private String auditStage;
     private String operatorType;
     private String operatorId;
+    private String identitySource;
+    private String roleSource;
+    private String servicePrincipal;
+    private String originalActorId;
+    private String delegatedActorId;
     private String actionCode;
     private String actionDesc;
     private String resultStatus;

@@ -1,21 +1,16 @@
 package com.quant.aiorchestrator.service.impl;
 
 import com.quant.aiorchestrator.service.AgentConfigService;
-import com.quant.aiorchestrator.service.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.configstore.ConfigStoreKey;
+import com.quant.aiorchestrator.configstore.GovernedConfigStore;
 import com.quant.aiorchestrator.domain.dto.AgentConfigUpdateDTO;
 import com.quant.aiorchestrator.domain.vo.AgentConfigItemVO;
 import com.quant.common.core.exception.BizException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -27,18 +22,15 @@ import java.util.Objects;
 @Service
 public class AgentConfigServiceImpl implements AgentConfigService {
 
-    private final String agentConfigPath;
     private final ObjectMapper objectMapper;
-    private final ConfigChangeAuditService configChangeAuditService;
+    private final GovernedConfigStore governedConfigStore;
 
     public AgentConfigServiceImpl(
-            @Value("${quant.ai.agent-config:../../../ai-config/agent-configs.json}") String agentConfigPath,
             ObjectMapper objectMapper,
-            ConfigChangeAuditService configChangeAuditService
+            GovernedConfigStore governedConfigStore
     ) {
-        this.agentConfigPath = agentConfigPath;
         this.objectMapper = objectMapper;
-        this.configChangeAuditService = configChangeAuditService;
+        this.governedConfigStore = governedConfigStore;
     }
 
     public List<AgentConfigItemVO> loadAgents() {
@@ -52,72 +44,58 @@ public class AgentConfigServiceImpl implements AgentConfigService {
 
     public void saveAgent(String agentCode, AgentConfigUpdateDTO dto) {
         if (dto == null) {
-            throw new BizException("AGENT_CONFIG_EMPTY", "Agent 配置更新内容不能为空");
+            throw new BizException("AGENT_CONFIG_EMPTY", "Agent config update cannot be empty");
         }
         if (!hasText(agentCode)) {
-            throw new BizException("AGENT_CODE_EMPTY", "Agent 编码不能为空");
+            throw new BizException("AGENT_CODE_EMPTY", "Agent code cannot be empty");
         }
         if (!hasText(dto.getAgentName())) {
-            throw new BizException("AGENT_NAME_EMPTY", "Agent 名称不能为空");
+            throw new BizException("AGENT_NAME_EMPTY", "Agent name cannot be empty");
         }
         if (!hasText(dto.getStageCode())) {
-            throw new BizException("AGENT_STAGE_EMPTY", "阶段编码不能为空");
+            throw new BizException("AGENT_STAGE_EMPTY", "Agent stage code cannot be empty");
         }
         if (dto.getExecutionOrder() == null || dto.getExecutionOrder() < 1) {
-            throw new BizException("AGENT_ORDER_INVALID", "执行顺序必须大于 0");
+            throw new BizException("AGENT_ORDER_INVALID", "Agent execution order must be greater than 0");
         }
         if (dto.getTimeoutSeconds() == null || dto.getTimeoutSeconds() < 1) {
-            throw new BizException("AGENT_TIMEOUT_INVALID", "超时时间必须大于 0");
+            throw new BizException("AGENT_TIMEOUT_INVALID", "Agent timeout must be greater than 0");
         }
         if (!hasText(dto.getImplementationMode())) {
-            throw new BizException("AGENT_MODE_EMPTY", "实现模式不能为空");
+            throw new BizException("AGENT_MODE_EMPTY", "Agent implementation mode cannot be empty");
         }
         if (!hasText(dto.getVersion())) {
-            throw new BizException("AGENT_VERSION_EMPTY", "版本不能为空");
+            throw new BizException("AGENT_VERSION_EMPTY", "Agent version cannot be empty");
         }
         if ("report_generation_agent".equals(agentCode) && Boolean.FALSE.equals(dto.getEnabled())) {
-            throw new BizException("AGENT_REQUIRED", "报告生成节点不能被禁用");
+            throw new BizException("AGENT_REQUIRED", "report_generation_agent cannot be disabled");
         }
 
-        Path configPath = resolveConfigPath();
         List<Map<String, Object>> agents = readAgents();
         boolean updated = false;
+        List<String> changedFields = new ArrayList<>();
         for (Map<String, Object> item : agents) {
             if (Objects.equals(normalize(item.get("agentCode")), agentCode.trim())) {
                 Map<String, Object> before = new LinkedHashMap<>(item);
                 applyUpdate(item, dto);
+                changedFields = diffFields(before, item);
                 updated = true;
-                configChangeAuditService.appendAudit(
-                        "AGENT_CONFIG",
-                        agentCode,
-                        dto.getAgentName(),
-                        "UPDATE",
-                        configPath.toString(),
-                        "更新 Agent 配置",
-                        diffFields(before, item)
-                );
                 break;
             }
         }
 
         if (!updated) {
-            throw new BizException("AGENT_NOT_FOUND", "未找到 Agent 配置: " + agentCode);
+            throw new BizException("AGENT_NOT_FOUND", "Agent config not found: " + agentCode);
         }
 
         Map<String, Object> root = new LinkedHashMap<>();
         root.put("agents", agents);
 
-        try {
-            Files.createDirectories(configPath.getParent());
-            String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(root);
-            Files.writeString(configPath, json + System.lineSeparator(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new BizException("AGENT_SAVE_FAILED", "保存 Agent 配置失败: " + agentCode);
-        }
+        governedConfigStore.writeRoot(ConfigStoreKey.AGENT, root, agentCode, dto.getAgentName(), "UPDATE", "更新 Agent 配置", changedFields);
     }
 
     public String resolveConfigPathForDisplay() {
-        return resolveConfigPath().toString();
+        return governedConfigStore.displayPath(ConfigStoreKey.AGENT);
     }
 
     private void applyUpdate(Map<String, Object> item, AgentConfigUpdateDTO dto) {
@@ -154,15 +132,10 @@ public class AgentConfigServiceImpl implements AgentConfigService {
     }
 
     private List<Map<String, Object>> readAgents() {
-        Path configPath = resolveConfigPath();
-        if (!Files.exists(configPath)) {
-            return new ArrayList<>();
-        }
         try {
-            Map<String, Object> root = objectMapper.readValue(
-                    Files.readString(configPath, StandardCharsets.UTF_8),
-                    new TypeReference<LinkedHashMap<String, Object>>() {}
-            );
+            Map<String, Object> emptyRoot = new LinkedHashMap<>();
+            emptyRoot.put("agents", new ArrayList<>());
+            Map<String, Object> root = governedConfigStore.readRoot(ConfigStoreKey.AGENT, emptyRoot);
             Object agents = root.get("agents");
             if (!(agents instanceof List<?> agentList)) {
                 return new ArrayList<>();
@@ -179,37 +152,8 @@ public class AgentConfigServiceImpl implements AgentConfigService {
             }
             return result;
         } catch (Exception e) {
-            throw new BizException("AGENT_READ_FAILED", "读取 Agent 配置失败");
+            throw new BizException("AGENT_READ_FAILED", "Failed to read Agent config");
         }
-    }
-
-    private Path resolveConfigPath() {
-        Path userDir = Paths.get(System.getProperty("user.dir")).normalize();
-        LinkedHashSet<Path> candidates = new LinkedHashSet<>();
-
-        Path configuredPath = Paths.get(agentConfigPath);
-        if (configuredPath.isAbsolute()) {
-            candidates.add(configuredPath.normalize());
-        } else {
-            candidates.add(userDir.resolve(configuredPath).normalize());
-        }
-
-        candidates.add(userDir.resolve("ai-config").resolve("agent-configs.json").normalize());
-        candidates.add(userDir.resolve("quant-ai-platform").resolve("ai-config").resolve("agent-configs.json").normalize());
-
-        Path current = userDir;
-        while (current != null) {
-            candidates.add(current.resolve("ai-config").resolve("agent-configs.json").normalize());
-            candidates.add(current.resolve("quant-ai-platform").resolve("ai-config").resolve("agent-configs.json").normalize());
-            current = current.getParent();
-        }
-
-        for (Path candidate : candidates) {
-            if (Files.exists(candidate)) {
-                return candidate;
-            }
-        }
-        return candidates.iterator().next();
     }
 
     private List<String> castList(Object value) {
@@ -289,3 +233,5 @@ public class AgentConfigServiceImpl implements AgentConfigService {
         return normalized.isEmpty() ? null : normalized;
     }
 }
+
+

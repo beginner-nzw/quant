@@ -7,8 +7,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
 import com.quant.common.core.exception.BizException;
+import com.quant.common.security.ServiceActor;
+import com.quant.common.security.ServiceActorSigner;
 import com.quant.common.security.SecurityConstants;
-import com.quant.common.security.SecurityUtils;
 import com.quant.common.web.RequestHeaderConstants;
 import com.quant.common.web.TraceContext;
 import lombok.RequiredArgsConstructor;
@@ -31,10 +32,17 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class EventAutoTaskDispatchServiceImpl implements EventAutoTaskDispatchService {
 
+    private static final String SERVICE_PRINCIPAL = "ai-orchestration-service";
+    private static final String AUTO_TRIGGER_ACTOR = "market-event-auto-dispatcher";
+    private static final String AUTO_TRIGGER_ROLE = "EVENT_AUTO_DISPATCHER";
+
     private final ObjectMapper objectMapper;
 
     @Value("${quant.ai.research-task-service-base-url:http://127.0.0.1:8081}")
     private String researchTaskServiceBaseUrl;
+
+    @Value("${quant.security.service-actor.secret:}")
+    private String serviceActorSecret;
 
     public String createFollowUpTask(MarketEventDO event, EventAutoTriggerConfigService.EventAutoTriggerRule rule) {
         if (event == null || rule == null) {
@@ -64,9 +72,10 @@ public class EventAutoTaskDispatchServiceImpl implements EventAutoTaskDispatchSe
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + "/api/research/tasks"))
                 .header("Content-Type", "application/json")
-                .header(SecurityConstants.HEADER_USER_ID, defaultValue(event.getCreatedBy(), defaultValue(SecurityUtils.currentUserId(), "system")))
-                .header(SecurityConstants.HEADER_USER_ROLE, defaultValue(SecurityUtils.currentUserRole(), "ADMIN"))
+                .header(SecurityConstants.HEADER_USER_ID, "system")
+                .header(SecurityConstants.HEADER_USER_ROLE, "ADMIN")
                 .header(RequestHeaderConstants.HEADER_TRACE_ID, TraceContext.resolveTraceId(TraceContext.currentTraceId()))
+                .headers(buildServiceActorHeaders(event))
                 .timeout(Duration.ofSeconds(10))
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
@@ -102,6 +111,32 @@ public class EventAutoTaskDispatchServiceImpl implements EventAutoTaskDispatchSe
             }
             throw new BizException("EVENT_AUTO_TRIGGER_REQUEST_FAILED", "自动触发任务请求失败");
         }
+    }
+
+    public String[] buildServiceActorHeaders(MarketEventDO event) {
+        if (!StringUtils.hasText(serviceActorSecret)) {
+            throw new BizException(
+                    "EVENT_AUTO_TRIGGER_SERVICE_IDENTITY_NOT_CONFIGURED",
+                    "自动触发任务缺少服务间身份密钥配置"
+            );
+        }
+        long timestamp = System.currentTimeMillis();
+        ServiceActor actor = new ServiceActor(
+                SERVICE_PRINCIPAL,
+                AUTO_TRIGGER_ACTOR,
+                AUTO_TRIGGER_ROLE,
+                defaultValue(event.getCreatedBy(), "system"),
+                "SYSTEM"
+        );
+        return new String[]{
+                SecurityConstants.HEADER_SERVICE_PRINCIPAL, actor.servicePrincipal(),
+                SecurityConstants.HEADER_SERVICE_ACTOR_ID, actor.actorId(),
+                SecurityConstants.HEADER_SERVICE_ACTOR_ROLE, actor.actorRole(),
+                SecurityConstants.HEADER_SERVICE_ORIGINAL_ACTOR_ID, actor.originalActorId(),
+                SecurityConstants.HEADER_SERVICE_ORIGINAL_ACTOR_ROLE, actor.originalActorRole(),
+                SecurityConstants.HEADER_SERVICE_TIMESTAMP, String.valueOf(timestamp),
+                SecurityConstants.HEADER_SERVICE_SIGNATURE, ServiceActorSigner.sign(actor, timestamp, serviceActorSecret)
+        };
     }
 
     private String resolveTaskTitle(MarketEventDO event, EventAutoTriggerConfigService.EventAutoTriggerRule rule) {

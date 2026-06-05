@@ -1,5 +1,6 @@
 package com.quant.quantcommonmodel;
 
+import com.quant.common.model.message.AiTaskActorProvenance;
 import com.quant.common.model.message.AiTaskAuditMessage;
 import com.quant.common.model.message.AiTaskDispatchMessage;
 import com.quant.common.model.message.AiTaskResultMessage;
@@ -47,7 +48,8 @@ class AiTaskMessageContractTests {
                 "sourceEventId",
                 "sourceDomain",
                 "sourceReviewStatus",
-                "analysisScope"
+                "analysisScope",
+                "actorProvenance"
         ));
     }
 
@@ -58,7 +60,8 @@ class AiTaskMessageContractTests {
                 "status",
                 "currentStage",
                 "currentNode",
-                "progress"
+                "progress",
+                "actorProvenance"
         ));
     }
 
@@ -85,7 +88,8 @@ class AiTaskMessageContractTests {
                 "needHumanReview",
                 "riskWarnings",
                 "reportMeta",
-                "resultRef"
+                "resultRef",
+                "actorProvenance"
         ));
     }
 
@@ -95,7 +99,8 @@ class AiTaskMessageContractTests {
                 "workflowInstanceId",
                 "agents",
                 "reviewSuggestion",
-                "evidenceRefs"
+                "evidenceRefs",
+                "actorProvenance"
         ));
         assertFieldNames(AiTaskAuditMessage.AgentAuditItem.class, List.of(
                 "executionId",
@@ -108,6 +113,24 @@ class AiTaskMessageContractTests {
                 "startTimestamp",
                 "finishTimestamp",
                 "durationMs"
+        ));
+    }
+
+    @Test
+    void actorProvenanceFieldsMatchPythonMirrorContract() {
+        assertFieldNames(AiTaskActorProvenance.class, List.of(
+                "identitySource",
+                "roleSource",
+                "servicePrincipal",
+                "systemActor",
+                "originalActor",
+                "delegatedActor"
+        ));
+        assertFieldNames(AiTaskActorProvenance.ActorRef.class, List.of(
+                "actorType",
+                "actorId",
+                "actorRole",
+                "sourceService"
         ));
     }
 

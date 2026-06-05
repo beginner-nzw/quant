@@ -101,6 +101,10 @@ class TaskRetryServiceTests {
         assertEquals("MARKET_EVENT", payload.getSourceDomain());
         assertEquals("APPROVED", payload.getSourceReviewStatus());
         assertEquals("FULL", payload.getAnalysisScope());
+        assertNotNull(payload.getActorProvenance());
+        assertEquals("USER_CONTEXT", payload.getActorProvenance().getIdentitySource());
+        assertEquals("ai-orchestration-service", payload.getActorProvenance().getServicePrincipal());
+        assertEquals("operator-1", payload.getActorProvenance().getOriginalActor().getActorId());
 
         assertEquals(2, deps.stringRedisTemplate.deletedKeys.size());
         assertTrue(deps.stringRedisTemplate.deletedKeys.contains(RedisKeyBuilder.taskFull("task-1")));

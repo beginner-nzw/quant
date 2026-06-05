@@ -1,0 +1,15 @@
+USE quant_ai;
+
+ALTER TABLE audit_record
+    ADD COLUMN IF NOT EXISTS identity_source VARCHAR(64) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS role_source VARCHAR(64) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS service_principal VARCHAR(128) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS original_actor_id VARCHAR(128) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS delegated_actor_id VARCHAR(128) DEFAULT NULL;
+
+ALTER TABLE task_message_log
+    ADD COLUMN IF NOT EXISTS identity_source VARCHAR(64) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS role_source VARCHAR(64) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS service_principal VARCHAR(128) DEFAULT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_service_principal ON task_message_log (service_principal);

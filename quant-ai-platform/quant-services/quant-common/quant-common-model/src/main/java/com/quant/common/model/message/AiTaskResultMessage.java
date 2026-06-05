@@ -36,5 +36,6 @@ public class AiTaskResultMessage extends MessageEnvelope {
         private List<String> riskWarnings;
         private Map<String, Object> reportMeta;
         private String resultRef;
+        private AiTaskActorProvenance actorProvenance;
     }
 }

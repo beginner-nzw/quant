@@ -1,6 +1,7 @@
 package com.quant.aiorchestrationservice;
 
 import com.quant.aiorchestrator.controller.AuditComplianceController;
+import com.quant.aiorchestrator.controller.GovernedConfigController;
 import com.quant.aiorchestrator.controller.MarketEventController;
 import com.quant.aiorchestrator.controller.MarketIntelligenceController;
 import com.quant.aiorchestrator.controller.ModelAgentConfigController;
@@ -11,6 +12,7 @@ import com.quant.aiorchestrator.controller.StrategySignalController;
 import com.quant.aiorchestrator.controller.TaskQueryController;
 import com.quant.aiorchestrator.domain.dto.AgentConfigUpdateDTO;
 import com.quant.aiorchestrator.domain.dto.AuditCompliancePageQueryDTO;
+import com.quant.aiorchestrator.domain.dto.ConfigRollbackDTO;
 import com.quant.aiorchestrator.domain.dto.EventAutoTriggerRuleUpdateDTO;
 import com.quant.aiorchestrator.domain.dto.EventSourceConfigUpdateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventBatchImportDTO;
@@ -33,9 +35,11 @@ import com.quant.aiorchestrator.domain.dto.WorkflowConfigUpdateDTO;
 import com.quant.aiorchestrator.domain.vo.AuditCompliancePageVO;
 import com.quant.aiorchestrator.domain.vo.AuditComplianceStatsVO;
 import com.quant.aiorchestrator.domain.vo.CninfoProxyAnnouncementResponseVO;
+import com.quant.aiorchestrator.domain.vo.ConfigRollbackResultVO;
 import com.quant.aiorchestrator.domain.vo.EventSourceConfigItemVO;
 import com.quant.aiorchestrator.domain.vo.EventSourcePreviewResultVO;
 import com.quant.aiorchestrator.domain.vo.EventSourceRequestDiagnosticResultVO;
+import com.quant.aiorchestrator.domain.vo.GovernedConfigVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchImportResultVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchPreviewResultVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventCreateResultVO;
@@ -105,6 +109,7 @@ class LegacyTaskApiContractFreezeTest {
             MarketIntelligenceController.class,
             AuditComplianceController.class,
             ModelAgentConfigController.class,
+            GovernedConfigController.class,
             ResearchWorkbenchController.class
     );
 
@@ -117,6 +122,7 @@ class LegacyTaskApiContractFreezeTest {
             "MarketIntelligenceController",
             "AuditComplianceController",
             "ModelAgentConfigController",
+            "GovernedConfigController",
             "ResearchWorkbenchController"
     );
 
@@ -254,6 +260,14 @@ class LegacyTaskApiContractFreezeTest {
                     "/api/tasks/model-agent-config/role-access/{roleCode}",
                     resultOf(String.class), List.of(path("roleCode", String.class),
                             body(RoleAccessConfigUpdateDTO.class)),
+                    RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_EDIT),
+
+            endpoint(GovernedConfigController.class, "GET", "/api/tasks/config-store/{storeCode}",
+                    resultOf(GovernedConfigVO.class), List.of(path("storeCode", String.class)),
+                    RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_VIEW),
+            endpoint(GovernedConfigController.class, "POST", "/api/tasks/config-store/{storeCode}/rollback",
+                    resultOf(ConfigRollbackResultVO.class), List.of(path("storeCode", String.class),
+                            body(ConfigRollbackDTO.class)),
                     RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_EDIT),
 
             endpoint(ResearchWorkbenchController.class, "GET", "/api/tasks/research-workbench",

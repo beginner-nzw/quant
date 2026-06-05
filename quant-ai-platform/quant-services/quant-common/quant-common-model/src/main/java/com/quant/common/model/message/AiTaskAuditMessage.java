@@ -18,6 +18,7 @@ public class AiTaskAuditMessage extends MessageEnvelope {
         private List<AgentAuditItem> agents;
         private String reviewSuggestion;
         private List<String> evidenceRefs;
+        private AiTaskActorProvenance actorProvenance;
     }
 
     @Data

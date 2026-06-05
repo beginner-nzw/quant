@@ -7,7 +7,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.common.messaging.KafkaTopicConstants;
 import com.quant.common.messaging.MessageTypeConstants;
+import com.quant.common.model.message.AiTaskActorProvenance;
+import com.quant.common.model.message.AiTaskActorProvenanceSupport;
 import com.quant.common.model.message.AiTaskDispatchMessage;
+import com.quant.common.security.ServiceActor;
+import com.quant.common.security.ServiceActorContext;
+import com.quant.common.security.SecurityUtils;
 import com.quant.task.domain.entity.ResearchTaskDO;
 import com.quant.task.domain.entity.TaskOutboxMessageDO;
 import com.quant.task.mapper.TaskOutboxMessageMapper;
@@ -86,6 +91,7 @@ public class TaskOutboxMessageServiceImpl implements TaskOutboxMessageService {
         payload.setSourceDomain(task.getSourceDomain());
         payload.setSourceReviewStatus(task.getSourceReviewStatus());
         payload.setAnalysisScope(task.getAnalysisScope());
+        payload.setActorProvenance(resolveActorProvenance(task));
 
         AiTaskDispatchMessage message = new AiTaskDispatchMessage();
         message.setMessageId(UUID.randomUUID().toString());
@@ -102,6 +108,24 @@ public class TaskOutboxMessageServiceImpl implements TaskOutboxMessageService {
         message.setRetryCount(0);
         message.setPayload(payload);
         return message;
+    }
+
+    private AiTaskActorProvenance resolveActorProvenance(ResearchTaskDO task) {
+        ServiceActor serviceActor = ServiceActorContext.get();
+        if (serviceActor != null) {
+            return AiTaskActorProvenanceSupport.systemInitiated(
+                    serviceActor.servicePrincipal(),
+                    serviceActor.actorId(),
+                    serviceActor.actorRole(),
+                    serviceActor.originalActorId(),
+                    serviceActor.originalActorRole()
+            );
+        }
+        return AiTaskActorProvenanceSupport.userInitiated(
+                PRODUCER_SERVICE,
+                SecurityUtils.currentUserId(),
+                SecurityUtils.currentUserRole()
+        );
     }
 
     private String serialize(AiTaskDispatchMessage message) {

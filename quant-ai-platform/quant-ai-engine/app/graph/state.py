@@ -13,6 +13,7 @@ class WorkflowState(TypedDict, total=False):
     tenant_id: str
     biz_key: str
     retry_count: int
+    actor_provenance: Dict[str, Any]
     source_context: Dict[str, Any]
     analysis_scope: str
     task_context: Dict[str, Any]

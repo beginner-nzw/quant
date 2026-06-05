@@ -3,11 +3,13 @@ from pathlib import Path
 from typing import Any
 
 from app.config.settings import settings
+from app.services.config_store_reader import ConfigStoreReader
 
 
 class ModelStrategyRepository:
     def __init__(self) -> None:
         self.config_file_name = "model-strategies.json"
+        self.config_store_reader = ConfigStoreReader("model-strategies", self.config_file_name)
 
     def load_strategy(self, scenario_code: str | None) -> dict[str, Any]:
         if not scenario_code:
@@ -26,13 +28,7 @@ class ModelStrategyRepository:
         return {}
 
     def _load_file(self) -> dict[str, Any]:
-        config_path = self._resolve_config_path()
-        if not config_path.exists():
-            return {}
-        try:
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
+        return self.config_store_reader.load_root()
 
     def _resolve_config_path(self) -> Path:
         current = Path(__file__).resolve()

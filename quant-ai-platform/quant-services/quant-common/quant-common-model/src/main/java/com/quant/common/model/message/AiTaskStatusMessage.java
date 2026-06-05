@@ -17,5 +17,6 @@ public class AiTaskStatusMessage extends MessageEnvelope {
         private String currentStage;
         private String currentNode;
         private Integer progress;
+        private AiTaskActorProvenance actorProvenance;
     }
 }

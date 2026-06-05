@@ -48,6 +48,11 @@ def start_consumer():
         event_id = data.eventId or data.payload.sourceEventId
         task_type = resolve_task_type(data.payload.taskType, data.payload.analysisScope)
         analysis_scope = resolve_analysis_scope(task_type, data.payload.analysisScope)
+        actor_provenance = (
+            data.payload.actorProvenance.model_dump(mode="json", exclude_none=True)
+            if data.payload.actorProvenance is not None
+            else None
+        )
 
         log_info(
             data.traceId,
@@ -119,6 +124,7 @@ def start_consumer():
                 "tenant_id": data.tenantId,
                 "biz_key": data.bizKey,
                 "retry_count": data.retryCount,
+                "actor_provenance": actor_provenance,
                 "source_context": source_context,
                 "analysis_scope": task_detail.get("analysisScope") or analysis_scope,
                 "task_context": task_context,
@@ -160,7 +166,8 @@ def start_consumer():
                 tenant_id=data.tenantId,
                 biz_key=data.bizKey,
                 event_id=event_id,
-                retry_count=data.retryCount
+                retry_count=data.retryCount,
+                actor_provenance=actor_provenance
             )
             producer.send_cancelled_result(
                 task_id=data.taskId,
@@ -172,6 +179,7 @@ def start_consumer():
                 biz_key=data.bizKey,
                 event_id=event_id,
                 retry_count=data.retryCount,
+                actor_provenance=actor_provenance,
                 task_title=data.payload.taskTitle,
                 analysis_scope=analysis_scope,
                 target_type=data.payload.targetType,
@@ -200,7 +208,8 @@ def start_consumer():
                 tenant_id=data.tenantId,
                 biz_key=data.bizKey,
                 event_id=event_id,
-                retry_count=data.retryCount
+                retry_count=data.retryCount,
+                actor_provenance=actor_provenance
             )
             producer.send_failed_result(
                 task_id=data.taskId,
@@ -213,6 +222,7 @@ def start_consumer():
                 biz_key=data.bizKey,
                 event_id=event_id,
                 retry_count=data.retryCount,
+                actor_provenance=actor_provenance,
                 task_title=data.payload.taskTitle,
                 analysis_scope=analysis_scope,
                 target_type=data.payload.targetType,
@@ -241,7 +251,8 @@ def start_consumer():
                 tenant_id=data.tenantId,
                 biz_key=data.bizKey,
                 event_id=event_id,
-                retry_count=data.retryCount
+                retry_count=data.retryCount,
+                actor_provenance=actor_provenance
             )
             producer.send_failed_result(
                 task_id=data.taskId,
@@ -254,6 +265,7 @@ def start_consumer():
                 biz_key=data.bizKey,
                 event_id=event_id,
                 retry_count=data.retryCount,
+                actor_provenance=actor_provenance,
                 task_title=data.payload.taskTitle,
                 analysis_scope=analysis_scope,
                 target_type=data.payload.targetType,

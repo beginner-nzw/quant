@@ -37,6 +37,7 @@ class ServicesConfig(BaseModel):
     request_timeout_seconds: float = 5.0
     user_id: str = "ai-engine"
     user_role: str = "ADMIN"
+    config_store_fallback_enabled: bool = False
 
 
 class ModelConfig(BaseModel):

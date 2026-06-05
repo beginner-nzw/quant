@@ -16,6 +16,8 @@ import com.quant.common.core.exception.BizException;
 import com.quant.common.model.TaskDomainConstants;
 import com.quant.common.model.enums.TaskStageEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
+import com.quant.common.model.message.AiTaskActorProvenance;
+import com.quant.common.model.message.AiTaskActorProvenanceSupport;
 import com.quant.common.redis.RedisKeyConstants;
 import com.quant.common.redis.RedisKeyBuilder;
 import lombok.RequiredArgsConstructor;
@@ -78,12 +80,22 @@ public class TaskControlServiceImpl implements TaskControlService {
 
 
         AuditRecordDO audit = new AuditRecordDO();
+        AiTaskActorProvenance provenance = AiTaskActorProvenanceSupport.userInitiated(
+                "ai-orchestration-service",
+                dto == null ? null : dto.getOperatorId(),
+                null
+        );
         audit.setAuditId(UUID.randomUUID().toString());
         audit.setTaskId(taskId);
         audit.setAuditType(TaskDomainConstants.AuditType.TASK_CONTROL.name());
         audit.setAuditStage(TaskStageEnum.CANCELLED.name());
         audit.setOperatorType(TaskDomainConstants.AuditOperatorType.HUMAN.name());
         audit.setOperatorId(dto == null ? null : dto.getOperatorId());
+        audit.setIdentitySource(AiTaskActorProvenanceSupport.identitySource(provenance));
+        audit.setRoleSource(AiTaskActorProvenanceSupport.roleSource(provenance));
+        audit.setServicePrincipal(AiTaskActorProvenanceSupport.servicePrincipal(provenance));
+        audit.setOriginalActorId(AiTaskActorProvenanceSupport.originalActorId(provenance));
+        audit.setDelegatedActorId(AiTaskActorProvenanceSupport.delegatedActorId(provenance));
         audit.setActionCode(TaskDomainConstants.AuditActionCode.TASK_CANCEL.name());
         audit.setActionDesc(cancelReason);
         audit.setResultStatus(TaskDomainConstants.AuditResultStatus.SUCCESS.name());

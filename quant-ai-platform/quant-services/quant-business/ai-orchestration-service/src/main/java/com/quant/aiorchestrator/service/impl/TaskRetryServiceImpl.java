@@ -17,6 +17,7 @@ import com.quant.common.messaging.MessageTypeConstants;
 import com.quant.common.model.TaskDomainConstants;
 import com.quant.common.model.enums.TaskStageEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
+import com.quant.common.model.message.AiTaskActorProvenanceSupport;
 import com.quant.common.model.message.AiTaskDispatchMessage;
 import com.quant.common.redis.RedisKeyBuilder;
 import com.quant.common.redis.RedisKeyConstants;
@@ -95,6 +96,11 @@ public class TaskRetryServiceImpl implements TaskRetryService {
         payload.setSourceDomain(task.getSourceDomain());
         payload.setSourceReviewStatus(task.getSourceReviewStatus());
         payload.setAnalysisScope(task.getAnalysisScope());
+        payload.setActorProvenance(AiTaskActorProvenanceSupport.userInitiated(
+                "ai-orchestration-service",
+                dto == null ? null : dto.getOperatorId(),
+                null
+        ));
 
         AiTaskDispatchMessage message = new AiTaskDispatchMessage();
         message.setMessageId(UUID.randomUUID().toString());

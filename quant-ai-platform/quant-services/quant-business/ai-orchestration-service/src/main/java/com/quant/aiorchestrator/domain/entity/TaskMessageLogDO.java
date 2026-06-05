@@ -22,6 +22,9 @@ public class TaskMessageLogDO {
     private String messageType;
     private String producerService;
     private String consumerService;
+    private String identitySource;
+    private String roleSource;
+    private String servicePrincipal;
     private String consumeStatus;
     private Integer retryCount;
     private String errorMessage;

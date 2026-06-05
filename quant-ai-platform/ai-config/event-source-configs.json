@@ -22,12 +22,12 @@
       "remark": "基于公开 RSS 搜索的真实新闻快讯源"
     },
     {
-      "sourceCode": "EXCHANGE_ANNOUNCEMENT",
+      "sourceCode": "LOCAL_DEMO_EXCHANGE_ANNOUNCEMENT",
       "sourceName": "交易所公告源",
       "sourceCategory": "ANNOUNCEMENT",
       "sourceChannel": "EXCHANGE_FEED",
       "ingestMode": "MOCK",
-      "enabled": true,
+      "enabled": false,
       "supportsMockIngest": true,
       "sslVerify": true,
       "defaultEventType": "ANNOUNCEMENT",

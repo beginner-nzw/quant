@@ -3,6 +3,22 @@ from typing import Optional, Any
 from pydantic import BaseModel
 
 
+class ActorRef(BaseModel):
+    actorType: Optional[str] = None
+    actorId: Optional[str] = None
+    actorRole: Optional[str] = None
+    sourceService: Optional[str] = None
+
+
+class AiTaskActorProvenance(BaseModel):
+    identitySource: Optional[str] = None
+    roleSource: Optional[str] = None
+    servicePrincipal: Optional[str] = None
+    systemActor: Optional[ActorRef] = None
+    originalActor: Optional[ActorRef] = None
+    delegatedActor: Optional[ActorRef] = None
+
+
 class AiTaskDispatchPayload(BaseModel):
     taskType: str
     taskTitle: Optional[str] = None
@@ -16,6 +32,7 @@ class AiTaskDispatchPayload(BaseModel):
     sourceDomain: Optional[str] = None
     sourceReviewStatus: Optional[str] = None
     analysisScope: Optional[str] = None
+    actorProvenance: Optional[AiTaskActorProvenance] = None
 
 
 class AiTaskDispatchMessage(BaseModel):
@@ -55,6 +72,7 @@ class AiTaskStatusPayload(BaseModel):
     currentStage: str
     currentNode: str
     progress: int
+    actorProvenance: Optional[AiTaskActorProvenance] = None
 
 
 class AiTaskStatusMessage(AiTaskMessageEnvelope):
@@ -83,6 +101,7 @@ class AiTaskResultPayload(BaseModel):
     riskWarnings: list[str]
     reportMeta: dict[str, Any]
     resultRef: str
+    actorProvenance: Optional[AiTaskActorProvenance] = None
 
 
 class AiTaskResultMessage(AiTaskMessageEnvelope):
@@ -107,6 +126,7 @@ class AiTaskAuditPayload(BaseModel):
     agents: list[AgentAuditItem | dict[str, Any]]
     reviewSuggestion: str
     evidenceRefs: list[str]
+    actorProvenance: Optional[AiTaskActorProvenance] = None
 
 
 class AiTaskAuditMessage(AiTaskMessageEnvelope):

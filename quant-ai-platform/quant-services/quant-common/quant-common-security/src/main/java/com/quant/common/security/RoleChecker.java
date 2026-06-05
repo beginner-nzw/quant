@@ -9,19 +9,17 @@ import java.util.Arrays;
 public class RoleChecker {
 
     public void requireAny(String... roles) {
-        String currentRole = UserContext.getUserRole();
         boolean matched = Arrays.stream(roles)
                 .map(UserRoleEnum::from)
-                .anyMatch(role -> role.matches(currentRole));
+                .anyMatch(expectedRole -> UserContext.getRoles().stream().anyMatch(expectedRole::matches));
         if (!matched) {
             throw new BizException("FORBIDDEN", "当前用户无权限执行该操作");
         }
     }
 
     public void requireAny(UserRoleEnum... roles) {
-        String currentRole = UserContext.getUserRole();
         boolean matched = Arrays.stream(roles)
-                .anyMatch(role -> role.matches(currentRole));
+                .anyMatch(expectedRole -> UserContext.getRoles().stream().anyMatch(expectedRole::matches));
         if (!matched) {
             throw new BizException("FORBIDDEN", "当前用户无权限执行该操作");
         }

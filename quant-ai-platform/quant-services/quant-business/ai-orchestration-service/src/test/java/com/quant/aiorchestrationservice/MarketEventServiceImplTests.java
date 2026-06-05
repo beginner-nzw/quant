@@ -1,7 +1,9 @@
 package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.dataingest.DataIngestService;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
+import com.quant.aiorchestrator.domain.dto.MarketEventMockIngestDTO;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
 import com.quant.aiorchestrator.domain.entity.MarketEventRelationDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
@@ -36,6 +38,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -62,6 +65,7 @@ class MarketEventServiceImplTests {
         EventSourceConfigService eventSourceConfigService = mock(EventSourceConfigService.class);
         CninfoProxyAnnouncementService cninfoProxyAnnouncementService = mock(CninfoProxyAnnouncementService.class);
         MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
+        DataIngestService dataIngestService = mock(DataIngestService.class);
 
         MarketEventServiceImpl service = new MarketEventServiceImpl(
                 marketEventMapper,
@@ -78,7 +82,8 @@ class MarketEventServiceImplTests {
                 eventSourceConfigService,
                 List.<EventSourceSyncAdapter>of(),
                 cninfoProxyAnnouncementService,
-                marketEventStandardizedPublisherService
+                marketEventStandardizedPublisherService,
+                dataIngestService
         );
 
         when(marketEventMapper.selectList(any())).thenReturn(List.of());
@@ -146,6 +151,7 @@ class MarketEventServiceImplTests {
         EventSourceConfigService eventSourceConfigService = mock(EventSourceConfigService.class);
         CninfoProxyAnnouncementService cninfoProxyAnnouncementService = mock(CninfoProxyAnnouncementService.class);
         MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
+        DataIngestService dataIngestService = mock(DataIngestService.class);
 
         MarketEventServiceImpl service = new MarketEventServiceImpl(
                 marketEventMapper,
@@ -162,7 +168,8 @@ class MarketEventServiceImplTests {
                 eventSourceConfigService,
                 List.<EventSourceSyncAdapter>of(),
                 cninfoProxyAnnouncementService,
-                marketEventStandardizedPublisherService
+                marketEventStandardizedPublisherService,
+                dataIngestService
         );
 
         MarketEventDO event = new MarketEventDO();
@@ -223,5 +230,49 @@ class MarketEventServiceImplTests {
         assertEquals(1, result.getDerivedWarningCount());
         assertEquals(1, result.getDerivedRiskPointCount());
         assertEquals(Boolean.TRUE, result.getLatestNeedHumanReview());
+    }
+
+    @Test
+    void mockIngestIsDisabledUnlessLocalDemoFlagEnablesIt() {
+        MarketEventMapper marketEventMapper = mock(MarketEventMapper.class);
+        MarketEventRelationMapper marketEventRelationMapper = mock(MarketEventRelationMapper.class);
+        ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
+        ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
+        RiskWarningMapper riskWarningMapper = mock(RiskWarningMapper.class);
+        RiskWarningDetailMapper riskWarningDetailMapper = mock(RiskWarningDetailMapper.class);
+        EventAutoTriggerConfigService eventAutoTriggerConfigService = mock(EventAutoTriggerConfigService.class);
+        MarketEventAutoTriggerService marketEventAutoTriggerService = mock(MarketEventAutoTriggerService.class);
+        MarketEventMockIngestGenerator marketEventMockIngestGenerator = mock(MarketEventMockIngestGenerator.class);
+        MarketEventIngestHistoryService marketEventIngestHistoryService = mock(MarketEventIngestHistoryService.class);
+        EventSourceConfigService eventSourceConfigService = mock(EventSourceConfigService.class);
+        CninfoProxyAnnouncementService cninfoProxyAnnouncementService = mock(CninfoProxyAnnouncementService.class);
+        MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
+        DataIngestService dataIngestService = mock(DataIngestService.class);
+
+        MarketEventServiceImpl service = new MarketEventServiceImpl(
+                marketEventMapper,
+                marketEventRelationMapper,
+                researchTaskMapper,
+                researchReportMapper,
+                riskWarningMapper,
+                riskWarningDetailMapper,
+                new ObjectMapper(),
+                eventAutoTriggerConfigService,
+                marketEventAutoTriggerService,
+                marketEventMockIngestGenerator,
+                marketEventIngestHistoryService,
+                eventSourceConfigService,
+                List.<EventSourceSyncAdapter>of(),
+                cninfoProxyAnnouncementService,
+                marketEventStandardizedPublisherService,
+                dataIngestService
+        );
+
+        MarketEventMockIngestDTO dto = new MarketEventMockIngestDTO();
+        dto.setTargetCode("600519");
+        dto.setTargetName("Kweichow Moutai");
+        dto.setSourcePreset("LOCAL_DEMO_EXCHANGE_ANNOUNCEMENT");
+
+        assertThrows(Exception.class, () -> service.mockIngestMarketEvents(dto));
     }
 }

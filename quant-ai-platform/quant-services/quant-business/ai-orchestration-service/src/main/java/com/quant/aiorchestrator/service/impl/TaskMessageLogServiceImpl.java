@@ -6,6 +6,8 @@ import com.quant.aiorchestrator.service.*;
 import com.quant.aiorchestrator.domain.entity.TaskMessageLogDO;
 import com.quant.aiorchestrator.mapper.TaskMessageLogMapper;
 import com.quant.common.messaging.MessageConsumeStatusConstants;
+import com.quant.common.model.message.AiTaskActorProvenance;
+import com.quant.common.model.message.AiTaskActorProvenanceSupport;
 import com.quant.common.model.message.MessageEnvelope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,7 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
                 message == null ? null : message.getTimestamp(),
                 message == null ? null : message.getTraceId(),
                 message == null ? null : message.getTenantId(),
+                extractActorProvenance(message),
                 null
         );
     }
@@ -79,6 +82,7 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
                 message == null ? null : message.getTimestamp(),
                 message == null ? null : message.getTraceId(),
                 message == null ? null : message.getTenantId(),
+                extractActorProvenance(message),
                 errorMessage
         );
     }
@@ -127,6 +131,7 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
                 message == null ? null : message.getTimestamp(),
                 message == null ? null : message.getTraceId(),
                 message == null ? null : message.getTenantId(),
+                extractActorProvenance(message),
                 errorMessage
         );
     }
@@ -175,6 +180,7 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
                            Long messageTimestamp,
                            String traceId,
                            String tenantId,
+                           AiTaskActorProvenance provenance,
                            String errorMessage) {
         try {
             String safeMessageId = defaultValue(messageId, "missing-" + UUID.randomUUID());
@@ -187,6 +193,9 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
             entity.setMessageType(defaultValue(messageType, "UNKNOWN"));
             entity.setProducerService(producerService);
             entity.setConsumerService(consumerService);
+            entity.setIdentitySource(AiTaskActorProvenanceSupport.identitySource(provenance));
+            entity.setRoleSource(AiTaskActorProvenanceSupport.roleSource(provenance));
+            entity.setServicePrincipal(AiTaskActorProvenanceSupport.servicePrincipal(provenance));
             entity.setConsumeStatus(consumeStatus);
             entity.setRetryCount(retryCount == null ? 0 : retryCount);
             entity.setErrorMessage(safeTruncate(errorMessage));
@@ -200,6 +209,26 @@ public class TaskMessageLogServiceImpl implements TaskMessageLogService {
             log.warn("record task message log failed, topic={}, taskId={}, messageId={}",
                     topicName, taskId, messageId, e);
         }
+    }
+
+    private AiTaskActorProvenance extractActorProvenance(MessageEnvelope message) {
+        if (message instanceof com.quant.common.model.message.AiTaskDispatchMessage dispatchMessage
+                && dispatchMessage.getPayload() != null) {
+            return dispatchMessage.getPayload().getActorProvenance();
+        }
+        if (message instanceof com.quant.common.model.message.AiTaskStatusMessage statusMessage
+                && statusMessage.getPayload() != null) {
+            return statusMessage.getPayload().getActorProvenance();
+        }
+        if (message instanceof com.quant.common.model.message.AiTaskResultMessage resultMessage
+                && resultMessage.getPayload() != null) {
+            return resultMessage.getPayload().getActorProvenance();
+        }
+        if (message instanceof com.quant.common.model.message.AiTaskAuditMessage auditMessage
+                && auditMessage.getPayload() != null) {
+            return auditMessage.getPayload().getActorProvenance();
+        }
+        return null;
     }
 
     private String buildRawMessageRef(String topicName, String messageId) {

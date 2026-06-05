@@ -44,7 +44,8 @@ class NodeExecutor:
                 tenant_id=new_state.get("tenant_id"),
                 biz_key=new_state.get("biz_key"),
                 event_id=new_state.get("event_id") or (new_state.get("source_context") or {}).get("sourceEventId"),
-                retry_count=new_state.get("retry_count", 0)
+                retry_count=new_state.get("retry_count", 0),
+                actor_provenance=new_state.get("actor_provenance")
             )
 
             # 如果 agent_audits 没记录 duration，这里顺手补

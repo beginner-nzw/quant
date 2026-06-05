@@ -24,5 +24,6 @@ public class AiTaskDispatchMessage extends MessageEnvelope {
         private String sourceDomain;
         private String sourceReviewStatus;
         private String analysisScope;
+        private AiTaskActorProvenance actorProvenance;
     }
 }

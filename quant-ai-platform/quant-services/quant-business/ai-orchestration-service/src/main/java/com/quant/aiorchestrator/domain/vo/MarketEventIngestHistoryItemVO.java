@@ -13,6 +13,10 @@ public class MarketEventIngestHistoryItemVO {
     private String sourceCategory;
     private String sourceChannel;
     private String sourceDetail;
+    private String fetchStatus;
+    private String rawPayloadRef;
+    private Integer retryCount;
+    private Boolean deadlettered;
     private Integer totalCount;
     private Integer successCount;
     private Integer failedCount;

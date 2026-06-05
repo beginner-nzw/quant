@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.dataingest.DataIngestService;
+import com.quant.aiorchestrator.dataingest.SourceIngestResult;
 import com.quant.aiorchestrator.domain.dto.MarketEventBatchImportDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventMockIngestDTO;
@@ -47,6 +49,7 @@ import com.quant.common.core.exception.BizException;
 import com.quant.common.security.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -104,6 +107,11 @@ public class MarketEventServiceImpl implements MarketEventService {
     private final List<EventSourceSyncAdapter> eventSourceSyncAdapters;
     private final CninfoProxyAnnouncementService cninfoProxyAnnouncementService;
     private final MarketEventStandardizedPublisherService marketEventStandardizedPublisherService;
+
+    private final DataIngestService dataIngestService;
+
+    @Value("${quant.ai.mock-ingest.enabled:false}")
+    private boolean mockIngestEnabled;
 
     @Override
     public MarketEventPageVO pageMarketEvents(MarketEventPageQueryDTO queryDTO) {
@@ -357,6 +365,9 @@ public class MarketEventServiceImpl implements MarketEventService {
 
     @Override
     public MarketEventBatchImportResultVO mockIngestMarketEvents(MarketEventMockIngestDTO dto) {
+        if (!mockIngestEnabled) {
+            throw new BizException("MARKET_EVENT_MOCK_INGEST_LOCAL_ONLY", "mock ingest is only available in local/demo/test mode");
+        }
         if (dto == null) {
             throw new BizException("MARKET_EVENT_MOCK_INGEST_EMPTY", "模拟接入请求不能为空");
         }
@@ -414,6 +425,24 @@ public class MarketEventServiceImpl implements MarketEventService {
         }
         if (!Boolean.TRUE.equals(sourceConfig.getEnabled())) {
             throw new BizException("MARKET_EVENT_SOURCE_DISABLED", "事件源已禁用");
+        }
+
+        if (dataIngestService != null) {
+            SourceIngestResult ingestResult = dataIngestService.ingestMarketEventSource(
+                    sourceConfig,
+                    dto,
+                    (importDTO, sourceDetail) -> executeBatchImport(
+                            importDTO,
+                            "SOURCE_SYNC",
+                            defaultIfBlank(sourceConfig.getSourceName(), "事件源同步"),
+                            defaultIfBlank(sourceConfig.getSourceCode(), sourceCode),
+                            defaultIfBlank(sourceConfig.getSourceName(), "事件源同步"),
+                            defaultIfBlank(sourceConfig.getSourceCategory(), "SOURCE"),
+                            defaultIfBlank(sourceConfig.getSourceChannel(), null),
+                            sourceDetail
+                    )
+            );
+            return ingestResult.getImportResult();
         }
 
         EventSourceSyncAdapter adapter = eventSourceSyncAdapters.stream()

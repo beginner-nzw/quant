@@ -2,10 +2,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from app.services.config_store_reader import ConfigStoreReader
+
 
 class WorkflowConfigRepository:
     def __init__(self) -> None:
         self.config_file_name = "workflow-configs.json"
+        self.config_store_reader = ConfigStoreReader("workflow-configs", self.config_file_name)
 
     def load_workflows(self) -> list[dict[str, Any]]:
         data = self._load_file()
@@ -35,13 +38,7 @@ class WorkflowConfigRepository:
         return enabled_workflows[0]
 
     def _load_file(self) -> dict[str, Any]:
-        config_path = self._resolve_config_path()
-        if not config_path.exists():
-            return {}
-        try:
-            return json.loads(config_path.read_text(encoding="utf-8"))
-        except Exception:
-            return {}
+        return self.config_store_reader.load_root()
 
     def _resolve_config_path(self) -> Path:
         current = Path(__file__).resolve()

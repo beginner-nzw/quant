@@ -98,6 +98,10 @@ public class MarketEventIngestHistoryServiceImpl implements MarketEventIngestHis
         item.put("sourceCategory", normalize(sourceCategory));
         item.put("sourceChannel", normalize(sourceChannel));
         item.put("sourceDetail", normalize(sourceDetail));
+        item.put("fetchStatus", defaultValue(extractSourceDetailValue(sourceDetail, "status"), normalize(resultStatus)));
+        item.put("rawPayloadRef", extractSourceDetailValue(sourceDetail, "rawPayloadRef"));
+        item.put("retryCount", extractRetryCount(sourceDetail, summary));
+        item.put("deadlettered", "DEADLETTERED".equalsIgnoreCase(normalize(resultStatus)));
         item.put("totalCount", totalCount == null ? 0 : totalCount);
         item.put("successCount", successCount == null ? 0 : successCount);
         item.put("failedCount", failedCount == null ? 0 : failedCount);
@@ -139,6 +143,11 @@ public class MarketEventIngestHistoryServiceImpl implements MarketEventIngestHis
             vo.setSourceCategory(normalize(item.get("sourceCategory")));
             vo.setSourceChannel(normalize(item.get("sourceChannel")));
             vo.setSourceDetail(normalize(item.get("sourceDetail")));
+            vo.setFetchStatus(normalize(item.get("fetchStatus")));
+            vo.setRawPayloadRef(normalize(item.get("rawPayloadRef")));
+            vo.setRetryCount(toInteger(item.get("retryCount")));
+            vo.setDeadlettered(Boolean.TRUE.equals(item.get("deadlettered"))
+                    || "true".equalsIgnoreCase(normalize(item.get("deadlettered"))));
             vo.setTotalCount(toInteger(item.get("totalCount")));
             vo.setSuccessCount(toInteger(item.get("successCount")));
             vo.setFailedCount(toInteger(item.get("failedCount")));
@@ -245,5 +254,40 @@ public class MarketEventIngestHistoryServiceImpl implements MarketEventIngestHis
             return "FAILED";
         }
         return "SUCCESS";
+    }
+
+    private String defaultValue(String value, String fallback) {
+        return normalize(value) == null ? fallback : normalize(value);
+    }
+
+    private String extractSourceDetailValue(String sourceDetail, String key) {
+        String normalized = normalize(sourceDetail);
+        if (normalized == null || key == null) {
+            return null;
+        }
+        String marker = key + "=";
+        int start = normalized.indexOf(marker);
+        if (start < 0) {
+            return null;
+        }
+        int valueStart = start + marker.length();
+        int valueEnd = normalized.indexOf(' ', valueStart);
+        String value = valueEnd < 0 ? normalized.substring(valueStart) : normalized.substring(valueStart, valueEnd);
+        return normalize("NONE".equalsIgnoreCase(value) ? null : value);
+    }
+
+    private Integer extractRetryCount(String sourceDetail, String summary) {
+        String value = extractSourceDetailValue(sourceDetail, "retry");
+        if (value == null) {
+            value = extractSourceDetailValue(summary, "retry");
+        }
+        if (value == null || !value.contains("/")) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value.substring(0, value.indexOf('/')).trim());
+        } catch (Exception ignored) {
+            return 0;
+        }
     }
 }

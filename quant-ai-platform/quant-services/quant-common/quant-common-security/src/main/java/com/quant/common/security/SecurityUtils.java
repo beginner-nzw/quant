@@ -1,5 +1,7 @@
 package com.quant.common.security;
 
+import java.util.List;
+
 public final class SecurityUtils {
 
     public static String currentUserId() {
@@ -10,14 +12,25 @@ public final class SecurityUtils {
         return UserContext.getUserRole();
     }
 
+    public static List<String> currentUserRoles() {
+        return UserContext.getRoles();
+    }
+
+    public static UserProfileStatus currentUserStatus() {
+        return UserContext.getStatus();
+    }
+
+    public static String currentDisplayName() {
+        return UserContext.getDisplayName();
+    }
+
     public static boolean isAdmin() {
-        return UserRoleEnum.ADMIN.matches(currentUserRole());
+        return currentUserRoles().stream().anyMatch(UserRoleEnum.ADMIN::matches);
     }
 
     public static boolean isReviewer() {
-        String role = currentUserRole();
-        return UserRoleEnum.REVIEWER.matches(role)
-                || UserRoleEnum.ADMIN.matches(role);
+        return currentUserRoles().stream()
+                .anyMatch(role -> UserRoleEnum.REVIEWER.matches(role) || UserRoleEnum.ADMIN.matches(role));
     }
 
     private SecurityUtils() {

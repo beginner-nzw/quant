@@ -10,6 +10,8 @@ import com.quant.aiorchestrator.service.AiTaskInboundMessageSupportService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
 import com.quant.common.model.TaskDomainConstants;
+import com.quant.common.model.message.AiTaskActorProvenance;
+import com.quant.common.model.message.AiTaskActorProvenanceSupport;
 import com.quant.common.model.message.AiTaskAuditMessage;
 import com.quant.common.redis.RedisKeyConstants;
 import com.quant.common.redis.RedisKeyBuilder;
@@ -92,12 +94,18 @@ public class AiTaskAuditConsumer {
             }
 
             AuditRecordDO audit = new AuditRecordDO();
+            AiTaskActorProvenance provenance = message.getPayload().getActorProvenance();
             audit.setAuditId(UUID.randomUUID().toString());
             audit.setTaskId(message.getTaskId());
             audit.setAuditType(TaskDomainConstants.AuditType.AI_TASK_AUDIT.name());
             audit.setAuditStage(TaskDomainConstants.AuditStage.WORKFLOW_FINISHED.name());
             audit.setOperatorType(TaskDomainConstants.AuditOperatorType.AGENT.name());
-            audit.setOperatorId("python-ai-engine");
+            audit.setOperatorId(defaultText(AiTaskActorProvenanceSupport.delegatedActorId(provenance), "python-ai-engine"));
+            audit.setIdentitySource(AiTaskActorProvenanceSupport.identitySource(provenance));
+            audit.setRoleSource(AiTaskActorProvenanceSupport.roleSource(provenance));
+            audit.setServicePrincipal(AiTaskActorProvenanceSupport.servicePrincipal(provenance));
+            audit.setOriginalActorId(AiTaskActorProvenanceSupport.originalActorId(provenance));
+            audit.setDelegatedActorId(AiTaskActorProvenanceSupport.delegatedActorId(provenance));
             audit.setActionCode(TaskDomainConstants.AuditActionCode.AUDIT_SUMMARY.name());
             audit.setActionDesc(safeTruncate(message.getPayload().getReviewSuggestion(), MAX_ACTION_DESC_LENGTH));
             audit.setResultStatus(TaskDomainConstants.AuditResultStatus.SUCCESS.name());
@@ -136,5 +144,9 @@ public class AiTaskAuditConsumer {
             return value;
         }
         return value.substring(0, maxLength);
+    }
+
+    private String defaultText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 }

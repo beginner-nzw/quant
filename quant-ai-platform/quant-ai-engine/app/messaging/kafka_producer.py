@@ -64,6 +64,31 @@ class AiKafkaProducer:
             retryCount=max(0, int(retry_count or 0))
         )
 
+    def _build_callback_provenance(self, inbound: dict[str, Any] | None) -> dict[str, Any] | None:
+        original_actor = None
+        role_source = "SYSTEM_POLICY"
+        if isinstance(inbound, dict):
+            original_actor = inbound.get("originalActor")
+            role_source = inbound.get("roleSource") or role_source
+        return {
+            "identitySource": "KAFKA_PAYLOAD",
+            "roleSource": role_source,
+            "servicePrincipal": "python-ai-engine",
+            "systemActor": {
+                "actorType": "SERVICE",
+                "actorId": "python-ai-engine",
+                "actorRole": "SERVICE",
+                "sourceService": "python-ai-engine",
+            },
+            "originalActor": original_actor,
+            "delegatedActor": {
+                "actorType": "SERVICE",
+                "actorId": "python-ai-engine",
+                "actorRole": "SERVICE",
+                "sourceService": "python-ai-engine",
+            },
+        }
+
     def _normalize_text_list(self, value: Any) -> list[str]:
         if not isinstance(value, list):
             return []
@@ -144,7 +169,8 @@ class AiKafkaProducer:
         confidence_score: float = 0.0,
         need_human_review: bool = False,
         risk_warnings: list[str] | None = None,
-        report_meta: dict[str, Any] | None = None
+        report_meta: dict[str, Any] | None = None,
+        actor_provenance: dict[str, Any] | None = None
     ) -> AiTaskResultMessage:
         source_context = source_context or {}
         envelope = self._build_envelope(
@@ -177,7 +203,8 @@ class AiKafkaProducer:
             needHumanReview=bool(need_human_review),
             riskWarnings=risk_warnings or [],
             reportMeta=report_meta or {},
-            resultRef=""
+            resultRef="",
+            actorProvenance=self._build_callback_provenance(actor_provenance)
         )
         return AiTaskResultMessage(
             **envelope.model_dump(),
@@ -196,7 +223,8 @@ class AiKafkaProducer:
         tenant_id: str | None = None,
         biz_key: str | None = None,
         event_id: str | None = None,
-        retry_count: int = 0
+        retry_count: int = 0,
+        actor_provenance: dict[str, Any] | None = None
     ):
         envelope = self._build_envelope(
             task_id=task_id,
@@ -214,7 +242,8 @@ class AiKafkaProducer:
                 status=status,
                 currentStage=stage,
                 currentNode=node,
-                progress=progress
+                progress=progress,
+                actorProvenance=self._build_callback_provenance(actor_provenance)
             )
         )
         self._send(
@@ -243,6 +272,7 @@ class AiKafkaProducer:
             target_name=state.get("target_name"),
             priority=state.get("priority"),
             source_context=state.get("source_context"),
+            actor_provenance=state.get("actor_provenance"),
             confidence_score=self._extract_confidence_score(state),
             need_human_review=self._extract_need_human_review(state),
             risk_warnings=self._extract_risk_warnings(state),
@@ -271,7 +301,8 @@ class AiKafkaProducer:
                 agents=state.get("agent_audits", []),
                 reviewSuggestion=state.get("review_suggestion")
                 or "Workflow completed without additional review suggestion.",
-                evidenceRefs=self._normalize_text_list(state.get("evidence_refs"))
+                evidenceRefs=self._normalize_text_list(state.get("evidence_refs")),
+                actorProvenance=self._build_callback_provenance(state.get("actor_provenance"))
             )
         )
         self._send(
@@ -297,7 +328,8 @@ class AiKafkaProducer:
         target_code: str | None = None,
         target_name: str | None = None,
         priority: str | None = None,
-        source_context: dict[str, Any] | None = None
+        source_context: dict[str, Any] | None = None,
+        actor_provenance: dict[str, Any] | None = None
     ):
         message = self._build_result_message(
             task_id=task_id,
@@ -316,7 +348,8 @@ class AiKafkaProducer:
             target_code=target_code,
             target_name=target_name,
             priority=priority,
-            source_context=source_context
+            source_context=source_context,
+            actor_provenance=actor_provenance
         )
         self._send(
             settings.kafka.topics.result,
@@ -334,7 +367,8 @@ class AiKafkaProducer:
         tenant_id: str | None = None,
         biz_key: str | None = None,
         event_id: str | None = None,
-        retry_count: int = 0
+        retry_count: int = 0,
+        actor_provenance: dict[str, Any] | None = None
     ):
         self.send_status(
             task_id=task_id,
@@ -347,7 +381,8 @@ class AiKafkaProducer:
             tenant_id=tenant_id,
             biz_key=biz_key,
             event_id=event_id,
-            retry_count=retry_count
+            retry_count=retry_count,
+            actor_provenance=actor_provenance
         )
 
     def send_cancelled_status(
@@ -358,7 +393,8 @@ class AiKafkaProducer:
         tenant_id: str | None = None,
         biz_key: str | None = None,
         event_id: str | None = None,
-        retry_count: int = 0
+        retry_count: int = 0,
+        actor_provenance: dict[str, Any] | None = None
     ):
         self.send_status(
             task_id=task_id,
@@ -371,7 +407,8 @@ class AiKafkaProducer:
             tenant_id=tenant_id,
             biz_key=biz_key,
             event_id=event_id,
-            retry_count=retry_count
+            retry_count=retry_count,
+            actor_provenance=actor_provenance
         )
 
     def send_cancelled_result(
@@ -390,7 +427,8 @@ class AiKafkaProducer:
         target_code: str | None = None,
         target_name: str | None = None,
         priority: str | None = None,
-        source_context: dict[str, Any] | None = None
+        source_context: dict[str, Any] | None = None,
+        actor_provenance: dict[str, Any] | None = None
     ):
         message = self._build_result_message(
             task_id=task_id,
@@ -409,7 +447,8 @@ class AiKafkaProducer:
             target_code=target_code,
             target_name=target_name,
             priority=priority,
-            source_context=source_context
+            source_context=source_context,
+            actor_provenance=actor_provenance
         )
         self._send(
             settings.kafka.topics.result,

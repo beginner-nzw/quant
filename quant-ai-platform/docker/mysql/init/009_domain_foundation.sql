@@ -213,6 +213,9 @@ CREATE TABLE IF NOT EXISTS task_message_log (
     message_type VARCHAR(64) NOT NULL,
     producer_service VARCHAR(128) DEFAULT NULL,
     consumer_service VARCHAR(128) DEFAULT NULL,
+    identity_source VARCHAR(64) DEFAULT NULL,
+    role_source VARCHAR(64) DEFAULT NULL,
+    service_principal VARCHAR(128) DEFAULT NULL,
     consume_status VARCHAR(32) NOT NULL,
     retry_count INT NOT NULL DEFAULT 0,
     error_message VARCHAR(1000) DEFAULT NULL,
@@ -228,5 +231,6 @@ CREATE TABLE IF NOT EXISTS task_message_log (
     INDEX idx_event_id (event_id),
     INDEX idx_topic_status (topic_name, consume_status),
     INDEX idx_trace_id (trace_id),
+    INDEX idx_service_principal (service_principal),
     INDEX idx_created_at (created_at)
 );

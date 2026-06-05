@@ -25,6 +25,7 @@ services:
   request_timeout_seconds: 5
   user_id: ai-engine
   user_role: ADMIN
+  config_store_fallback_enabled: true
 
 model:
   enabled: false

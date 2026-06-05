@@ -2,112 +2,130 @@
 
 ## Status
 
-Phase: Phase 003 - Contract Hardening for Workbench and Fallback.
+Phase: Phase 003 - Service-To-Service Identity And Audit Identity.
 
-Window: Window 2 - Backend Implementer.
+Window: Implementation.
 
-Mode: Initial implementation.
+Result: Complete.
 
-Result: Implementation complete; ready for Window 3 review.
+## Scope Implemented
 
-## Inputs Read
-
-- `docs/harness/00-project-charter.md`
-- `docs/harness/02-authority-matrix.md`
-- `docs/harness/03-host-ownership.md`
-- `docs/harness/04-contract-map.md`
-- `docs/harness/05-transition-lifetime.md`
-- `docs/harness/08-eval-checklist.md`
-- `docs/harness/09-window-protocol.md`
-- `docs/harness/state/current-state.md`
-- `docs/harness/handoffs/steering-decision-phase-003.md`
-- `docs/harness/handoffs/phase-003-architect.md`
-
-No Phase 003 implementation, review, or fix handoff existed at startup.
+- Added a shared optional AI task actor provenance contract:
+  - `servicePrincipal`
+  - `identitySource`
+  - `roleSource`
+  - `systemActor`
+  - `originalActor`
+  - `delegatedActor`
+- Extended AI task dispatch/status/result/audit payloads with optional `actorProvenance`.
+- Kept Kafka topic names unchanged.
+- Preserved payload compatibility by making the new field optional and by keeping existing field names/order stable except for appending the optional field.
+- Updated Java and Python message mirrors.
+- Preserved actor provenance through:
+  - research-task dispatch outbox
+  - AI engine dispatch consume
+  - AI status/result/audit callbacks
+  - event auto dispatch
+  - manual retry
+  - cancel audit records
+- Stopped using frontend-style user headers or request-body fields as the source of service-principal truth for event auto dispatch. The internal service call still sends existing user headers for current endpoint compatibility, but research-task-service does not treat them as service-principal authority.
+- Fix: event auto dispatch now signs internal service actor headers with `quant.security.service-actor.secret`; research-task-service only promotes service/system provenance when `ServiceActorContextFilter` validates that signature.
+- Fix: event auto dispatch now fails closed with `EVENT_AUTO_TRIGGER_SERVICE_IDENTITY_NOT_CONFIGURED` when `quant.security.service-actor.secret` is missing, instead of silently falling back to human-like `system/ADMIN` provenance.
+- Added `quant.security.service-actor.secret` to local and docker resource configuration for both ai-orchestration-service and research-task-service.
+- Fix: external task creation DTOs no longer expose or trust `actorProvenance`; research-task dispatch provenance is always constructed server-side from `UserContext` for this boundary.
+- Fix: request body `actorProvenance` is not read from `requestPayload` by the outbox path, so human callers cannot forge `SERVICE_PRINCIPAL`, system actor, or delegated actor identity through task creation payloads.
+- Updated audit/message log persistence to record:
+  - `identity_source`
+  - `role_source`
+  - `service_principal`
+  - audit `original_actor_id`
+  - audit `delegated_actor_id`
 
 ## Files Changed By This Window
 
-Production comment-only changes:
+Core message contract:
 
-- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/ResearchWorkbenchQueryService.java`
-  - Added a display-only aggregation contract note.
-- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/ResearchWorkbenchQueryServiceImpl.java`
-  - Added a contract boundary note near the class fields.
-  - Added a display-hydration-only note near existing preferred/fallback selection.
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskActorProvenance.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskActorProvenanceSupport.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskDispatchMessage.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskStatusMessage.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskResultMessage.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/main/java/com/quant/common/model/message/AiTaskAuditMessage.java`
 
-Backend test changes:
+Java service paths:
 
-- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/test/java/com/quant/aiorchestrationservice/QueryServiceBoundaryTests.java`
-  - Added a source boundary test that fails if workbench references move outside the controller, workbench query service, workbench DTO/VO, or tests.
-  - Added a source boundary test that fails if `ResearchWorkbenchQueryServiceImpl` starts writing domain facts, writing Redis, or publishing events.
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/main/java/com/quant/task/domain/dto/CreateResearchTaskDTO.java`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/main/java/com/quant/task/service/impl/TaskOutboxMessageServiceImpl.java`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/main/java/com/quant/task/config/CommonInfraConfig.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/config/CommonInfraConfig.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/EventAutoTaskDispatchServiceImpl.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/resources/application-local.yml`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/resources/application-docker.yml`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/main/resources/application-local.yml`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/main/resources/application-docker.yml`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/TaskRetryServiceImpl.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/TaskControlServiceImpl.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/consumer/AiTaskAuditConsumer.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/TaskMessageLogServiceImpl.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/domain/entity/AuditRecordDO.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/domain/entity/TaskMessageLogDO.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/domain/vo/AuditRecordVO.java`
 
-Handoff:
+Python AI engine:
 
-- `docs/harness/handoffs/phase-003-implementation.md`
+- `quant-ai-platform/quant-ai-engine/app/messaging/message_models.py`
+- `quant-ai-platform/quant-ai-engine/app/messaging/kafka_consumer.py`
+- `quant-ai-platform/quant-ai-engine/app/messaging/kafka_producer.py`
+- `quant-ai-platform/quant-ai-engine/app/graph/node_executor.py`
+- `quant-ai-platform/quant-ai-engine/app/graph/state.py`
 
-No executable production logic was changed.
+Database:
 
-## Architect Acceptance Completed
+- `quant-ai-platform/docker/mysql/init/002_init.sql`
+- `quant-ai-platform/docker/mysql/init/009_domain_foundation.sql`
+- `quant-ai-platform/docker/mysql/init/015_service_identity_audit.sql`
 
-- `research-workbench` remains a display-only aggregation.
-- Backend command and projection paths are guarded from depending on `ResearchWorkbenchQueryService`, `ResearchWorkbenchVO`, `ResearchWorkbenchQueryDTO`, or `getResearchWorkbench(...)` by `workbenchContractReferencesStayInsideDisplaySurface`.
-- `AiResultDomainProjectionServiceImpl` remains outside the workbench dependency surface.
-- `ResearchWorkbenchQueryServiceImpl` is guarded against database writes, Redis writes, and event publishes by `researchWorkbenchAggregationDoesNotWriteDomainFactsOrPublishEvents`.
-- Phase 002 removed read-model entrypoints remain guarded by the existing `researchWorkbenchDoesNotKeepDomainReadModelEntryPoints` test.
-- Existing preferred/fallback selection is documented as display hydration only.
-- No new fallback source, precedence rule, response field, message field, helper, adapter, bridge, facade, production fallback service, or endpoint was added.
+Tests:
 
-## Contracts Kept Stable
+- `quant-ai-platform/quant-services/quant-common/quant-common-security/src/test/java/com/quant/common/security/ServiceActorContextFilterTests.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/test/java/com/quant/aiorchestrationservice/EventAutoTaskDispatchServiceTests.java`
+- `quant-ai-platform/quant-services/quant-common/quant-common-model/src/test/java/com/quant/quantcommonmodel/AiTaskMessageContractTests.java`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/test/java/com/quant/task/service/AiTaskDispatchCompatibilityTests.java`
+- `quant-ai-platform/quant-services/quant-business/research-task-service/src/test/java/com/quant/task/service/TaskOutboxMessageServiceTests.java`
+- `quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/test/java/com/quant/aiorchestrationservice/TaskRetryServiceTests.java`
+- `quant-ai-platform/quant-ai-engine/tests/test_ai_task_message_contract.py`
 
-Unchanged:
+## Compatibility Notes
 
-- `GET /api/tasks/research-workbench`
-- HTTP method and request binding through `ResearchWorkbenchQueryDTO`
-- `Result.success(...)` envelope
-- `ResearchWorkbenchVO` response shape
-- Authoritative/read-model endpoint paths listed in the architect handoff
-- Command endpoint paths listed in the architect handoff
-- DTO, VO, entity, mapper, database schema, Kafka contract, frontend, and Python surfaces
-- Redis cache keys and TTLs
-- Report/risk/strategy/market/audit projection behavior
+- Existing Kafka topic names are unchanged.
+- New AI task payload field is optional: `actorProvenance`.
+- Old messages without `actorProvenance` still deserialize in Java and Python.
+- Existing Python Pydantic models keep old required fields unchanged.
+- Existing Java payload fields are unchanged, with the optional provenance field appended.
+- Existing message logs and audit records can continue to contain null identity fields for old data.
+- External create-task requests cannot set service principal by payload.
+- Internal auto dispatch requires both services to share `quant.security.service-actor.secret`; unsigned or invalid service actor headers are ignored by the receiver, and missing sender secret fails closed before dispatch.
 
-## Behavior Change
+## Verification
 
-No business behavior change.
+Passed:
 
-This pass added comments and source-level regression tests only. Runtime query behavior, fallback precedence, null/empty handling, sorting, pagination limits, permissions, response envelopes, writes, and event publishing behavior were not changed.
+- `python -c "import ast, pathlib; files=[...]; [compile(ast.parse(pathlib.Path(f).read_text(encoding='utf-8')), f, 'exec') for f in files]; print('syntax ok')"`
+- `python -m unittest tests.test_ai_task_message_contract`
+- `python -m unittest discover tests`
+- `mvn -q -pl quant-common/quant-common-model test`
+- `mvn -q -pl quant-common/quant-common-security -Dtest=ServiceActorContextFilterTests test`
+- `mvn -q -pl quant-business/ai-orchestration-service -am -Dtest=EventAutoTaskDispatchServiceTests '-Dsurefire.failIfNoSpecifiedTests=false' test`
+- `mvn -q -pl quant-business/research-task-service -am -Dtest=AiTaskDispatchCompatibilityTests '-Dsurefire.failIfNoSpecifiedTests=false' test`
+- `mvn -q -pl quant-business/research-task-service -am '-Dtest=TaskOutboxMessageServiceTests,AiTaskDispatchCompatibilityTests' '-Dsurefire.failIfNoSpecifiedTests=false' test`
+- `mvn -q -pl quant-business/ai-orchestration-service -am -Dtest=TaskRetryServiceTests '-Dsurefire.failIfNoSpecifiedTests=false' test`
+- `mvn -q test`
 
-## Verification Results
+Notes:
 
-Required Maven verification:
+- `python -m py_compile ...` was attempted first, but Windows denied writing `__pycache__`; the AST compile command above was used instead and passed.
+- `mvn -q test` prints an expected stack trace from a test that simulates `kafka down`; Maven still exited successfully.
 
-- Command: `mvn -q test`
-- Working directory: `D:\projects\bussiness\quant-ai-platform\quant-services`
-- Result: passed, exit code 0.
-- Note: test output includes an expected WARN/stack trace from `TaskOutboxPublisherServiceTests.publishPendingOnceShouldMarkFailedWhenKafkaSendFails`, which simulates `kafka down`; Maven still passed.
+## Worktree Note
 
-Required boundary inspections:
-
-- Command: `rg -n "ResearchWorkbench|research-workbench|getResearchWorkbench" quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator`
-- Result: matches were confined to `ResearchWorkbenchController`, `ResearchWorkbenchQueryService`, `ResearchWorkbenchQueryServiceImpl`, `ResearchWorkbenchQueryDTO`, and `ResearchWorkbench*VO` classes. No command service or projection service match was present.
-
-- Command: `rg -n "\.(insert|update|updateById|delete|deleteById)\(" quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/ResearchWorkbenchQueryServiceImpl.java`
-- Result: no matches; `rg` exit code 1 for no matches.
-
-- Command: `rg -n "listRiskWarningRecords|listStrategySignalRecords|listReportCenterRecords|listMarketIntelligenceRecords|RiskWarningListItemVO|StrategySignalListItemVO|ReportCenterListItemVO|MarketIntelligenceListItemVO" quant-ai-platform/quant-services/quant-business/ai-orchestration-service/src/main/java/com/quant/aiorchestrator/service/impl/ResearchWorkbenchQueryServiceImpl.java`
-- Result: no matches; `rg` exit code 1 for no matches.
-
-Scope inspection:
-
-- Command: `git diff --name-only`
-- Result: showed pre-existing tracked dirty files from before this Phase 003 pass, including `.gitignore`, `TaskQueryController.java`, several query service files, and existing task query tests.
-- Important note: the workspace was already dirty at startup. This Window 2 did not revert or claim those pre-existing changes. Phase 003 changes made by this window are limited to the allowed files listed above and this handoff.
-
-## Blockers And Residual Risk
-
-Blockers: none.
-
-Residual risk:
-
-- The repository worktree is already dirty with prior uncommitted and untracked phase artifacts. Window 3 should review Phase 003 changes against the allowed files listed in this handoff rather than treating all dirty files as new work from this pass.
-- The new guardrails are source-level contract tests. They intentionally do not alter runtime behavior or introduce runtime contract marker objects.
+The worktree had pre-existing dirty and untracked Phase 2/security files before this implementation. This handoff only claims the Service-To-Service Identity changes listed above.

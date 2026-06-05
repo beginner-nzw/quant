@@ -2,6 +2,8 @@ import unittest
 
 from app.messaging.message_models import (
     AgentAuditItem,
+    ActorRef,
+    AiTaskActorProvenance,
     AiTaskAuditMessage,
     AiTaskAuditPayload,
     AiTaskDispatchMessage,
@@ -65,6 +67,7 @@ class AiTaskMessageContractTests(unittest.TestCase):
                 'sourceDomain',
                 'sourceReviewStatus',
                 'analysisScope',
+                'actorProvenance',
             ],
             list(AiTaskDispatchPayload.model_fields),
         )
@@ -77,6 +80,7 @@ class AiTaskMessageContractTests(unittest.TestCase):
                 'currentStage',
                 'currentNode',
                 'progress',
+                'actorProvenance',
             ],
             list(AiTaskStatusPayload.model_fields),
         )
@@ -105,6 +109,7 @@ class AiTaskMessageContractTests(unittest.TestCase):
                 'riskWarnings',
                 'reportMeta',
                 'resultRef',
+                'actorProvenance',
             ],
             list(AiTaskResultPayload.model_fields),
         )
@@ -116,6 +121,7 @@ class AiTaskMessageContractTests(unittest.TestCase):
                 'agents',
                 'reviewSuggestion',
                 'evidenceRefs',
+                'actorProvenance',
             ],
             list(AiTaskAuditPayload.model_fields),
         )
@@ -134,6 +140,51 @@ class AiTaskMessageContractTests(unittest.TestCase):
             ],
             list(AgentAuditItem.model_fields),
         )
+
+    def test_actor_provenance_fields_match_java_contract(self):
+        self.assertEqual(
+            [
+                'identitySource',
+                'roleSource',
+                'servicePrincipal',
+                'systemActor',
+                'originalActor',
+                'delegatedActor',
+            ],
+            list(AiTaskActorProvenance.model_fields),
+        )
+        self.assertEqual(
+            [
+                'actorType',
+                'actorId',
+                'actorRole',
+                'sourceService',
+            ],
+            list(ActorRef.model_fields),
+        )
+
+    def test_legacy_dispatch_message_without_actor_provenance_still_deserializes(self):
+        message = AiTaskDispatchMessage.model_validate({
+            'messageId': 'message-1',
+            'traceId': 'trace-1',
+            'taskId': 'task-1',
+            'messageType': 'AI_TASK_DISPATCH',
+            'sourceService': 'research-task-service',
+            'timestamp': 1,
+            'version': '1.0',
+            'retryCount': 0,
+            'payload': {
+                'taskType': 'EQUITY_RESEARCH',
+                'taskTitle': 'legacy',
+                'targetType': 'STOCK',
+                'targetCode': '000001',
+                'targetName': 'Ping An Bank',
+                'priority': 'HIGH',
+            },
+        })
+
+        self.assertEqual('task-1', message.taskId)
+        self.assertIsNone(message.payload.actorProvenance)
 
     def test_python_required_fields_are_explicitly_guarded(self):
         expected_required = {
