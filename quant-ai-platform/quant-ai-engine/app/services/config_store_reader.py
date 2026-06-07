@@ -57,12 +57,13 @@ class ConfigStoreReader:
 
     def _resolve_legacy_path(self) -> Path:
         current = Path(__file__).resolve()
-        candidates = [
-            current.parents[3] / "ai-config" / self.legacy_file_name,
-            current.parents[4] / "ai-config" / self.legacy_file_name,
+        candidates = []
+        for parent in current.parents:
+            candidates.append(parent / "ai-config" / self.legacy_file_name)
+        candidates.extend([
             Path.cwd() / "ai-config" / self.legacy_file_name,
             Path.cwd() / "quant-ai-platform" / "ai-config" / self.legacy_file_name,
-        ]
+        ])
         seen: set[Path] = set()
         for candidate in candidates:
             normalized = candidate.resolve()
@@ -71,4 +72,4 @@ class ConfigStoreReader:
             seen.add(normalized)
             if normalized.exists():
                 return normalized
-        return (current.parents[4] / "ai-config" / self.legacy_file_name).resolve()
+        return (Path.cwd() / "ai-config" / self.legacy_file_name).resolve()

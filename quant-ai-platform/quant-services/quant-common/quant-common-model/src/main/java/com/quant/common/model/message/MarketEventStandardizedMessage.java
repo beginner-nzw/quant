@@ -25,6 +25,11 @@ public class MarketEventStandardizedMessage extends MessageEnvelope {
         private String eventSummary;
         private String sourceChannel;
         private String sourceUrl;
+        private String normalizedFingerprint;
+        private String provenanceType;
+        private String provenanceRef;
+        private String provenanceDetail;
+        private String confidenceScore;
         private String impactLevel;
         private String eventStatus;
         private String occurredAt;
@@ -32,6 +37,10 @@ public class MarketEventStandardizedMessage extends MessageEnvelope {
         private String autoTriggerStatus;
         private String autoTriggerTaskId;
         private String autoTriggerMessage;
+        private String autoTriggerReason;
+        private String autoTriggerSource;
+        private String autoTriggerFailureCode;
+        private Integer autoTriggerRetryCount;
         private String autoTriggerAttemptedAt;
         private String createdBy;
         private String createdAt;

@@ -4,6 +4,7 @@ import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.quant.aiorchestrator.domain.dto.TaskCancelDTO;
 import com.quant.aiorchestrator.domain.dto.TaskPageQueryDTO;
 import com.quant.aiorchestrator.domain.dto.TaskRetryDTO;
+import com.quant.aiorchestrator.domain.dto.TaskWorkflowControlDTO;
 import com.quant.aiorchestrator.domain.vo.AgentExecutionVO;
 import com.quant.aiorchestrator.domain.vo.AuditRecordVO;
 import com.quant.aiorchestrator.domain.vo.TaskDetailVO;
@@ -118,5 +119,19 @@ public class TaskQueryController {
                                      @RequestBody(required = false) TaskCancelDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CANCEL);
         return Result.success(taskControlService.cancelTask(taskId, dto));
+    }
+
+    @PostMapping("/{taskId}/resume")
+    public Result<String> resumeTask(@PathVariable("taskId") String taskId,
+                                     @RequestBody(required = false) TaskWorkflowControlDTO dto) {
+        roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_RETRY);
+        return Result.success(taskControlService.resumeTask(taskId, dto));
+    }
+
+    @PostMapping("/{taskId}/rerun")
+    public Result<String> rerunNode(@PathVariable("taskId") String taskId,
+                                    @RequestBody(required = false) TaskWorkflowControlDTO dto) {
+        roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_RETRY);
+        return Result.success(taskControlService.rerunNode(taskId, dto));
     }
 }

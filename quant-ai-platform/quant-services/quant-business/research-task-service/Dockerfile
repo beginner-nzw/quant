@@ -6,5 +6,8 @@ RUN mvn -pl quant-business/research-task-service -am clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=build /workspace/quant-business/research-task-service/target/research-task-service.jar app.jar
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

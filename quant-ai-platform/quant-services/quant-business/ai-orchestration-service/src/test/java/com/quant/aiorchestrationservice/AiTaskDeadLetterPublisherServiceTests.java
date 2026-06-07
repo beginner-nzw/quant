@@ -3,6 +3,8 @@ package com.quant.aiorchestrationservice;
 import com.quant.aiorchestrator.service.impl.AiTaskDeadLetterPublisherServiceImpl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.manager.AiTaskDeadLetterMessageManager;
+import com.quant.aiorchestrator.manager.KafkaMessagePublisherManager;
 import com.quant.aiorchestrator.service.AiTaskDeadLetterPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -35,9 +37,8 @@ class AiTaskDeadLetterPublisherServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
         AiTaskDeadLetterPublisherService service = new AiTaskDeadLetterPublisherServiceImpl(
-                objectMapper,
-                kafkaTemplate,
-                taskMessageLogService
+                new AiTaskDeadLetterMessageManager(),
+                new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
         );
 
         SimpleMessageEnvelope original = new SimpleMessageEnvelope();

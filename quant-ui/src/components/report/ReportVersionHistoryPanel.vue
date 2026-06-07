@@ -5,7 +5,7 @@ import {
   compareTaskReportVersions,
   fetchTaskReportVersion,
   fetchTaskReportVersions
-} from '../../api/task'
+} from '../../api/report'
 import type {
   ReportVersion,
   ReportVersionCompare,

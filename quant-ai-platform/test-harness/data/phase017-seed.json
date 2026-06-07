@@ -1,0 +1,69 @@
+{
+  "tasks": [
+    {
+      "taskType": "EQUITY_RESEARCH",
+      "taskTitle": "Phase 17 E2E Research Task - Semiconductor Supply Chain",
+      "targetType": "STOCK",
+      "targetCode": "PH17-SMIC",
+      "targetName": "Phase 17 Semiconductor Basket",
+      "priority": "HIGH",
+      "sourceChannel": "PHASE_017_SEED",
+      "sourceDomain": "E2E_TEST",
+      "analysisScope": "report,risk,strategy,audit"
+    },
+    {
+      "taskType": "EVENT_RESEARCH",
+      "taskTitle": "Phase 17 Recovery Task - Policy Shock",
+      "targetType": "SECTOR",
+      "targetCode": "PH17-POLICY",
+      "targetName": "Phase 17 Policy Sensitive Sector",
+      "priority": "MEDIUM",
+      "sourceChannel": "PHASE_017_SEED",
+      "sourceDomain": "RECOVERY_TEST",
+      "analysisScope": "checkpoint,retry,recovery"
+    },
+    {
+      "taskType": "RISK_REVIEW",
+      "taskTitle": "Phase 17 Load Task - Liquidity Risk",
+      "targetType": "PORTFOLIO",
+      "targetCode": "PH17-LIQUIDITY",
+      "targetName": "Phase 17 Liquidity Portfolio",
+      "priority": "LOW",
+      "sourceChannel": "PHASE_017_SEED",
+      "sourceDomain": "LOAD_TEST",
+      "analysisScope": "risk,strategy"
+    }
+  ],
+  "marketEvents": [
+    {
+      "eventTitle": "Phase 17 Seed Market Event - Export Controls",
+      "eventType": "POLICY",
+      "targetCode": "PH17-SMIC",
+      "targetName": "Phase 17 Semiconductor Basket",
+      "targetType": "STOCK",
+      "sourceChannel": "phase017-seed",
+      "sourceUrl": "https://example.invalid/phase017/export-controls",
+      "occurredAt": "2026-06-06T09:00:00",
+      "eventSummary": "Deterministic seed event used by Phase 17 e2e and load verification.",
+      "impactLevel": "HIGH",
+      "confidenceScore": 0.91,
+      "provenanceType": "MOCK",
+      "provenanceRef": "phase017-export-controls"
+    },
+    {
+      "eventTitle": "Phase 17 Seed Market Event - Funding Conditions",
+      "eventType": "MARKET",
+      "targetCode": "PH17-LIQUIDITY",
+      "targetName": "Phase 17 Liquidity Portfolio",
+      "targetType": "PORTFOLIO",
+      "sourceChannel": "phase017-seed",
+      "sourceUrl": "https://example.invalid/phase017/funding-conditions",
+      "occurredAt": "2026-06-06T09:05:00",
+      "eventSummary": "Deterministic seed event for risk warning and strategy projection checks.",
+      "impactLevel": "MEDIUM",
+      "confidenceScore": 0.86,
+      "provenanceType": "MOCK",
+      "provenanceRef": "phase017-funding-conditions"
+    }
+  ]
+}

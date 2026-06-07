@@ -6,6 +6,8 @@ import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportReviewLogDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportSectionDO;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.aiorchestrator.manager.TaskReportReviewLogManager;
+import com.quant.aiorchestrator.manager.TaskReportReviewManager;
 import com.quant.aiorchestrator.mapper.HumanReviewRecordMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportReviewLogMapper;
@@ -68,15 +70,20 @@ class TaskReportVersionTests {
     }
 
     private static TaskReportServiceImpl newService(TestDeps deps) {
-        return new TaskReportServiceImpl(
+        ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+        TaskReportReviewManager reviewManager = new TaskReportReviewManager(
                 deps.reportMapper,
-                new ObjectMapper().findAndRegisterModules(),
+                objectMapper,
                 deps.reviewLogMapper,
                 deps.humanReviewRecordMapper,
                 deps.sectionMapper,
                 deps.redisTemplate,
                 deps.versionManager,
                 deps.reportVersionService
+        );
+        return new TaskReportServiceImpl(
+                reviewManager,
+                new TaskReportReviewLogManager(objectMapper, deps.reviewLogMapper)
         );
     }
 

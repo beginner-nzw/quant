@@ -8,6 +8,9 @@ import com.quant.aiorchestrator.domain.dto.StrategySignalCreateDTO;
 import com.quant.aiorchestrator.domain.dto.StrategySignalStatusUpdateDTO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalDO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalFactorDO;
+import com.quant.aiorchestrator.manager.StrategySignalCacheManager;
+import com.quant.aiorchestrator.manager.StrategySignalCommandManager;
+import com.quant.aiorchestrator.manager.StrategySignalFactorManager;
 import com.quant.aiorchestrator.mapper.StrategySignalFactorMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalMapper;
 import com.quant.aiorchestrator.service.StrategySignalService;
@@ -143,11 +146,14 @@ class StrategySignalServiceTests {
     }
 
     private StrategySignalService newService(TestDeps deps) {
+        StrategySignalFactorManager factorManager = new StrategySignalFactorManager(deps.strategySignalFactorMapper);
+        StrategySignalCacheManager cacheManager = new StrategySignalCacheManager(new ObjectMapper(), deps.stringRedisTemplate);
         return new StrategySignalServiceImpl(
-                deps.strategySignalMapper,
-                deps.strategySignalFactorMapper,
-                new ObjectMapper(),
-                deps.stringRedisTemplate
+                new StrategySignalCommandManager(
+                        deps.strategySignalMapper,
+                        factorManager,
+                        cacheManager
+                )
         );
     }
 

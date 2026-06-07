@@ -1,4 +1,17 @@
 import { get, post } from '../utils/request'
+import { MARKET_DATA_INGEST_API_CONTRACTS } from './marketDataIngestContracts'
+import {
+  compareTaskReportVersions as compareStableTaskReportVersions,
+  fetchReportCenter as fetchStableReportCenter,
+  fetchReportCenterStats as fetchStableReportCenterStats,
+  fetchReportReviewStats as fetchStableReportReviewStats,
+  fetchTaskReport as fetchStableTaskReport,
+  fetchTaskReportReviewLogs as fetchStableTaskReportReviewLogs,
+  fetchTaskReportVersion as fetchStableTaskReportVersion,
+  fetchTaskReportVersions as fetchStableTaskReportVersions,
+  reviewTaskReport as reviewStableTaskReport
+} from './report'
+import { RISK_STRATEGY_API_CONTRACTS } from './riskStrategyContracts'
 import type {
   AuditCompliancePageData,
   AuditComplianceStats,
@@ -13,6 +26,9 @@ import type {
   EventSourceConfigItem,
   EventSourceRequestDiagnosticResult,
   EventSourcePreviewResult,
+  HumanReviewDecisionForm,
+  HumanReviewQueuePageData,
+  HumanReviewQueueStats,
   MarketEventIngestHistoryItem,
   MarketEventListItem,
   MarketEventPageData,
@@ -51,95 +67,95 @@ export function fetchFailedTasks(params: Record<string, any>) {
 }
 
 export function fetchRiskWarningStats() {
-  return get<RiskWarningStats>('/api/tasks/risk-warning-stats')
+  return get<RiskWarningStats>(RISK_STRATEGY_API_CONTRACTS.riskWarningStats)
 }
 
 export function fetchMarketEventStats() {
-  return get<MarketEventStats>('/api/tasks/market-event-stats')
+  return get<MarketEventStats>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventStats)
 }
 
 export function fetchMarketEvents(params: Record<string, any>) {
-  return get<MarketEventPageData>('/api/tasks/market-events', params)
+  return get<MarketEventPageData>(MARKET_DATA_INGEST_API_CONTRACTS.marketEvents, params)
 }
 
 export function fetchMarketEvent(eventId: string) {
-  return get<MarketEventListItem>(`/api/tasks/market-events/${eventId}`)
+  return get<MarketEventListItem>(MARKET_DATA_INGEST_API_CONTRACTS.marketEvent(eventId))
 }
 
 export function fetchMarketEventIngestHistory() {
-  return get<MarketEventIngestHistoryItem[]>('/api/tasks/market-events/ingest-history')
+  return get<MarketEventIngestHistoryItem[]>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventIngestHistory)
 }
 
 export function fetchMarketEventSourceConfigs() {
-  return get<EventSourceConfigItem[]>('/api/tasks/market-event-source-configs')
+  return get<EventSourceConfigItem[]>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventSourceConfigs)
 }
 
 export function createMarketEvent(data: MarketEventCreateForm) {
-  return post<MarketEventCreateResult>('/api/tasks/market-events', data)
+  return post<MarketEventCreateResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEvents, data)
 }
 
 export function previewBatchImportMarketEvents(data: MarketEventBatchImportForm) {
-  return post<MarketEventBatchPreviewResult>('/api/tasks/market-events/batch-import/preview', data)
+  return post<MarketEventBatchPreviewResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventBatchImportPreview, data)
 }
 
 export function batchImportMarketEvents(data: MarketEventBatchImportForm) {
-  return post<MarketEventBatchImportResult>('/api/tasks/market-events/batch-import', data)
+  return post<MarketEventBatchImportResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventBatchImport, data)
 }
 
 export function mockIngestMarketEvents(data: MarketEventMockIngestForm) {
-  return post<MarketEventBatchImportResult>('/api/tasks/market-events/mock-ingest', data)
+  return post<MarketEventBatchImportResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventMockIngest, data)
 }
 
 export function syncMarketEventSource(sourceCode: string, data: MarketEventSourceSyncForm) {
-  return post<MarketEventBatchImportResult>(`/api/tasks/market-events/source-sync/${sourceCode}`, data)
+  return post<MarketEventBatchImportResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventSourceSync(sourceCode), data)
 }
 
 export function previewMarketEventSource(sourceCode: string, data: MarketEventSourceSyncForm) {
-  return post<EventSourcePreviewResult>(`/api/tasks/market-events/source-preview/${sourceCode}`, data)
+  return post<EventSourcePreviewResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventSourcePreview(sourceCode), data)
 }
 
 export function diagnoseMarketEventSource(sourceCode: string, data: MarketEventSourceSyncForm) {
-  return post<EventSourceRequestDiagnosticResult>(`/api/tasks/market-events/source-diagnose/${sourceCode}`, data)
+  return post<EventSourceRequestDiagnosticResult>(MARKET_DATA_INGEST_API_CONTRACTS.marketEventSourceDiagnose(sourceCode), data)
 }
 
 export function fetchRiskWarnings(params: Record<string, any>) {
-  return get<RiskWarningPageData>('/api/tasks/risk-warnings', params)
+  return get<RiskWarningPageData>(RISK_STRATEGY_API_CONTRACTS.riskWarnings, params)
 }
 
 export function fetchStrategySignalStats() {
-  return get<StrategySignalStats>('/api/tasks/strategy-signal-stats')
+  return get<StrategySignalStats>(RISK_STRATEGY_API_CONTRACTS.strategySignalStats)
 }
 
 export function fetchStrategySignals(params: Record<string, any>) {
-  return get<StrategySignalPageData>('/api/tasks/strategy-signals', params)
+  return get<StrategySignalPageData>(RISK_STRATEGY_API_CONTRACTS.strategySignals, params)
 }
 
 export function createStrategySignal(data: StrategySignalCreateForm) {
-  return post<string>('/api/tasks/strategy-signals', data)
+  return post<string>(RISK_STRATEGY_API_CONTRACTS.strategySignals, data)
 }
 
 export function fetchStrategySignalFactors(signalId: string) {
-  return get<StrategySignalFactorItem[]>(`/api/tasks/strategy-signals/${signalId}/factors`)
+  return get<StrategySignalFactorItem[]>(RISK_STRATEGY_API_CONTRACTS.strategySignalFactors(signalId))
 }
 
 export function updateStrategySignalStatus(signalId: string, status: string) {
-  return post<string>(`/api/tasks/strategy-signals/${signalId}/status`, { status })
+  return post<string>(RISK_STRATEGY_API_CONTRACTS.strategySignalStatus(signalId), { status })
 }
 
 export function fetchReportCenterStats() {
-  return get<ReportCenterStats>('/api/tasks/report-center-stats')
+  return fetchStableReportCenterStats()
 }
 
 export function fetchReportCenter(params: Record<string, any>) {
-  return get<ReportCenterPageData>('/api/tasks/report-center', params)
+  return fetchStableReportCenter(params)
 }
 
 export function fetchMarketIntelligenceStats() {
-  return get<MarketIntelligenceStats>('/api/tasks/market-intelligence-stats')
+  return get<MarketIntelligenceStats>(MARKET_DATA_INGEST_API_CONTRACTS.marketIntelligenceStats)
 }
 
 export function fetchMarketIntelligence(params: Record<string, any>) {
-  return get<MarketIntelligencePageData>('/api/tasks/market-intelligence', params)
+  return get<MarketIntelligencePageData>(MARKET_DATA_INGEST_API_CONTRACTS.marketIntelligence, params)
 }
 
 export function fetchAuditComplianceStats() {
@@ -205,37 +221,54 @@ export function cancelTask(taskId: string, data?: Record<string, any>) {
   return post<string>(`/api/tasks/${taskId}/cancel`, data)
 }
 
+export function resumeTask(taskId: string, data?: Record<string, any>) {
+  return post<string>(`/api/tasks/${taskId}/resume`, data)
+}
+
+export function rerunTaskNode(taskId: string, data?: Record<string, any>) {
+  return post<string>(`/api/tasks/${taskId}/rerun`, data)
+}
+
 export function createTask(data: CreateTaskForm) {
   return post<string>('/api/research/tasks', data)
 }
 
 export function fetchTaskReport(taskId: string) {
-  return get<any>(`/api/tasks/${taskId}/report`)
+  return fetchStableTaskReport(taskId)
 }
 
 export function reviewTaskReport(taskId: string, data: Record<string, any>) {
-  return post<string>(`/api/tasks/${taskId}/report/review`, data)
+  return reviewStableTaskReport(taskId, data)
 }
 
 export function fetchReportReviewStats() {
-  return get<ReportReviewStats>('/api/tasks/report-review-stats')
+  return fetchStableReportReviewStats()
 }
 
 export function fetchTaskReportReviewLogs(taskId: string) {
-  return get<TaskReportReviewLog[]>(`/api/tasks/${taskId}/report/review-logs`)
+  return fetchStableTaskReportReviewLogs(taskId)
+}
+
+export function fetchHumanReviewQueue(params?: Record<string, any>) {
+  return get<HumanReviewQueuePageData>('/api/tasks/human-reviews', params)
+}
+
+export function fetchHumanReviewQueueStats() {
+  return get<HumanReviewQueueStats>('/api/tasks/human-reviews/stats')
+}
+
+export function decideHumanReview(queueId: string, data: HumanReviewDecisionForm) {
+  return post<string>(`/api/tasks/human-reviews/${encodeURIComponent(queueId)}/decision`, data)
 }
 
 export function fetchTaskReportVersions(taskId: string) {
-  return get<ReportVersion[]>(`/api/tasks/${taskId}/report/versions`)
+  return fetchStableTaskReportVersions(taskId)
 }
 
 export function fetchTaskReportVersion(taskId: string, versionNo: number) {
-  return get<ReportVersion | null>(`/api/tasks/${taskId}/report/versions/${versionNo}`)
+  return fetchStableTaskReportVersion(taskId, versionNo)
 }
 
 export function compareTaskReportVersions(taskId: string, fromVersionNo: number, toVersionNo: number) {
-  return get<ReportVersionCompare | null>(`/api/tasks/${taskId}/report/versions/compare`, {
-    fromVersionNo,
-    toVersionNo
-  })
+  return compareStableTaskReportVersions(taskId, fromVersionNo, toVersionNo)
 }

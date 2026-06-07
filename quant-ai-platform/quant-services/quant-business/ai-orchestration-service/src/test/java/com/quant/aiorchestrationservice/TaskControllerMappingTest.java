@@ -1,6 +1,8 @@
 package com.quant.aiorchestrationservice;
 
 import com.quant.aiorchestrator.controller.AuditComplianceController;
+import com.quant.aiorchestrator.controller.GovernedConfigController;
+import com.quant.aiorchestrator.controller.HumanReviewController;
 import com.quant.aiorchestrator.controller.MarketEventController;
 import com.quant.aiorchestrator.controller.MarketIntelligenceController;
 import com.quant.aiorchestrator.controller.ModelAgentConfigController;
@@ -43,6 +45,8 @@ class TaskControllerMappingTest {
                 "GET /api/tasks/{taskId}/steps -> TaskQueryController",
                 "GET /api/tasks/{taskId}/workflow -> TaskQueryController",
                 "POST /api/tasks/{taskId}/cancel -> TaskQueryController",
+                "POST /api/tasks/{taskId}/rerun -> TaskQueryController",
+                "POST /api/tasks/{taskId}/resume -> TaskQueryController",
                 "POST /api/tasks/{taskId}/retry -> TaskQueryController",
                 "GET /api/tasks/market-event-source-configs -> MarketEventController",
                 "GET /api/tasks/market-event-stats -> MarketEventController",
@@ -86,6 +90,11 @@ class TaskControllerMappingTest {
                 "POST /api/tasks/model-agent-config/prompt-templates/{templateCode} -> ModelAgentConfigController",
                 "POST /api/tasks/model-agent-config/role-access/{roleCode} -> ModelAgentConfigController",
                 "POST /api/tasks/model-agent-config/workflows/{workflowCode} -> ModelAgentConfigController",
+                "GET /api/tasks/config-store/{storeCode} -> GovernedConfigController",
+                "POST /api/tasks/config-store/{storeCode}/rollback -> GovernedConfigController",
+                "GET /api/tasks/human-reviews -> HumanReviewController",
+                "GET /api/tasks/human-reviews/stats -> HumanReviewController",
+                "POST /api/tasks/human-reviews/{queueId}/decision -> HumanReviewController",
                 "GET /api/tasks/research-workbench -> ResearchWorkbenchController"
         ));
 
@@ -98,6 +107,8 @@ class TaskControllerMappingTest {
         actual.addAll(mappingsFor(MarketIntelligenceController.class));
         actual.addAll(mappingsFor(AuditComplianceController.class));
         actual.addAll(mappingsFor(ModelAgentConfigController.class));
+        actual.addAll(mappingsFor(GovernedConfigController.class));
+        actual.addAll(mappingsFor(HumanReviewController.class));
         actual.addAll(mappingsFor(ResearchWorkbenchController.class));
 
         assertEquals(expected, actual);

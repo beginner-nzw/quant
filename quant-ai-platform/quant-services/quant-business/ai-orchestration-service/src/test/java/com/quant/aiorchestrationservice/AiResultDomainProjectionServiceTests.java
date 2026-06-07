@@ -5,13 +5,19 @@ import com.quant.aiorchestrator.service.impl.AiResultDomainProjectionServiceImpl
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
+import com.quant.aiorchestrator.domain.entity.RiskWarningDO;
+import com.quant.aiorchestrator.domain.entity.RiskWarningDetailDO;
+import com.quant.aiorchestrator.domain.entity.StrategySignalFactorDO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalDO;
+import com.quant.aiorchestrator.manager.AiResultReportProjectionManager;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalFactorMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalMapper;
+import com.quant.aiorchestrator.risk.RiskWarningProjectionService;
+import com.quant.aiorchestrator.risk.StrategySignalProjectionService;
 import com.quant.aiorchestrator.service.AiResultDomainProjectionService;
 import com.quant.common.model.enums.TaskStatusEnum;
 import com.quant.common.model.message.AiTaskResultMessage;
@@ -23,12 +29,14 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.data.redis.core.ZSetOperations;
 
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +87,7 @@ class AiResultDomainProjectionServiceTests {
         message.getPayload().setSummary(null);
         message.getPayload().setConfidenceScore(null);
         message.getPayload().setRiskWarnings(List.of());
+        message.getPayload().setReportMeta(Map.of("approvedPayload", Map.of()));
         AiResultDomainProjectionService service = newService(deps);
 
         service.project(message, buildReport("report-1", "task-signal"));
@@ -90,16 +99,140 @@ class AiResultDomainProjectionServiceTests {
         verify(deps.zSetOperations).remove(RedisKeyBuilder.signalRanking("2026-05-15"), "signal-task-signal");
     }
 
+    @Test
+    void projectDoesNotPromoteUnapprovedFallbackPayloadIntoRiskOrStrategyTruth() {
+        TestDeps deps = new TestDeps();
+        AiTaskResultMessage message = buildSuccessMessage();
+        message.getPayload().setReportMeta(null);
+        message.getPayload().setRiskWarnings(List.of("fallback risk must stay metadata"));
+        message.getPayload().setSummary("fallback summary must stay metadata");
+
+        AiResultDomainProjectionService service = newService(deps);
+
+        service.project(message, buildReport("report-1", "task-signal"));
+
+        verify(deps.riskWarningMapper, never()).insert(any(RiskWarningDO.class));
+        verify(deps.strategySignalMapper, never()).insert(any(StrategySignalDO.class));
+        verify(deps.riskWarningDetailMapper, never()).insert(any(RiskWarningDetailDO.class));
+        verify(deps.strategySignalFactorMapper, never()).insert(any(StrategySignalFactorDO.class));
+    }
+
+    @Test
+    void projectDoesNotPromoteTopLevelFallbackWhenApprovedPayloadFieldsAreMissing() {
+        TestDeps deps = new TestDeps();
+        AiTaskResultMessage message = buildSuccessMessage();
+        message.getPayload().setReportMeta(Map.of("approvedPayload", Map.of()));
+        message.getPayload().setRiskWarnings(List.of("top-level fallback risk"));
+        message.getPayload().setSummary("top-level fallback summary");
+        message.getPayload().setConfidenceScore(0.99D);
+        message.getPayload().setNeedHumanReview(true);
+
+        AiResultDomainProjectionService service = newService(deps);
+
+        service.project(message, buildReport("report-1", "task-signal"));
+
+        verify(deps.riskWarningMapper, never()).insert(any(RiskWarningDO.class));
+        verify(deps.strategySignalMapper, never()).insert(any(StrategySignalDO.class));
+        verify(deps.riskWarningDetailMapper, never()).insert(any(RiskWarningDetailDO.class));
+        verify(deps.strategySignalFactorMapper, never()).insert(any(StrategySignalFactorDO.class));
+    }
+
+    @Test
+    void projectConsumesOnlyApprovedPayloadFields() {
+        TestDeps deps = new TestDeps();
+        AiTaskResultMessage message = buildSuccessMessage();
+        message.getPayload().setRiskWarnings(List.of("payload approved warning"));
+        message.getPayload().setReportMeta(Map.of(
+                "riskPoints", List.of("unapproved fallback risk"),
+                "contextSnapshot", Map.of(
+                        "eventExtractionFallbackReason", "MODEL_CONFIG_DISABLED",
+                        "industryResearchFallbackReason", "MODEL_CONFIG_DISABLED"
+                ),
+                "approvedPayload", Map.of(
+                        "summary", "approved summary",
+                        "highlights", List.of("approved highlight"),
+                        "riskPoints", List.of("approved risk point"),
+                        "riskWarnings", List.of("approved risk warning"),
+                        "evidenceRefs", List.of("approved evidence ref")
+                )
+        ));
+
+        AiResultDomainProjectionService service = newService(deps);
+
+        service.project(message, buildReport("report-1", "task-signal"));
+
+        ArgumentCaptor<StrategySignalDO> signalCaptor = ArgumentCaptor.forClass(StrategySignalDO.class);
+        verify(deps.strategySignalMapper).insert(signalCaptor.capture());
+        assertEquals("approved summary", signalCaptor.getValue().getReasonSummary());
+
+        ArgumentCaptor<com.quant.aiorchestrator.domain.entity.RiskWarningDO> riskCaptor =
+                ArgumentCaptor.forClass(com.quant.aiorchestrator.domain.entity.RiskWarningDO.class);
+        verify(deps.riskWarningMapper).insert(riskCaptor.capture());
+        assertEquals("approved risk warning\napproved risk point", riskCaptor.getValue().getWarningReason());
+    }
+
+    @Test
+    void projectUsesApprovedStrategyCandidateAndFactorsWithoutAuditAuthority() {
+        TestDeps deps = new TestDeps();
+        AiTaskResultMessage message = buildSuccessMessage();
+        message.getPayload().setReportMeta(Map.of(
+                "approvedPayload", Map.of(
+                        "summary", "approved report summary",
+                        "strategyCandidate", Map.of(
+                                "direction", "NEGATIVE",
+                                "summary", "candidate defensive signal",
+                                "confidence", 0.64D,
+                                "trace", Map.of("authority", "CANDIDATE_ONLY")
+                        ),
+                        "strategyFactors", List.of(
+                                Map.of(
+                                        "factorCode", "RISK_ADJUSTMENT",
+                                        "factorName", "Risk adjustment",
+                                        "factorValue", "2",
+                                        "factorWeight", 0.2D,
+                                        "factorConclusion", "risk pressure"
+                                )
+                        ),
+                        "auditSupport", Map.of(
+                                "authority", "SUPPORT_ONLY_NO_BUSINESS_APPROVAL",
+                                "reportReview", Map.of("doesNotApproveReport", true)
+                        )
+                )
+        ));
+
+        AiResultDomainProjectionService service = newService(deps);
+
+        service.project(message, buildReport("report-1", "task-signal"));
+
+        ArgumentCaptor<StrategySignalDO> signalCaptor = ArgumentCaptor.forClass(StrategySignalDO.class);
+        verify(deps.strategySignalMapper).insert(signalCaptor.capture());
+        StrategySignalDO signal = signalCaptor.getValue();
+        assertEquals("NEGATIVE", signal.getSignalDirection());
+        assertEquals("candidate defensive signal", signal.getReasonSummary());
+        assertEquals(0, signal.getConfidenceScore().compareTo(new java.math.BigDecimal("0.64")));
+
+        ArgumentCaptor<StrategySignalFactorDO> factorCaptor = ArgumentCaptor.forClass(StrategySignalFactorDO.class);
+        verify(deps.strategySignalFactorMapper).insert(factorCaptor.capture());
+        assertEquals("RISK_ADJUSTMENT", factorCaptor.getValue().getFactorCode());
+        assertEquals("risk pressure", factorCaptor.getValue().getFactorConclusion());
+    }
+
     private AiResultDomainProjectionService newService(TestDeps deps) {
-        return new AiResultDomainProjectionServiceImpl(
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                deps.strategySignalFactorMapper,
+        ObjectMapper objectMapper = new ObjectMapper();
+        AiResultReportProjectionManager reportProjectionManager = new AiResultReportProjectionManager(
                 deps.reportEvidenceRefMapper,
                 deps.researchReportSectionMapper,
-                new ObjectMapper(),
-                deps.stringRedisTemplate
+                objectMapper
+        );
+        return new AiResultDomainProjectionServiceImpl(
+                new RiskWarningProjectionService(deps.riskWarningMapper, deps.riskWarningDetailMapper),
+                new StrategySignalProjectionService(
+                        deps.strategySignalMapper,
+                        deps.strategySignalFactorMapper,
+                        objectMapper,
+                        deps.stringRedisTemplate
+                ),
+                reportProjectionManager
         );
     }
 
@@ -119,6 +252,14 @@ class AiResultDomainProjectionServiceTests {
         payload.setConfidenceScore(0.92D);
         payload.setNeedHumanReview(false);
         payload.setRiskWarnings(List.of());
+        payload.setReportMeta(Map.of(
+                "approvedPayload", Map.of(
+                        "summary", "high confidence upside",
+                        "confidenceScore", 0.92D,
+                        "needHumanReview", false,
+                        "riskWarnings", List.of()
+                )
+        ));
         message.setPayload(payload);
         return message;
     }

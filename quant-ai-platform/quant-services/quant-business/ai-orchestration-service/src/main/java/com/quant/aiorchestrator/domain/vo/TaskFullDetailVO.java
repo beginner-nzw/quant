@@ -12,6 +12,7 @@ public class TaskFullDetailVO {
     private TaskReportVO report;
     private List<TaskStepVO> steps;
     private WorkflowInstanceVO workflow;
+    private WorkflowCheckpointVO checkpoint;
     private List<AgentExecutionVO> agents;
     private List<AuditRecordVO> audits;
     private List<TaskRetryLogVO> retries;

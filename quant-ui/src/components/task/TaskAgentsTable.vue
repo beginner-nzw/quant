@@ -12,6 +12,8 @@ defineProps<{
   agents: AgentExecution[]
 }>()
 
+const phase007Agents = new Set(['event_extraction_agent', 'industry_research_agent'])
+
 const text = {
   title: 'Agent 执行记录',
   subtitle: '记录每个 Agent 节点的状态、置信度、复核要求和耗时。',
@@ -44,6 +46,14 @@ const text = {
       <el-table-column prop="agentCode" :label="text.agentCode" width="220" />
       <el-table-column prop="agentName" :label="text.agentName" width="220" />
       <el-table-column prop="nodeCode" :label="text.nodeCode" width="200" />
+      <el-table-column label="Trace" width="170">
+        <template #default="{ row }">
+          <el-tag v-if="phase007Agents.has(row.agentCode)" type="warning">
+            Event & Industry
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
 
       <el-table-column :label="text.status" width="100">
         <template #default="{ row }">

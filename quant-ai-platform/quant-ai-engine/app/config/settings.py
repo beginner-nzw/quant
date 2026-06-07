@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any
+import os
 import yaml
 from pydantic import BaseModel
 
@@ -23,6 +24,8 @@ class KafkaTopicsConfig(BaseModel):
 class KafkaConfig(BaseModel):
     bootstrap_servers: str
     consumer_group: str
+    max_lag_messages: int = 500
+    lag_log_interval_seconds: int = 30
     topics: KafkaTopicsConfig
 
 
@@ -30,6 +33,8 @@ class RedisConfig(BaseModel):
     host: str
     port: int
     db: int = 0
+    socket_timeout_seconds: float = 1.0
+    degradation_enabled: bool = True
 
 
 class ServicesConfig(BaseModel):
@@ -89,4 +94,4 @@ def load_settings(profile: str = "local") -> Settings:
     return Settings(**data)
 
 
-settings = load_settings("local")
+settings = load_settings(os.getenv("QUANT_AI_PROFILE", "local"))

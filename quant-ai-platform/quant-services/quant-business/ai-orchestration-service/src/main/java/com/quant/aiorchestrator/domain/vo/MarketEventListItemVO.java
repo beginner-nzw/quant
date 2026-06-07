@@ -17,12 +17,21 @@ public class MarketEventListItemVO {
     private String eventSummary;
     private String sourceChannel;
     private String sourceUrl;
+    private String normalizedFingerprint;
+    private String provenanceType;
+    private String provenanceRef;
+    private String provenanceDetail;
+    private BigDecimal confidenceScore;
     private String impactLevel;
     private String eventStatus;
     private String autoTriggerRuleCode;
     private String autoTriggerStatus;
     private String autoTriggerTaskId;
     private String autoTriggerMessage;
+    private String autoTriggerReason;
+    private String autoTriggerSource;
+    private String autoTriggerFailureCode;
+    private Integer autoTriggerRetryCount;
     private LocalDateTime autoTriggerAttemptedAt;
     private LocalDateTime occurredAt;
     private String createdBy;
@@ -50,6 +59,12 @@ public class MarketEventListItemVO {
     private String derivedSignalStrength;
     private Integer derivedSignalScore;
     private String derivedIntelligenceType;
+    private String analysisId;
+    private String analysisSummary;
+    private String analysisImpactDirection;
+    private String analysisImpactLevel;
+    private Boolean analysisRiskFlag;
+    private BigDecimal analysisConfidenceScore;
     private Integer relationCount;
     private List<MarketEventRelationVO> relations;
 }

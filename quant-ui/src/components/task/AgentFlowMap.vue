@@ -9,6 +9,8 @@ const props = defineProps<{
   steps: TaskStep[]
 }>()
 
+const phase007Agents = new Set(['event_extraction_agent', 'industry_research_agent'])
+
 const nodes = computed(() => {
   if (props.agents.length) {
     return props.agents.map((agent, index) => ({
@@ -18,7 +20,8 @@ const nodes = computed(() => {
       status: agent.status,
       duration: agent.durationMs,
       confidence: agent.confidenceScore,
-      humanReview: Boolean(agent.needHumanReview)
+      humanReview: Boolean(agent.needHumanReview),
+      phase007: phase007Agents.has(agent.agentCode)
     }))
   }
 
@@ -29,7 +32,8 @@ const nodes = computed(() => {
     status: step.status,
     duration: step.durationMs,
     confidence: undefined,
-    humanReview: false
+    humanReview: false,
+    phase007: false
   }))
 })
 
@@ -96,6 +100,7 @@ function formatConfidence(value?: number) {
         <span>{{ node.subtitle }}</span>
         <strong>{{ node.title }}</strong>
         <div class="node-meta">
+          <small v-if="node.phase007">Event & Industry Trace</small>
           <small>{{ getTaskStatusText(node.status) }}</small>
           <small>{{ node.duration ?? '-' }}ms</small>
           <small>置信度 {{ formatConfidence(node.confidence) }}</small>

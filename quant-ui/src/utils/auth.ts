@@ -15,6 +15,7 @@ export interface CurrentUser {
 }
 
 const STORAGE_KEY = 'quant_current_user'
+const SESSION_STORAGE_KEY = 'quant_session'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   [USER_ROLE.RESEARCHER]: '研究员',
@@ -87,6 +88,61 @@ export function getCurrentUser(): CurrentUser {
 
 export function setCurrentUser(user: CurrentUser) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeCurrentUser(user)))
+}
+
+export interface AuthSession {
+  accessToken?: string
+  tokenType?: string
+  expiresAt?: string
+  issuer?: string
+  subject?: string
+  approvedSso?: boolean
+}
+
+export function getAuthSession(): AuthSession | null {
+  const raw = localStorage.getItem(SESSION_STORAGE_KEY)
+  if (!raw) return null
+
+  try {
+    return normalizeAuthSession(JSON.parse(raw))
+  } catch {
+    return null
+  }
+}
+
+export function setAuthSession(session: AuthSession | null) {
+  if (!session?.accessToken) {
+    localStorage.removeItem(SESSION_STORAGE_KEY)
+    return
+  }
+  localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(normalizeAuthSession(session)))
+}
+
+export function clearAuthSession() {
+  localStorage.removeItem(SESSION_STORAGE_KEY)
+}
+
+export function hasActiveAuthSession(session = getAuthSession()) {
+  if (!session?.accessToken) return false
+  if (!session.expiresAt) return true
+  const expiresAt = Date.parse(session.expiresAt)
+  return Number.isNaN(expiresAt) || expiresAt > Date.now()
+}
+
+export function getSessionMode(session = getAuthSession()) {
+  if (!session?.accessToken) return 'DEMO_HEADER'
+  return session.approvedSso ? 'APPROVED_SSO' : 'JWT'
+}
+
+function normalizeAuthSession(session?: Partial<AuthSession> | null): AuthSession {
+  return {
+    accessToken: session?.accessToken || '',
+    tokenType: session?.tokenType || 'Bearer',
+    expiresAt: session?.expiresAt,
+    issuer: session?.issuer,
+    subject: session?.subject,
+    approvedSso: Boolean(session?.approvedSso)
+  }
 }
 
 export function getAccessRole(userRole: UserRole): AccessRole {

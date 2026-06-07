@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { MARKET_DATA_INGEST_ROUTE_CONTRACTS } from '../api/marketDataIngestContracts'
 import {
   fetchAuditComplianceStats,
   fetchMarketEventStats,
   fetchMarketIntelligenceStats,
-  fetchReportCenterStats,
   fetchRiskWarningStats,
   fetchStrategySignalStats,
   fetchTaskStats
 } from '../api/task'
+import { fetchReportCenterStats } from '../api/report'
 import type {
   AuditComplianceStats,
   MarketEventStats,
@@ -129,7 +130,7 @@ const lanes = computed(() => [
     description: '市场新闻、公告、政策和舆情进入事件池，自动识别高影响事件。',
     metric: eventStats.value.highImpactCount,
     metricLabel: '高影响事件',
-    path: '/market-events',
+    path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketEvents,
     glyph: '01',
     color: '#ff8764'
   },
@@ -138,7 +139,7 @@ const lanes = computed(() => [
     description: '将风险、策略、报告洞察合并为可分发、可转任务的情报项。',
     metric: intelligenceStats.value.highPriorityCount,
     metricLabel: '高优先级情报',
-    path: '/intelligence',
+    path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketIntelligence,
     glyph: '02',
     color: '#69d2c4'
   },
@@ -268,7 +269,7 @@ onMounted(() => {
           <button v-if="canCreateResearchTask" type="button" class="primary-action" @click="goPath('/tasks/create')">
             发起深度研究
           </button>
-          <button type="button" @click="goPath('/market-events')">
+          <button type="button" @click="goPath(MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketEvents)">
             查看事件雷达
           </button>
           <button type="button" @click="goPath('/research-workbench')">

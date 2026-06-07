@@ -6,6 +6,11 @@ import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportSectionDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportVersionDO;
 import com.quant.aiorchestrator.domain.vo.ReportVersionCompareVO;
+import com.quant.aiorchestrator.manager.ReportVersionCompareManager;
+import com.quant.aiorchestrator.manager.ReportVersionCommandManager;
+import com.quant.aiorchestrator.manager.ReportVersionProjectionManager;
+import com.quant.aiorchestrator.manager.ReportVersionSnapshotManager;
+import com.quant.aiorchestrator.manager.ReportVersionStoreManager;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportVersionMapper;
@@ -147,11 +152,20 @@ class ReportVersionServiceTests {
     }
 
     private static ReportVersionService newService(TestDeps deps) {
-        return new ReportVersionServiceImpl(
-                deps.versionMapper,
+        ObjectMapper objectMapper = new ObjectMapper();
+        ReportVersionSnapshotManager snapshotManager = new ReportVersionSnapshotManager(
                 deps.sectionMapper,
                 deps.evidenceMapper,
-                new ObjectMapper()
+                objectMapper
+        );
+        ReportVersionStoreManager storeManager = new ReportVersionStoreManager(deps.versionMapper);
+        ReportVersionProjectionManager projectionManager = new ReportVersionProjectionManager(snapshotManager);
+        return new ReportVersionServiceImpl(
+                new ReportVersionCommandManager(
+                        storeManager,
+                        projectionManager,
+                        new ReportVersionCompareManager(objectMapper)
+                )
         );
     }
 

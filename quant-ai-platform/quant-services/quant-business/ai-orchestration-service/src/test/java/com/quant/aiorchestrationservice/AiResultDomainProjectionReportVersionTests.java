@@ -2,12 +2,15 @@ package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
+import com.quant.aiorchestrator.manager.AiResultReportProjectionManager;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalFactorMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalMapper;
+import com.quant.aiorchestrator.risk.RiskWarningProjectionService;
+import com.quant.aiorchestrator.risk.StrategySignalProjectionService;
 import com.quant.aiorchestrator.service.ReportVersionService;
 import com.quant.aiorchestrator.service.impl.AiResultDomainProjectionServiceImpl;
 import com.quant.common.model.enums.TaskStatusEnum;
@@ -49,15 +52,15 @@ class AiResultDomainProjectionReportVersionTests {
     }
 
     private static AiResultDomainProjectionServiceImpl newService(TestDeps deps) {
-        AiResultDomainProjectionServiceImpl service = new AiResultDomainProjectionServiceImpl(
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                deps.strategySignalFactorMapper,
+        AiResultReportProjectionManager reportProjectionManager = new AiResultReportProjectionManager(
                 deps.evidenceMapper,
                 deps.sectionMapper,
-                new ObjectMapper(),
-                deps.redisTemplate
+                new ObjectMapper()
+        );
+        AiResultDomainProjectionServiceImpl service = new AiResultDomainProjectionServiceImpl(
+                deps.riskWarningProjectionService,
+                deps.strategySignalProjectionService,
+                reportProjectionManager
         );
         ReflectionTestUtils.setField(service, "reportVersionService", deps.reportVersionService);
         return service;
@@ -89,6 +92,8 @@ class AiResultDomainProjectionReportVersionTests {
         private final RiskWarningDetailMapper riskWarningDetailMapper = mock(RiskWarningDetailMapper.class);
         private final StrategySignalMapper strategySignalMapper = mock(StrategySignalMapper.class);
         private final StrategySignalFactorMapper strategySignalFactorMapper = mock(StrategySignalFactorMapper.class);
+        private final RiskWarningProjectionService riskWarningProjectionService = mock(RiskWarningProjectionService.class);
+        private final StrategySignalProjectionService strategySignalProjectionService = mock(StrategySignalProjectionService.class);
         private final ReportEvidenceRefMapper evidenceMapper = mock(ReportEvidenceRefMapper.class);
         private final ResearchReportSectionMapper sectionMapper = mock(ResearchReportSectionMapper.class);
         private final StringRedisTemplate redisTemplate = mock(StringRedisTemplate.class);

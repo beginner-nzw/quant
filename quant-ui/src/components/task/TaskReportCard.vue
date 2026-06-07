@@ -32,6 +32,9 @@ const text = {
   emptyContextSnapshot: '暂无上下文快照',
   evidenceRefs: '证据链',
   emptyEvidenceRefs: '暂无证据链',
+  strategyAuditSupport: 'Strategy / Audit Support',
+  trace: 'Trace',
+  reviewSuggestionEn: 'Review suggestion',
   empty: '当前暂无报告结果',
   taskContextSource: '任务上下文来源',
   marketDataSource: '市场快照来源',
@@ -145,6 +148,9 @@ const riskWarnings = computed(() => props.report?.riskWarnings || [])
 const evidenceItems = computed(() => props.report?.evidenceItems || [])
 const evidenceRefs = computed(() => props.report?.evidenceRefs || [])
 const reviewSuggestion = computed(() => props.report?.reviewSuggestion || '')
+const strategyCandidate = computed(() => props.report?.strategyCandidate || null)
+const strategyFactors = computed(() => props.report?.strategyFactors || [])
+const auditSupport = computed(() => props.report?.auditSupport || null)
 
 function normalizeTextValue(value?: string | null) {
   return (value || '').trim()
@@ -315,6 +321,49 @@ const contextItems = computed(() => {
 
   return items.filter((item) => item.value !== undefined && item.value !== null && item.value !== '')
 })
+
+function formatJsonValue(value: unknown) {
+  if (value === undefined || value === null || value === '') return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
+const strategyCandidateItems = computed(() => {
+  const candidate = strategyCandidate.value as Record<string, unknown> | null
+  if (!candidate) return []
+  return [
+    { label: 'Direction', value: candidate.direction },
+    { label: 'Confidence', value: candidate.confidence },
+    { label: 'Summary', value: candidate.summary },
+    { label: text.trace, value: candidate.trace }
+  ].map((item) => ({ ...item, value: formatJsonValue(item.value) }))
+    .filter((item) => item.value)
+})
+
+const auditSupportItems = computed(() => {
+  const support = auditSupport.value as Record<string, unknown> | null
+  if (!support) return []
+  return [
+    { label: 'Authority', value: support.authority },
+    { label: 'Support type', value: support.supportType },
+    { label: 'Report review', value: support.reportReview },
+    { label: text.reviewSuggestionEn, value: support.reviewSuggestions },
+    { label: text.trace, value: support.trace }
+  ].map((item) => ({ ...item, value: formatJsonValue(item.value) }))
+    .filter((item) => item.value)
+})
+
+const hasStrategyAuditSupport = computed(() => {
+  return strategyCandidateItems.value.length > 0
+    || strategyFactors.value.length > 0
+    || auditSupportItems.value.length > 0
+})
 </script>
 
 <template>
@@ -438,6 +487,54 @@ const contextItems = computed(() => {
           :review-suggestion="reviewSuggestion"
           :empty-text="text.emptyEvidenceRefs"
         />
+      </div>
+
+      <div
+        v-if="hasStrategyAuditSupport"
+        class="report-block"
+      >
+        <div class="report-block-title">{{ text.strategyAuditSupport }}</div>
+
+        <el-descriptions
+          v-if="strategyCandidateItems.length > 0"
+          :column="1"
+          border
+          style="margin-bottom: 12px;"
+        >
+          <el-descriptions-item
+            v-for="item in strategyCandidateItems"
+            :key="`strategy-${item.label}`"
+            :label="item.label"
+          >
+            {{ item.value }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <el-table
+          v-if="strategyFactors.length > 0"
+          :data="strategyFactors"
+          border
+          style="width: 100%; margin-bottom: 12px;"
+        >
+          <el-table-column prop="factorCode" label="Code" min-width="130" />
+          <el-table-column prop="factorName" label="Factor" min-width="140" />
+          <el-table-column prop="factorValue" label="Value" min-width="120" />
+          <el-table-column prop="factorConclusion" label="Evidence / Conclusion" min-width="220" />
+        </el-table>
+
+        <el-descriptions
+          v-if="auditSupportItems.length > 0"
+          :column="1"
+          border
+        >
+          <el-descriptions-item
+            v-for="item in auditSupportItems"
+            :key="`audit-${item.label}`"
+            :label="item.label"
+          >
+            {{ item.value }}
+          </el-descriptions-item>
+        </el-descriptions>
       </div>
     </template>
 

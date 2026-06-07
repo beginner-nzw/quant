@@ -7,6 +7,8 @@ public final class RedisKeyConstants {
     public static final String TASK_FULL = "task:full:%s";
     public static final String TASK_CONTROL = "task:control:%s";
     public static final String TASK_META = "task:meta:%s";
+    public static final String TASK_WORKFLOW_CHECKPOINT = "task:workflow:checkpoint:%s";
+    public static final String TASK_WORKFLOW_NODE = "task:workflow:node:%s:%s";
 
     public static final String TASK_STATS_GLOBAL = "task:stats:global";
     public static final String TASK_LIST_VERSION = "task:list:version";

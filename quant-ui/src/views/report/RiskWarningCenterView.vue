@@ -3,6 +3,7 @@ import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchRiskWarningStats, fetchRiskWarnings } from '../../api/task'
+import { RISK_STRATEGY_ROUTE_CONTRACTS } from '../../api/riskStrategyContracts'
 import FilterDock from '../../components/common/FilterDock.vue'
 import ReportRevisionStatusTags from '../../components/report/ReportRevisionStatusTags.vue'
 import RiskWarningStatsCards from '../../components/report/RiskWarningStatsCards.vue'
@@ -243,7 +244,7 @@ async function navigateWithQuery() {
   }
 
   await router.replace({
-    path: '/risk-warnings',
+    path: RISK_STRATEGY_ROUTE_CONTRACTS.riskWarnings,
     query: nextQuery
   })
 }

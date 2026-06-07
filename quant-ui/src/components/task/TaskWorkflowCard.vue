@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import DataEmptyState from '../common/DataEmptyState.vue'
-import type { WorkflowInstance } from '../../types/task'
+import type { WorkflowCheckpoint, WorkflowInstance } from '../../types/task'
 import { formatDateTime } from '../../utils/format'
 import { getTaskStatusTagType, getTaskStatusText } from '../../utils/task'
 
 defineProps<{
   workflow: WorkflowInstance | null
+  checkpoint?: WorkflowCheckpoint | null
 }>()
 
 const text = {
@@ -72,6 +73,27 @@ const text = {
         <span>{{ text.graphSnapshot }}</span>
         <pre>{{ workflow.graphSnapshot || '-' }}</pre>
       </div>
+
+      <div v-if="checkpoint" class="checkpoint-panel">
+        <span>Checkpoint</span>
+        <div class="checkpoint-grid">
+          <strong>{{ checkpoint.status || '-' }}</strong>
+          <small>{{ checkpoint.currentStage || '-' }} / {{ checkpoint.currentNode || '-' }}</small>
+          <small>{{ checkpoint.progress == null ? '-' : `${checkpoint.progress}%` }}</small>
+        </div>
+        <p v-if="checkpoint.failureMessage">Failure: {{ checkpoint.failureMessage }}</p>
+      </div>
+
+      <div v-if="checkpoint?.branchDecisions?.length" class="branch-panel">
+        <span>Branch Trace</span>
+        <div class="branch-list">
+          <div v-for="(item, index) in checkpoint.branchDecisions" :key="index">
+            <strong>{{ item.fromNode || '-' }} -> {{ item.nextNode || '-' }}</strong>
+            <small>{{ item.reason || '-' }}</small>
+            <small>{{ item.evidenceQuality || '-' }} / {{ item.riskLevel || '-' }} / {{ item.reviewResult || '-' }}</small>
+          </div>
+        </div>
+      </div>
     </div>
 
     <DataEmptyState v-else :title="text.empty" description="任务尚未绑定或返回工作流实例。" />
@@ -90,7 +112,9 @@ const text = {
 .detail-panel-heading span,
 .workflow-main span,
 .workflow-meta span,
-.graph-snapshot span {
+.graph-snapshot span,
+.checkpoint-panel span,
+.branch-panel span {
   display: block;
   color: #527086;
   font-size: 11px;
@@ -122,7 +146,9 @@ const text = {
 
 .workflow-main,
 .workflow-meta,
-.graph-snapshot {
+.graph-snapshot,
+.checkpoint-panel,
+.branch-panel {
   border-radius: var(--qa-radius-lg);
   background: rgba(20, 32, 51, 0.045);
   box-shadow: inset 0 0 0 1px rgba(20, 32, 51, 0.06);
@@ -188,6 +214,52 @@ const text = {
   font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
   font-size: 12px;
   line-height: 1.7;
+}
+
+.checkpoint-panel,
+.branch-panel {
+  grid-column: 1 / -1;
+  padding: 16px;
+}
+
+.checkpoint-grid,
+.branch-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.checkpoint-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.checkpoint-grid strong,
+.checkpoint-grid small,
+.branch-list strong,
+.branch-list small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checkpoint-grid strong,
+.branch-list strong {
+  color: #142033;
+  font-weight: 950;
+}
+
+.checkpoint-grid small,
+.branch-list small,
+.checkpoint-panel p {
+  color: #6b7a8d;
+}
+
+.branch-list div {
+  padding: 12px;
+  border-radius: var(--qa-radius-lg);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 @media (max-width: 960px) {

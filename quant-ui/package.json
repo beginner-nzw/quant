@@ -6,6 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" --",
+    "e2e": "node scripts/e2e-smoke-check.mjs",
+    "e2e:phase017": "powershell -ExecutionPolicy Bypass -File ../quant-ai-platform/test-harness/run-phase017-e2e.ps1",
+    "load:phase017": "powershell -ExecutionPolicy Bypass -File ../quant-ai-platform/test-harness/run-phase017-load.ps1",
+    "failure:phase017": "powershell -ExecutionPolicy Bypass -File ../quant-ai-platform/test-harness/run-phase017-failure-recovery.ps1",
+    "test:phase017": "npm run e2e && npm run e2e:phase017 && npm run load:phase017 && npm run failure:phase017",
+    "check:authority-boundary": "node scripts/authority-boundary-check.mjs",
+    "check:frontend-production-workflow": "node scripts/frontend-production-workflow-check.mjs",
+    "check:market-data-ingest": "node scripts/market-data-ingest-contract-check.mjs",
+    "check:report-contract": "node scripts/report-contract-check.mjs",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build"

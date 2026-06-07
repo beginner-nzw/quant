@@ -6,6 +6,7 @@ import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
 import com.quant.aiorchestrator.domain.vo.TaskStateVO;
 import com.quant.aiorchestrator.domain.vo.WorkflowInstanceVO;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.aiorchestrator.manager.TaskQueryProjectionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
 import com.quant.aiorchestrator.mapper.AiWorkflowInstanceMapper;
@@ -124,7 +125,7 @@ class TaskQueryServiceStateTests {
     private TaskQueryServiceImpl newService(ResearchTaskMapper researchTaskMapper,
                                             StringRedisTemplate stringRedisTemplate,
                                             AiWorkflowInstanceMapper aiWorkflowInstanceMapper) {
-        return new TaskQueryServiceImpl(
+        TaskQueryProjectionManager taskQueryProjectionManager = new TaskQueryProjectionManager(
                 researchTaskMapper,
                 mock(ResearchTaskStepMapper.class),
                 aiWorkflowInstanceMapper,
@@ -138,5 +139,6 @@ class TaskQueryServiceStateTests {
                 new TaskStateManager(),
                 mock(ReportQueryService.class)
         );
+        return new TaskQueryServiceImpl(taskQueryProjectionManager);
     }
 }

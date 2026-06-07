@@ -1,9 +1,12 @@
 server:
   port: 8082
+  shutdown: graceful
 
 spring:
   application:
     name: ai-orchestration-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   datasource:
     url: jdbc:mysql://mysql:3306/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: quant
@@ -13,16 +16,26 @@ spring:
     redis:
       host: redis
       port: 6379
+      timeout: 1s
+      connect-timeout: 1s
   kafka:
     bootstrap-servers: kafka:9092
     consumer:
       group-id: ai-orchestration-service-group
       auto-offset-reset: earliest
+      max-poll-records: 50
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        max.poll.interval.ms: 600000
+        session.timeout.ms: 30000
     producer:
       acks: all
       retries: 3
+      properties:
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        linger.ms: 10
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
   cloud:
@@ -31,15 +44,36 @@ spring:
         server-addr: nacos:8848
       config:
         server-addr: nacos:8848
-      import-check:
-        enabled: false
+        import-check:
+          enabled: false
     sentinel:
       transport:
         dashboard: nacos:8848
 
 quant:
   security:
+    auth:
+      mode: DEMO
     service-actor:
       secret: ${QUANT_SERVICE_ACTOR_SECRET:local-dev-service-actor-secret}
   ai:
     research-task-service-base-url: http://research-task-service:8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

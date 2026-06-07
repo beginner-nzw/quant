@@ -2,6 +2,7 @@ package com.quant.aiorchestrationservice;
 
 import com.quant.aiorchestrator.controller.AuditComplianceController;
 import com.quant.aiorchestrator.controller.GovernedConfigController;
+import com.quant.aiorchestrator.controller.HumanReviewController;
 import com.quant.aiorchestrator.controller.MarketEventController;
 import com.quant.aiorchestrator.controller.MarketIntelligenceController;
 import com.quant.aiorchestrator.controller.ModelAgentConfigController;
@@ -15,6 +16,8 @@ import com.quant.aiorchestrator.domain.dto.AuditCompliancePageQueryDTO;
 import com.quant.aiorchestrator.domain.dto.ConfigRollbackDTO;
 import com.quant.aiorchestrator.domain.dto.EventAutoTriggerRuleUpdateDTO;
 import com.quant.aiorchestrator.domain.dto.EventSourceConfigUpdateDTO;
+import com.quant.aiorchestrator.domain.dto.HumanReviewDecisionDTO;
+import com.quant.aiorchestrator.domain.dto.HumanReviewQueueQueryDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventBatchImportDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventMockIngestDTO;
@@ -40,6 +43,8 @@ import com.quant.aiorchestrator.domain.vo.EventSourceConfigItemVO;
 import com.quant.aiorchestrator.domain.vo.EventSourcePreviewResultVO;
 import com.quant.aiorchestrator.domain.vo.EventSourceRequestDiagnosticResultVO;
 import com.quant.aiorchestrator.domain.vo.GovernedConfigVO;
+import com.quant.aiorchestrator.domain.vo.HumanReviewQueuePageVO;
+import com.quant.aiorchestrator.domain.vo.HumanReviewQueueStatsVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchImportResultVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchPreviewResultVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventCreateResultVO;
@@ -110,6 +115,7 @@ class LegacyTaskApiContractFreezeTest {
             AuditComplianceController.class,
             ModelAgentConfigController.class,
             GovernedConfigController.class,
+            HumanReviewController.class,
             ResearchWorkbenchController.class
     );
 
@@ -123,6 +129,7 @@ class LegacyTaskApiContractFreezeTest {
             "AuditComplianceController",
             "ModelAgentConfigController",
             "GovernedConfigController",
+            "HumanReviewController",
             "ResearchWorkbenchController"
     );
 
@@ -270,6 +277,17 @@ class LegacyTaskApiContractFreezeTest {
                             body(ConfigRollbackDTO.class)),
                     RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_EDIT),
 
+            endpoint(HumanReviewController.class, "GET", "/api/tasks/human-reviews",
+                    resultOf(HumanReviewQueuePageVO.class), List.of(query(HumanReviewQueueQueryDTO.class)),
+                    RoleAccessConfigService.PERMISSION_REPORT_REVIEW),
+            endpoint(HumanReviewController.class, "GET", "/api/tasks/human-reviews/stats",
+                    resultOf(HumanReviewQueueStatsVO.class), List.of(),
+                    RoleAccessConfigService.PERMISSION_REPORT_REVIEW),
+            endpoint(HumanReviewController.class, "POST", "/api/tasks/human-reviews/{queueId}/decision",
+                    resultOf(String.class), List.of(path("queueId", String.class),
+                            body(HumanReviewDecisionDTO.class)),
+                    RoleAccessConfigService.PERMISSION_REPORT_REVIEW),
+
             endpoint(ResearchWorkbenchController.class, "GET", "/api/tasks/research-workbench",
                     resultOf(ResearchWorkbenchVO.class), List.of(query(ResearchWorkbenchQueryDTO.class)), null)
     );
@@ -328,14 +346,15 @@ class LegacyTaskApiContractFreezeTest {
     void apiTasksControllerClassesRemainApprovedSet() throws Exception {
         Set<String> actual = new TreeSet<>();
         Pattern apiTasksBaseMapping = Pattern.compile("@RequestMapping\\s*\\(\\s*"
-                + "(?:value\\s*=\\s*|path\\s*=\\s*)?\"/api/tasks\"");
+                + "(?:value\\s*=\\s*|path\\s*=\\s*)?\"/api/tasks(?:/|\"|$)");
 
         try (Stream<Path> files = Files.walk(resolveControllerSourceRoot())) {
             files.filter(path -> Files.isRegularFile(path) && path.getFileName().toString().endsWith("Controller.java"))
                     .forEach(path -> {
                         try {
                             String source = Files.readString(path);
-                            if (apiTasksBaseMapping.matcher(source).find()) {
+                            if (apiTasksBaseMapping.matcher(source).find()
+                                    || source.contains("@RequestMapping(MarketDataIngestStableContract.LEGACY_TASK_API_BASE)")) {
                                 actual.add(path.getFileName().toString().replace(".java", ""));
                             }
                         } catch (Exception e) {
@@ -352,7 +371,7 @@ class LegacyTaskApiContractFreezeTest {
     void controllersDoNotIntroduceDomainNamespaceAliases() throws Exception {
         Pattern domainNamespaceAlias = Pattern.compile("@(?:RequestMapping|GetMapping|PostMapping|PutMapping|DeleteMapping|PatchMapping)"
                 + "\\s*\\(\\s*(?:value\\s*=\\s*|path\\s*=\\s*)?\""
-                + "/api/(reports|risk|risks|strategy|strategies|market|markets|audit|config|workbench)(?:/|\"|$)");
+                + "/api/(risk|risks|strategy|strategies|market|markets|audit|config|workbench)(?:/|\"|$)");
         List<String> aliases = new ArrayList<>();
 
         try (Stream<Path> files = Files.walk(resolveControllerSourceRoot())) {
@@ -371,7 +390,13 @@ class LegacyTaskApiContractFreezeTest {
         }
 
         aliases.sort(Comparator.naturalOrder());
-        assertTrue(aliases.isEmpty(), "Phase 006 must not add domain namespace aliases: " + aliases);
+        assertTrue(aliases.isEmpty(), "Unapproved domain namespace aliases must stay out of legacy route cutover: " + aliases);
+    }
+
+    @Test
+    void reportLegacyControllerRemainsDeprecatedCompatibilityAlias() {
+        assertTrue(ReportController.class.isAnnotationPresent(Deprecated.class),
+                "legacy /api/tasks report routes must remain marked as compatibility aliases");
     }
 
     private static Method findMappedMethod(EndpointContract contract) {
@@ -536,6 +561,8 @@ class LegacyTaskApiContractFreezeTest {
                 "GET /api/tasks/{taskId}/steps -> TaskQueryController",
                 "GET /api/tasks/{taskId}/workflow -> TaskQueryController",
                 "POST /api/tasks/{taskId}/cancel -> TaskQueryController",
+                "POST /api/tasks/{taskId}/rerun -> TaskQueryController",
+                "POST /api/tasks/{taskId}/resume -> TaskQueryController",
                 "POST /api/tasks/{taskId}/retry -> TaskQueryController"
         ));
 

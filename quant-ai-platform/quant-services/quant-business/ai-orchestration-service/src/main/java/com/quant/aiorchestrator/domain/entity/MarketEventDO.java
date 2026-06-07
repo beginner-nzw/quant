@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -21,12 +22,21 @@ public class MarketEventDO {
     private String eventSummary;
     private String sourceChannel;
     private String sourceUrl;
+    private String normalizedFingerprint;
+    private String provenanceType;
+    private String provenanceRef;
+    private String provenanceDetail;
+    private BigDecimal confidenceScore;
     private String impactLevel;
     private String eventStatus;
     private String autoTriggerRuleCode;
     private String autoTriggerStatus;
     private String autoTriggerTaskId;
     private String autoTriggerMessage;
+    private String autoTriggerReason;
+    private String autoTriggerSource;
+    private String autoTriggerFailureCode;
+    private Integer autoTriggerRetryCount;
     private LocalDateTime autoTriggerAttemptedAt;
     private LocalDateTime occurredAt;
     private String createdBy;

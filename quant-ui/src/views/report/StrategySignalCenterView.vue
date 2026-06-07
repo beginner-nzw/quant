@@ -9,6 +9,7 @@ import {
   fetchStrategySignals,
   updateStrategySignalStatus
 } from '../../api/task'
+import { RISK_STRATEGY_ROUTE_CONTRACTS } from '../../api/riskStrategyContracts'
 import FilterDock from '../../components/common/FilterDock.vue'
 import ReportRevisionStatusTags from '../../components/report/ReportRevisionStatusTags.vue'
 import StrategySignalStatsCards from '../../components/report/StrategySignalStatsCards.vue'
@@ -337,7 +338,7 @@ async function navigateWithQuery() {
   }
 
   await router.replace({
-    path: '/signals',
+    path: RISK_STRATEGY_ROUTE_CONTRACTS.strategySignals,
     query: nextQuery
   })
 }

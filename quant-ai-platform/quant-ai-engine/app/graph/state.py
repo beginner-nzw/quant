@@ -24,14 +24,29 @@ class WorkflowState(TypedDict, total=False):
     current_stage: str
     current_node: str
     progress: int
+    resume_from_checkpoint: bool
+    resume_from_node: str
+    rerun_node: str
+    completed_nodes: List[str]
+    branch_decisions: List[Dict[str, Any]]
+    evidence_quality: str
+    risk_level: str
+    review_result: str
+    checkpoint_status: str
 
     workflow_instance_id: str
     need_human_review: bool
+    waiting_human_review: bool
+    human_review_gate: Dict[str, Any]
 
     plan_result: Dict[str, Any]
     intent_result: Dict[str, Any]
+    event_extraction_result: Dict[str, Any]
+    industry_research_result: Dict[str, Any]
     financial_result: Dict[str, Any]
     risk_result: Dict[str, Any]
+    strategy_result: Dict[str, Any]
+    audit_result: Dict[str, Any]
     report_result: Dict[str, Any]
     evidence_items: List[Dict[str, Any]]
     evidence_refs: List[str]

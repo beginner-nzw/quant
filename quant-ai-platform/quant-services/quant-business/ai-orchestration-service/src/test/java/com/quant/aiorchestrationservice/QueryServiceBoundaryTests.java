@@ -116,6 +116,10 @@ class QueryServiceBoundaryTests {
     private boolean isAllowedWorkbenchSurface(Path sourceRoot, Path sourceFile) {
         String relativePath = sourceRoot.relativize(sourceFile).toString().replace('\\', '/');
         return relativePath.equals("controller/ResearchWorkbenchController.java")
+                || relativePath.equals("manager/ResearchWorkbenchProjectionManager.java")
+                || relativePath.equals("manager/ResearchWorkbenchItemAssembler.java")
+                || relativePath.equals("manager/ResearchWorkbenchReadManager.java")
+                || relativePath.equals("manager/ResearchWorkbenchDispositionManager.java")
                 || relativePath.equals("service/ResearchWorkbenchQueryService.java")
                 || relativePath.equals("service/impl/ResearchWorkbenchQueryServiceImpl.java")
                 || relativePath.equals("domain/dto/ResearchWorkbenchQueryDTO.java")

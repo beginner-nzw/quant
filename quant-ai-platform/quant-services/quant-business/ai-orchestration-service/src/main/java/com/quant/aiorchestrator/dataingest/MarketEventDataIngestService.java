@@ -1,11 +1,15 @@
 package com.quant.aiorchestrator.dataingest;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.dto.MarketEventBatchImportDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventSourceSyncDTO;
+import com.quant.aiorchestrator.domain.entity.MarketEventIngestRunDO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchImportResultVO;
 import com.quant.aiorchestrator.domain.vo.EventSourceConfigItemVO;
+import com.quant.aiorchestrator.market.MarketDataIngestStableContract;
+import com.quant.aiorchestrator.mapper.MarketEventIngestRunMapper;
 import com.quant.aiorchestrator.service.EventSourceSyncAdapter;
 import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
 import com.quant.common.core.exception.BizException;
@@ -31,6 +35,7 @@ public class MarketEventDataIngestService implements DataIngestService {
     private final List<EventSourceSyncAdapter> eventSourceSyncAdapters;
     private final RawPayloadStore rawPayloadStore;
     private final MarketEventIngestHistoryService marketEventIngestHistoryService;
+    private final MarketEventIngestRunMapper marketEventIngestRunMapper;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
@@ -44,16 +49,33 @@ public class MarketEventDataIngestService implements DataIngestService {
         validateRequest(sourceConfig, request, importHandler);
         EventSourceSyncAdapter adapter = resolveAdapter(sourceConfig);
         int attempts = resolveMaxAttempts();
+        String ingestRunId = UUID.randomUUID().toString();
         SourceFetchResult fetchResult = null;
+        String lastRawPayloadRef = null;
+        SourceProvenance lastProvenance = null;
         RuntimeException lastFailure = null;
 
         for (int attempt = 1; attempt <= attempts; attempt++) {
             try {
-                fetchResult = adapter.fetch(sourceConfig, request);
-                fetchResult.setAttemptNo(attempt);
-                fetchResult.setMaxAttempts(attempts);
-                ensureProvenance(fetchResult, sourceConfig, request);
-                attachRawPayloadRef(fetchResult, sourceConfig, "FETCHED");
+                SourceRawPayload rawPayload = adapter.fetchRaw(sourceConfig, request);
+                SourceProvenance provenance = rawPayload == null || rawPayload.getProvenance() == null
+                        ? SourceProvenance.from(sourceConfig, request.getTargetCode())
+                        : rawPayload.getProvenance();
+                String rawPayloadRef = rawPayloadStore.save(sourceConfig.getSourceCode(), "FETCHED", rawPayload);
+                provenance.setRawPayloadRef(rawPayloadRef);
+                lastRawPayloadRef = rawPayloadRef;
+                lastProvenance = provenance;
+
+                fetchResult = SourceFetchResult.builder()
+                        .status(SourceFetchStatus.FETCHED)
+                        .provenance(provenance)
+                        .rawPayloadRef(rawPayloadRef)
+                        .httpStatus(rawPayload == null ? null : rawPayload.getHttpStatus())
+                        .standardizedEvents(adapter.standardize(rawPayload, sourceConfig, request))
+                        .attemptNo(attempt)
+                        .maxAttempts(attempts)
+                        .build();
+                recordIngestRun(ingestRunId, sourceConfig, request, fetchResult, null);
                 if (fetchResult.getStandardizedEvents() == null || fetchResult.getStandardizedEvents().isEmpty()) {
                     throw new BizException("DATA_INGEST_STANDARDIZED_EMPTY", "source adapter returned no standardized market events");
                 }
@@ -62,6 +84,7 @@ public class MarketEventDataIngestService implements DataIngestService {
                 importDTO.setEvents(fetchResult.getStandardizedEvents());
                 MarketEventBatchImportResultVO imported = importHandler.importEvents(importDTO, buildSourceDetail(sourceConfig, request, fetchResult));
                 fetchResult.setStatus(SourceFetchStatus.STANDARDIZED);
+                recordIngestRun(ingestRunId, sourceConfig, request, fetchResult, imported);
                 return SourceIngestResult.builder()
                         .fetchResult(fetchResult)
                         .importResult(imported)
@@ -69,7 +92,13 @@ public class MarketEventDataIngestService implements DataIngestService {
             } catch (RuntimeException e) {
                 lastFailure = e;
                 fetchResult = failedFetch(sourceConfig, request, attempt, attempts, e);
-                attachRawPayloadRef(fetchResult, sourceConfig, attempt >= attempts ? "DEADLETTER" : "RETRY");
+                if (StringUtils.hasText(lastRawPayloadRef)) {
+                    fetchResult.setProvenance(lastProvenance);
+                    fetchResult.setRawPayloadRef(lastRawPayloadRef);
+                } else {
+                    attachFailurePayloadRef(fetchResult, sourceConfig, request, attempt >= attempts ? "DEADLETTER" : "RETRY");
+                }
+                recordIngestRun(ingestRunId, sourceConfig, request, fetchResult, null);
                 appendFetchFailureHistory(sourceConfig, request, fetchResult);
                 if (attempt >= attempts) {
                     publishDeadletter(sourceConfig, request, fetchResult);
@@ -109,37 +138,27 @@ public class MarketEventDataIngestService implements DataIngestService {
                 .orElseThrow(() -> new BizException("DATA_INGEST_ADAPTER_UNSUPPORTED", "no data ingest source adapter supports current source"));
     }
 
-    private void ensureProvenance(SourceFetchResult fetchResult,
-                                  EventSourceConfigItemVO sourceConfig,
-                                  MarketEventSourceSyncDTO request) {
-        if (fetchResult.getStatus() == null) {
-            fetchResult.setStatus(SourceFetchStatus.FETCHED);
-        }
-        if (fetchResult.getProvenance() == null) {
-            fetchResult.setProvenance(SourceProvenance.from(sourceConfig, request.getTargetCode()));
-        }
-    }
-
-    private void attachRawPayloadRef(SourceFetchResult fetchResult,
-                                     EventSourceConfigItemVO sourceConfig,
-                                     String stage) {
+    private void attachFailurePayloadRef(SourceFetchResult fetchResult,
+                                         EventSourceConfigItemVO sourceConfig,
+                                         MarketEventSourceSyncDTO request,
+                                         String stage) {
         if (fetchResult == null) {
             return;
         }
         Map<String, Object> rawPayload = new LinkedHashMap<>();
         rawPayload.put("status", fetchResult.getStatus());
         rawPayload.put("provenance", fetchResult.getProvenance());
-        rawPayload.put("httpStatus", fetchResult.getHttpStatus());
+        rawPayload.put("request", request);
         rawPayload.put("attemptNo", fetchResult.getAttemptNo());
         rawPayload.put("maxAttempts", fetchResult.getMaxAttempts());
         rawPayload.put("errorCode", fetchResult.getErrorCode());
         rawPayload.put("errorMessage", fetchResult.getErrorMessage());
-        rawPayload.put("standardizedEvents", fetchResult.getStandardizedEvents());
         String ref = rawPayloadStore.save(sourceConfig.getSourceCode(), stage, rawPayload);
         if (fetchResult.getProvenance() == null) {
             fetchResult.setProvenance(SourceProvenance.from(sourceConfig, null));
         }
         fetchResult.getProvenance().setRawPayloadRef(ref);
+        fetchResult.setRawPayloadRef(ref);
     }
 
     private SourceFetchResult failedFetch(EventSourceConfigItemVO sourceConfig,
@@ -162,7 +181,7 @@ public class MarketEventDataIngestService implements DataIngestService {
                                            MarketEventSourceSyncDTO request,
                                            SourceFetchResult fetchResult) {
         marketEventIngestHistoryService.appendHistory(
-                "SOURCE_SYNC",
+                MarketDataIngestStableContract.SOURCE_SYNC_OPERATION,
                 defaultValue(sourceConfig.getSourceName(), "data ingest source"),
                 sourceConfig.getSourceCode(),
                 sourceConfig.getSourceName(),
@@ -202,6 +221,64 @@ public class MarketEventDataIngestService implements DataIngestService {
         } catch (Exception e) {
             log.warn("publish market event ingest deadletter failed, sourceCode={}", sourceConfig.getSourceCode(), e);
         }
+    }
+
+    private void recordIngestRun(String ingestRunId,
+                                 EventSourceConfigItemVO sourceConfig,
+                                 MarketEventSourceSyncDTO request,
+                                 SourceFetchResult fetchResult,
+                                 MarketEventBatchImportResultVO importResult) {
+        try {
+            MarketEventIngestRunDO entity = new MarketEventIngestRunDO();
+            entity.setIngestRunId(ingestRunId);
+            entity.setSourceCode(sourceConfig.getSourceCode());
+            entity.setSourceName(sourceConfig.getSourceName());
+            entity.setSourceCategory(sourceConfig.getSourceCategory());
+            entity.setSourceChannel(sourceConfig.getSourceChannel());
+            entity.setIngestMode(sourceConfig.getIngestMode());
+            entity.setRequestTarget(request == null ? null : request.getTargetCode());
+            entity.setFetchStatus(fetchResult == null || fetchResult.getStatus() == null ? "UNKNOWN" : fetchResult.getStatus().name());
+            entity.setRawPayloadRef(resolveRawPayloadRef(fetchResult));
+            entity.setRetryCount(fetchResult == null || fetchResult.getAttemptNo() == null ? 0 : Math.max(0, fetchResult.getAttemptNo() - 1));
+            entity.setMaxRetryCount(fetchResult == null || fetchResult.getMaxAttempts() == null ? 0 : fetchResult.getMaxAttempts());
+            entity.setDeadlettered(fetchResult != null && SourceFetchStatus.DEADLETTERED.equals(fetchResult.getStatus()) ? 1 : 0);
+            entity.setTotalCount(importResult == null || importResult.getTotalCount() == null ? 0 : importResult.getTotalCount());
+            entity.setSuccessCount(importResult == null || importResult.getSuccessCount() == null ? 0 : importResult.getSuccessCount());
+            entity.setFailedCount(importResult == null || importResult.getFailedCount() == null ? 0 : importResult.getFailedCount());
+            entity.setDuplicateCount(importResult == null || importResult.getDuplicateCount() == null ? 0 : importResult.getDuplicateCount());
+            entity.setAutoTriggeredCount(importResult == null || importResult.getAutoTriggeredCount() == null ? 0 : importResult.getAutoTriggeredCount());
+            entity.setErrorCode(fetchResult == null ? null : fetchResult.getErrorCode());
+            entity.setErrorMessage(fetchResult == null ? null : fetchResult.getErrorMessage());
+            LocalDateTime now = LocalDateTime.now();
+            MarketEventIngestRunDO existing = marketEventIngestRunMapper.selectOne(
+                    new LambdaQueryWrapper<MarketEventIngestRunDO>()
+                            .eq(MarketEventIngestRunDO::getIngestRunId, ingestRunId)
+                            .last("limit 1")
+            );
+            if (existing == null) {
+                entity.setCreatedAt(now);
+                entity.setUpdatedAt(now);
+                marketEventIngestRunMapper.insert(entity);
+            } else {
+                entity.setId(existing.getId());
+                entity.setCreatedAt(existing.getCreatedAt());
+                entity.setUpdatedAt(now);
+                marketEventIngestRunMapper.updateById(entity);
+            }
+        } catch (Exception e) {
+            log.warn("record market event ingest run failed, ingestRunId={}, sourceCode={}",
+                    ingestRunId, sourceConfig == null ? null : sourceConfig.getSourceCode(), e);
+        }
+    }
+
+    private String resolveRawPayloadRef(SourceFetchResult fetchResult) {
+        if (fetchResult == null) {
+            return null;
+        }
+        if (StringUtils.hasText(fetchResult.getRawPayloadRef())) {
+            return fetchResult.getRawPayloadRef();
+        }
+        return fetchResult.getProvenance() == null ? null : fetchResult.getProvenance().getRawPayloadRef();
     }
 
     private String buildSourceDetail(EventSourceConfigItemVO sourceConfig,

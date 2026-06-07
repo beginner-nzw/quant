@@ -29,6 +29,9 @@ public class TaskReportVO {
     private List<ReportSectionVO> sections;
     private List<ReportEvidenceItemVO> evidenceItems;
     private List<String> evidenceRefs;
+    private Map<String, Object> strategyCandidate;
+    private List<Map<String, Object>> strategyFactors;
+    private Map<String, Object> auditSupport;
     private List<HumanReviewRecordVO> humanReviewRecords;
     private String reviewSuggestion;
     private String reviewStatus;

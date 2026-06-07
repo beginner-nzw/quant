@@ -12,7 +12,10 @@ public class MarketEventBatchImportItemVO {
     private String targetCode;
     private String targetName;
     private String eventTitle;
+    private String normalizedFingerprint;
     private String autoTriggerStatus;
     private String autoTriggerTaskId;
+    private String autoTriggerReason;
+    private String autoTriggerFailureCode;
     private String message;
 }

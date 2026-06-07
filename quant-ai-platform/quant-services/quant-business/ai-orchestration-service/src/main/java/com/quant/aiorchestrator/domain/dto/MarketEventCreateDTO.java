@@ -2,6 +2,7 @@ package com.quant.aiorchestrator.domain.dto;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -22,6 +23,14 @@ public class MarketEventCreateDTO {
     private String sourceChannel;
 
     private String sourceUrl;
+
+    private String provenanceType;
+
+    private String provenanceRef;
+
+    private String provenanceDetail;
+
+    private BigDecimal confidenceScore;
 
     private String impactLevel;
 

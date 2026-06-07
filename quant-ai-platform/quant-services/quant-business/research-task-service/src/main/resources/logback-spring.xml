@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="appName" source="spring.application.name" defaultValue="research-task-service"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>{"ts":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX}","level":"%level","service":"${appName}","traceId":"%X{traceId:-}","thread":"%thread","logger":"%logger{40}","message":"%replace(%msg){'&quot;','\\&quot;'}","exception":"%replace(%ex{short}){'[\r\n]+',' | '}"}%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="${LOG_LEVEL:INFO}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

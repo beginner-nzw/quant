@@ -124,6 +124,8 @@ class ModelClient:
         mapping = {
             "planner": "TASK_PLANNING",
             "intent": "TASK_INTENT",
+            "event_extraction": "EVENT_EXTRACTION",
+            "industry_research": "INDUSTRY_RESEARCH",
             "financial": "FINANCIAL_ANALYSIS",
             "risk": "RISK_REVIEW",
             "report": "REPORT_GENERATION",

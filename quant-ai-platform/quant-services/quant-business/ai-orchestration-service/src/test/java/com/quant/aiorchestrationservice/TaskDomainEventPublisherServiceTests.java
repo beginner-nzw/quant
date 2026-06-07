@@ -11,6 +11,9 @@ import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalFactorMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalMapper;
+import com.quant.aiorchestrator.manager.KafkaMessagePublisherManager;
+import com.quant.aiorchestrator.manager.TaskGeneratedDomainEventManager;
+import com.quant.aiorchestrator.risk.RiskStrategyStableContract;
 import com.quant.aiorchestrator.service.TaskDomainEventPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -51,14 +54,14 @@ class TaskDomainEventPublisherServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
         TaskDomainEventPublisherService service = new TaskDomainEventPublisherServiceImpl(
-                objectMapper,
-                kafkaTemplate,
+                new TaskGeneratedDomainEventManager(
                 riskWarningMapper,
                 riskWarningDetailMapper,
                 strategySignalMapper,
                 strategySignalFactorMapper,
-                reportEvidenceRefMapper,
-                taskMessageLogService
+                        reportEvidenceRefMapper
+                ),
+                new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
         );
 
         AiTaskResultMessage message = buildSuccessMessage();
@@ -82,14 +85,66 @@ class TaskDomainEventPublisherServiceTests {
         ArgumentCaptor<MessageEnvelope> messageCaptor = ArgumentCaptor.forClass(MessageEnvelope.class);
         verify(taskMessageLogService, times(3)).recordProduced(topicCaptor.capture(), messageCaptor.capture());
 
-        assertEquals(KafkaTopicConstants.RISK_WARNING_GENERATED, topicCaptor.getAllValues().get(0));
-        assertEquals(KafkaTopicConstants.STRATEGY_SIGNAL_GENERATED, topicCaptor.getAllValues().get(1));
+        assertEquals(RiskStrategyStableContract.RISK_WARNING_GENERATED_TOPIC, topicCaptor.getAllValues().get(0));
+        assertEquals(RiskStrategyStableContract.STRATEGY_SIGNAL_GENERATED_TOPIC, topicCaptor.getAllValues().get(1));
         assertEquals(KafkaTopicConstants.REPORT_GENERATED, topicCaptor.getAllValues().get(2));
 
-        assertEquals(MessageTypeConstants.RISK_WARNING_GENERATED, messageCaptor.getAllValues().get(0).getMessageType());
-        assertEquals(MessageTypeConstants.STRATEGY_SIGNAL_GENERATED, messageCaptor.getAllValues().get(1).getMessageType());
+        assertEquals(RiskStrategyStableContract.RISK_WARNING_GENERATED_MESSAGE_TYPE, messageCaptor.getAllValues().get(0).getMessageType());
+        assertEquals(RiskStrategyStableContract.STRATEGY_SIGNAL_GENERATED_MESSAGE_TYPE, messageCaptor.getAllValues().get(1).getMessageType());
         assertEquals(MessageTypeConstants.REPORT_GENERATED, messageCaptor.getAllValues().get(2).getMessageType());
         assertTrue(messageCaptor.getAllValues().stream().allMatch(item -> "task-1".equals(item.getTaskId())));
+    }
+
+    @Test
+    void generatedEventsUseDeterministicMessageIdentityForReplay() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
+        RiskWarningMapper riskWarningMapper = mock(RiskWarningMapper.class);
+        RiskWarningDetailMapper riskWarningDetailMapper = mock(RiskWarningDetailMapper.class);
+        StrategySignalMapper strategySignalMapper = mock(StrategySignalMapper.class);
+        StrategySignalFactorMapper strategySignalFactorMapper = mock(StrategySignalFactorMapper.class);
+        ReportEvidenceRefMapper reportEvidenceRefMapper = mock(ReportEvidenceRefMapper.class);
+        TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
+
+        TaskDomainEventPublisherService service = new TaskDomainEventPublisherServiceImpl(
+                new TaskGeneratedDomainEventManager(
+                riskWarningMapper,
+                riskWarningDetailMapper,
+                strategySignalMapper,
+                strategySignalFactorMapper,
+                        reportEvidenceRefMapper
+                ),
+                new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
+        );
+
+        when(riskWarningMapper.selectOne(any())).thenReturn(buildWarning());
+        when(riskWarningDetailMapper.selectCount(any())).thenReturn(4L);
+        when(strategySignalMapper.selectOne(any())).thenReturn(buildSignal());
+        when(strategySignalFactorMapper.selectCount(any())).thenReturn(3L);
+        when(reportEvidenceRefMapper.selectCount(any())).thenReturn(6L);
+        doReturn(CompletableFuture.completedFuture(null)).when(kafkaTemplate).send(anyString(), anyString(), anyString());
+
+        AiTaskResultMessage message = buildSuccessMessage();
+        ResearchReportDO report = buildReport();
+        service.publishGeneratedEvents(message, report);
+        service.publishGeneratedEvents(message, report);
+
+        ArgumentCaptor<MessageEnvelope> messageCaptor = ArgumentCaptor.forClass(MessageEnvelope.class);
+        verify(taskMessageLogService, times(6)).recordProduced(anyString(), messageCaptor.capture());
+
+        assertEquals(messageCaptor.getAllValues().get(0).getMessageId(), messageCaptor.getAllValues().get(3).getMessageId());
+        assertEquals(messageCaptor.getAllValues().get(1).getMessageId(), messageCaptor.getAllValues().get(4).getMessageId());
+        assertEquals(messageCaptor.getAllValues().get(2).getMessageId(), messageCaptor.getAllValues().get(5).getMessageId());
+        assertEquals(messageCaptor.getAllValues().get(0).getTimestamp(), messageCaptor.getAllValues().get(3).getTimestamp());
+    }
+
+    @Test
+    void riskStrategyGeneratedContractAliasesCommonTopicAndMessageConstants() {
+        assertEquals(KafkaTopicConstants.RISK_WARNING_GENERATED, RiskStrategyStableContract.RISK_WARNING_GENERATED_TOPIC);
+        assertEquals(KafkaTopicConstants.STRATEGY_SIGNAL_GENERATED, RiskStrategyStableContract.STRATEGY_SIGNAL_GENERATED_TOPIC);
+        assertEquals(MessageTypeConstants.RISK_WARNING_GENERATED, RiskStrategyStableContract.RISK_WARNING_GENERATED_MESSAGE_TYPE);
+        assertEquals(MessageTypeConstants.STRATEGY_SIGNAL_GENERATED, RiskStrategyStableContract.STRATEGY_SIGNAL_GENERATED_MESSAGE_TYPE);
     }
 
     private AiTaskResultMessage buildSuccessMessage() {

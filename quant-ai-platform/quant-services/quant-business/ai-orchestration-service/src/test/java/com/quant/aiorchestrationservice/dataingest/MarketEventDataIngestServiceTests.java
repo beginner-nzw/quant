@@ -3,14 +3,15 @@ package com.quant.aiorchestrationservice.dataingest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.dataingest.MarketEventDataIngestService;
 import com.quant.aiorchestrator.dataingest.RawPayloadStore;
-import com.quant.aiorchestrator.dataingest.SourceFetchResult;
 import com.quant.aiorchestrator.dataingest.SourceFetchStatus;
 import com.quant.aiorchestrator.dataingest.SourceProvenance;
+import com.quant.aiorchestrator.dataingest.SourceRawPayload;
 import com.quant.aiorchestrator.domain.dto.MarketEventBatchImportDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventSourceSyncDTO;
 import com.quant.aiorchestrator.domain.vo.EventSourceConfigItemVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventBatchImportResultVO;
+import com.quant.aiorchestrator.mapper.MarketEventIngestRunMapper;
 import com.quant.aiorchestrator.service.EventSourceSyncAdapter;
 import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
 import com.quant.common.core.exception.BizException;
@@ -42,21 +43,27 @@ class MarketEventDataIngestServiceTests {
         EventSourceSyncAdapter adapter = mock(EventSourceSyncAdapter.class);
         RawPayloadStore rawPayloadStore = mock(RawPayloadStore.class);
         MarketEventIngestHistoryService historyService = mock(MarketEventIngestHistoryService.class);
+        MarketEventIngestRunMapper ingestRunMapper = mock(MarketEventIngestRunMapper.class);
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         MarketEventCreateDTO event = buildEvent();
+        SourceRawPayload rawPayload = SourceRawPayload.builder()
+                .provenance(SourceProvenance.from(source, request.getTargetCode()))
+                .httpStatus(200)
+                .requestMethod("GET")
+                .requestUrl("https://source.example/rss")
+                .body("<rss><channel><item><title>Market event</title></item></channel></rss>")
+                .build();
 
         when(adapter.supports(source)).thenReturn(true);
-        when(adapter.fetch(source, request)).thenReturn(SourceFetchResult.builder()
-                .status(SourceFetchStatus.FETCHED)
-                .provenance(SourceProvenance.from(source, request.getTargetCode()))
-                .standardizedEvents(List.of(event))
-                .build());
+        when(adapter.fetchRaw(source, request)).thenReturn(rawPayload);
+        when(adapter.standardize(rawPayload, source, request)).thenReturn(List.of(event));
         when(rawPayloadStore.save(eq("NEWS_WIRE"), eq("FETCHED"), any())).thenReturn("file:///raw/news.json");
 
         MarketEventDataIngestService service = new MarketEventDataIngestService(
                 List.of(adapter),
                 rawPayloadStore,
                 historyService,
+                ingestRunMapper,
                 kafkaTemplate,
                 new ObjectMapper()
         );
@@ -83,11 +90,12 @@ class MarketEventDataIngestServiceTests {
         EventSourceSyncAdapter adapter = mock(EventSourceSyncAdapter.class);
         RawPayloadStore rawPayloadStore = mock(RawPayloadStore.class);
         MarketEventIngestHistoryService historyService = mock(MarketEventIngestHistoryService.class);
+        MarketEventIngestRunMapper ingestRunMapper = mock(MarketEventIngestRunMapper.class);
         KafkaTemplate<String, String> kafkaTemplate = mock(KafkaTemplate.class);
         AtomicInteger rawCounter = new AtomicInteger();
 
         when(adapter.supports(source)).thenReturn(true);
-        when(adapter.fetch(source, request)).thenThrow(new BizException("UPSTREAM_DOWN", "upstream unavailable"));
+        when(adapter.fetchRaw(source, request)).thenThrow(new BizException("UPSTREAM_DOWN", "upstream unavailable"));
         when(rawPayloadStore.save(eq("POLICY_TRACKER"), any(), any()))
                 .thenAnswer(invocation -> "file:///raw/failure-" + rawCounter.incrementAndGet() + ".json");
 
@@ -95,6 +103,7 @@ class MarketEventDataIngestServiceTests {
                 List.of(adapter),
                 rawPayloadStore,
                 historyService,
+                ingestRunMapper,
                 kafkaTemplate,
                 new ObjectMapper()
         );
@@ -108,7 +117,7 @@ class MarketEventDataIngestServiceTests {
                 }
         ));
 
-        verify(adapter, times(2)).fetch(source, request);
+        verify(adapter, times(2)).fetchRaw(source, request);
         verify(historyService).appendHistory(
                 eq("SOURCE_SYNC"),
                 eq("Policy Source"),

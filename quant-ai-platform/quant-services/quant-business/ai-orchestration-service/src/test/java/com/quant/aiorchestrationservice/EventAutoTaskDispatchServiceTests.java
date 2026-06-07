@@ -2,6 +2,9 @@ package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
+import com.quant.aiorchestrator.manager.EventAutoTaskHttpDispatchManager;
+import com.quant.aiorchestrator.manager.EventAutoTaskPayloadManager;
+import com.quant.aiorchestrator.manager.EventAutoTaskServiceActorManager;
 import com.quant.aiorchestrator.service.impl.EventAutoTaskDispatchServiceImpl;
 import com.quant.common.core.exception.BizException;
 import com.quant.common.security.SecurityConstants;
@@ -16,7 +19,7 @@ class EventAutoTaskDispatchServiceTests {
 
     @Test
     void autoDispatchFailsClosedWhenServiceActorSecretMissing() {
-        EventAutoTaskDispatchServiceImpl service = new EventAutoTaskDispatchServiceImpl(new ObjectMapper());
+        EventAutoTaskDispatchServiceImpl service = newService();
 
         BizException ex = assertThrows(BizException.class, () -> service.buildServiceActorHeaders(event()));
 
@@ -25,7 +28,7 @@ class EventAutoTaskDispatchServiceTests {
 
     @Test
     void autoDispatchBuildsSignedServiceActorHeadersWhenSecretConfigured() {
-        EventAutoTaskDispatchServiceImpl service = new EventAutoTaskDispatchServiceImpl(new ObjectMapper());
+        EventAutoTaskDispatchServiceImpl service = newService();
         ReflectionTestUtils.setField(service, "serviceActorSecret", "local-dev-service-actor-secret");
 
         String[] headers = service.buildServiceActorHeaders(event());
@@ -43,6 +46,18 @@ class EventAutoTaskDispatchServiceTests {
         MarketEventDO event = new MarketEventDO();
         event.setCreatedBy("market-ingest");
         return event;
+    }
+
+    private EventAutoTaskDispatchServiceImpl newService() {
+        EventAutoTaskServiceActorManager serviceActorManager = new EventAutoTaskServiceActorManager();
+        return new EventAutoTaskDispatchServiceImpl(
+                new EventAutoTaskHttpDispatchManager(
+                        new ObjectMapper(),
+                        new EventAutoTaskPayloadManager(),
+                        serviceActorManager
+                ),
+                serviceActorManager
+        );
     }
 
     private void assertContainsPair(String[] headers, String name, String value) {

@@ -10,6 +10,8 @@ class PromptBuilderService:
     REPORT_PROMPT_VERSION = "report-v14"
     FINANCIAL_PROMPT_VERSION = "financial-v3"
     RISK_PROMPT_VERSION = "risk-v5"
+    EVENT_EXTRACTION_PROMPT_VERSION = "event-extraction-v1"
+    INDUSTRY_RESEARCH_PROMPT_VERSION = "industry-research-v1"
 
     def __init__(self) -> None:
         self.prompt_template_repository = PromptTemplateRepository()
@@ -381,6 +383,103 @@ class PromptBuilderService:
 
         user_prompt = json.dumps(prompt_payload, ensure_ascii=False, indent=2)
         return system_prompt, user_prompt
+
+    def build_event_extraction_prompts(
+        self,
+        *,
+        state: dict[str, Any],
+        fallback_result: dict[str, Any],
+        format_instructions: str | None = None,
+    ) -> tuple[str, str]:
+        system_prompt = self.prompt_template_repository.load_system_prompt(
+            "event_extraction_agent_template",
+            (
+                "You are an event extraction agent for an enterprise research workflow. "
+                "Extract only events supported by the provided task and market context. "
+                "Return JSON only. Do not treat fallback fields as verified facts."
+            ),
+        )
+        if format_instructions:
+            system_prompt = f"{system_prompt}\n\nOutput format:\n{format_instructions}"
+
+        prompt_payload = {
+            "promptVersion": self.EVENT_EXTRACTION_PROMPT_VERSION,
+            "task": self._extract_runtime_task(state),
+            "sourceContext": state.get("source_context") or {},
+            "taskContext": {
+                "sourceEvent": (state.get("task_context") or {}).get("sourceEvent") or {},
+                "summary": (state.get("task_context") or {}).get("summary") or {},
+            },
+            "marketContext": {
+                "liveMarketEvents": (state.get("market_context") or {}).get("liveMarketEvents") or [],
+                "recentMarketEvents": (state.get("market_context") or {}).get("recentMarketEvents") or [],
+            },
+            "fallbackResult": fallback_result,
+            "outputSchema": {
+                "events": [
+                    {
+                        "eventId": "string",
+                        "eventType": "string",
+                        "title": "string",
+                        "summary": "string",
+                        "occurredAt": "string",
+                        "impactLevel": "enum(LOW,MEDIUM,HIGH)",
+                        "evidenceIds": ["string"],
+                    }
+                ],
+                "eventThemes": ["string"],
+            },
+            "outputRules": [
+                "Every event must be grounded by at least one provided evidence id when available.",
+                "Use fallbackResult only as a candidate extraction baseline, not as independent truth.",
+                "Do not invent URLs, event ids, dates, or impact levels.",
+            ],
+        }
+        return system_prompt, json.dumps(prompt_payload, ensure_ascii=False, indent=2)
+
+    def build_industry_research_prompts(
+        self,
+        *,
+        state: dict[str, Any],
+        fallback_result: dict[str, Any],
+        format_instructions: str | None = None,
+    ) -> tuple[str, str]:
+        system_prompt = self.prompt_template_repository.load_system_prompt(
+            "industry_research_agent_template",
+            (
+                "You are an industry research agent for an enterprise investment workflow. "
+                "Summarize industry drivers, risks, and peer signals only from approved context. "
+                "Return JSON only and keep fallback provenance separate from conclusions."
+            ),
+        )
+        if format_instructions:
+            system_prompt = f"{system_prompt}\n\nOutput format:\n{format_instructions}"
+
+        prompt_payload = {
+            "promptVersion": self.INDUSTRY_RESEARCH_PROMPT_VERSION,
+            "task": self._extract_runtime_task(state),
+            "eventExtractionResult": state.get("event_extraction_result") or {},
+            "marketContext": {
+                "industryName": (state.get("market_context") or {}).get("industryName"),
+                "latestInsightSummary": (state.get("market_context") or {}).get("latestInsightSummary"),
+                "riskWarnings": (state.get("market_context") or {}).get("riskWarnings") or [],
+                "strategySignals": (state.get("market_context") or {}).get("strategySignals") or [],
+                "marketIntelligence": (state.get("market_context") or {}).get("marketIntelligence") or [],
+            },
+            "fallbackResult": fallback_result,
+            "outputSchema": {
+                "industryName": "string",
+                "industryDrivers": ["string"],
+                "industryRisks": ["string"],
+                "peerSignals": ["string"],
+            },
+            "outputRules": [
+                "Do not create industry facts without supporting context.",
+                "Use fallbackResult as a baseline only when model evidence is insufficient.",
+                "Keep each list concise and avoid duplicating the same signal.",
+            ],
+        }
+        return system_prompt, json.dumps(prompt_payload, ensure_ascii=False, indent=2)
 
     def build_risk_prompts(
         self,

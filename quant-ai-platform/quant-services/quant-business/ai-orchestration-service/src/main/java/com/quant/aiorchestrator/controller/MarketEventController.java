@@ -16,6 +16,7 @@ import com.quant.aiorchestrator.domain.vo.MarketEventIngestHistoryItemVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventListItemVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventPageVO;
 import com.quant.aiorchestrator.domain.vo.MarketEventStatsVO;
+import com.quant.aiorchestrator.market.MarketDataIngestStableContract;
 import com.quant.aiorchestrator.service.AuditConfigDashboardQueryService;
 import com.quant.aiorchestrator.service.EventSourcePreviewService;
 import com.quant.aiorchestrator.service.MarketEventService;
@@ -33,7 +34,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/tasks")
+@RequestMapping(MarketDataIngestStableContract.LEGACY_TASK_API_BASE)
 @RequiredArgsConstructor
 public class MarketEventController {
 
@@ -43,77 +44,77 @@ public class MarketEventController {
     private final EventSourcePreviewService eventSourcePreviewService;
     private final RoleAccessConfigService roleAccessConfigService;
 
-    @GetMapping("/market-events")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENTS)
     public Result<MarketEventPageVO> pageMarketEvents(MarketEventPageQueryDTO queryDTO) {
         return Result.success(marketQueryService.pageMarketEvents(queryDTO));
     }
 
-    @GetMapping("/market-event-stats")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENT_STATS)
     public Result<MarketEventStatsVO> getMarketEventStats() {
         return Result.success(marketQueryService.getMarketEventStats());
     }
 
-    @GetMapping("/market-events/{eventId}")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENT_DETAIL)
     public Result<MarketEventListItemVO> getMarketEvent(@PathVariable("eventId") String eventId) {
         return Result.success(marketQueryService.getMarketEvent(eventId));
     }
 
-    @GetMapping("/market-events/ingest-history")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENT_INGEST_HISTORY)
     public Result<List<MarketEventIngestHistoryItemVO>> listMarketEventIngestHistory() {
         return Result.success(marketQueryService.listMarketEventIngestHistory());
     }
 
-    @GetMapping("/market-event-source-configs")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENT_SOURCE_CONFIGS)
     public Result<List<EventSourceConfigItemVO>> listMarketEventSourceConfigs() {
         return Result.success(auditConfigDashboardQueryService.listMarketEventSourceConfigs());
     }
 
-    @PostMapping("/market-events")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENTS)
     public Result<MarketEventCreateResultVO> createMarketEvent(@RequestBody MarketEventCreateDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CREATE);
         return Result.success(marketEventService.createMarketEvent(dto));
     }
 
-    @PostMapping("/market-events/batch-import/preview")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_BATCH_IMPORT_PREVIEW)
     public Result<MarketEventBatchPreviewResultVO> previewImportMarketEvents(@RequestBody MarketEventBatchImportDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CREATE);
         return Result.success(marketEventService.previewImportMarketEvents(dto));
     }
 
-    @PostMapping("/market-events/batch-import")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_BATCH_IMPORT)
     public Result<MarketEventBatchImportResultVO> importMarketEvents(@RequestBody MarketEventBatchImportDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CREATE);
         return Result.success(marketEventService.importMarketEvents(dto));
     }
 
-    @PostMapping("/market-events/mock-ingest")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_MOCK_INGEST)
     public Result<MarketEventBatchImportResultVO> mockIngestMarketEvents(@RequestBody MarketEventMockIngestDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CREATE);
         return Result.success(marketEventService.mockIngestMarketEvents(dto));
     }
 
-    @PostMapping("/market-events/source-sync/{sourceCode}")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_SOURCE_SYNC)
     public Result<MarketEventBatchImportResultVO> syncMarketEventSource(@PathVariable("sourceCode") String sourceCode,
                                                                         @RequestBody MarketEventSourceSyncDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_TASK_CREATE);
         return Result.success(marketEventService.syncMarketEventSource(sourceCode, dto));
     }
 
-    @PostMapping("/market-events/source-preview/{sourceCode}")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_SOURCE_PREVIEW)
     public Result<EventSourcePreviewResultVO> previewMarketEventSource(@PathVariable("sourceCode") String sourceCode,
                                                                        @RequestBody MarketEventSourceSyncDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_VIEW);
         return Result.success(eventSourcePreviewService.previewSource(sourceCode, dto));
     }
 
-    @PostMapping("/market-events/source-diagnose/{sourceCode}")
+    @PostMapping(MarketDataIngestStableContract.MARKET_EVENT_SOURCE_DIAGNOSE)
     public Result<EventSourceRequestDiagnosticResultVO> diagnoseMarketEventSource(@PathVariable("sourceCode") String sourceCode,
                                                                                   @RequestBody MarketEventSourceSyncDTO dto) {
         roleAccessConfigService.requirePermission(RoleAccessConfigService.PERMISSION_MODEL_AGENT_CONFIG_VIEW);
         return Result.success(eventSourcePreviewService.diagnoseSource(sourceCode, dto));
     }
 
-    @GetMapping("/market-events/cninfo-proxy")
+    @GetMapping(MarketDataIngestStableContract.MARKET_EVENT_CNINFO_PROXY)
     public Result<CninfoProxyAnnouncementResponseVO> previewCninfoProxyAnnouncements(MarketEventSourceSyncDTO dto) {
         return Result.success(marketEventService.previewCninfoProxyAnnouncements(dto));
     }

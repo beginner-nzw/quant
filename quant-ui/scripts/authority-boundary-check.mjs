@@ -215,5 +215,61 @@ assertIncludes(
   "get<ResearchWorkbenchData>('/api/tasks/research-workbench', params)",
   'Research workbench API contract changed'
 )
+assertIncludes(
+  'src/api/task.ts',
+  taskApi,
+  "from './report'",
+  'Legacy task API report wrappers must delegate to the stable report client'
+)
+
+for (const legacyReportPath of [
+  "'/api/tasks/report-center-stats'",
+  "'/api/tasks/report-center'",
+  '`/api/tasks/${taskId}/report`',
+  '`/api/tasks/${taskId}/report/review`',
+  "'/api/tasks/report-review-stats'",
+  '`/api/tasks/${taskId}/report/review-logs`',
+  '`/api/tasks/${taskId}/report/versions`'
+]) {
+  if (taskApi.includes(legacyReportPath)) {
+    throw new Error(`Frontend report consumers must use stable /api/reports client, found ${legacyReportPath} in src/api/task.ts`)
+  }
+}
+
+const reportApi = await readText('src/api/report.ts')
+assertIncludes(
+  'src/api/report.ts',
+  reportApi,
+  "const REPORT_API_BASE = '/api/reports'",
+  'Stable report API base changed'
+)
+
+const researchWorkbenchView = stripComments(await readText('src/views/report/ResearchWorkbenchView.vue'))
+assertNoRegex(
+  'src/views/report/ResearchWorkbenchView.vue',
+  researchWorkbenchView,
+  /sourceReviewStatus\s*:/,
+  'Research workbench aggregation must not pass derived domain truth into task-create prefill'
+)
+
+const reportWorkbench = stripComments(await readText('src/utils/reportWorkbench.ts'))
+assertIncludes(
+  'src/utils/reportWorkbench.ts',
+  reportWorkbench,
+  "import { fetchReportCenter, fetchReportReviewStats } from '../api/report'",
+  'Report workbench must use stable report API contract'
+)
+assertNoRegex(
+  'src/utils/reportWorkbench.ts',
+  reportWorkbench,
+  /\bfetchTasks\b/,
+  'Report workbench must not use deprecated task pagination as report truth source'
+)
+assertNoRegex(
+  'src/utils/reportWorkbench.ts',
+  reportWorkbench,
+  /sourceReviewStatus\s*:/,
+  'Report workbench must not pass report review truth into task-create prefill'
+)
 
 console.log('authority-boundary-check passed')

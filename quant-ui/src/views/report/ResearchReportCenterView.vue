@@ -2,8 +2,9 @@
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { fetchReportCenter, fetchReportCenterStats } from '../../api/task'
+import { fetchReportCenter, fetchReportCenterStats } from '../../api/report'
 import FilterDock from '../../components/common/FilterDock.vue'
+import HumanReviewQueuePanel from '../../components/report/HumanReviewQueuePanel.vue'
 import ReportRevisionStatusTags from '../../components/report/ReportRevisionStatusTags.vue'
 import ResearchReportStatsCards from '../../components/report/ResearchReportStatsCards.vue'
 import type { ReportCenterListItem, ReportCenterStats } from '../../types/task'
@@ -335,6 +336,7 @@ function resolveReviewStatus(value: string): ReportReviewStatus | '' {
 <template>
   <div class="center-workspace">
     <ResearchReportStatsCards :stats="stats" />
+    <HumanReviewQueuePanel @reviewed="reloadAll" />
 
     <FilterDock :title="text.title" description="按标的、报告类型和审核状态筛选报告。">
       <el-form inline>

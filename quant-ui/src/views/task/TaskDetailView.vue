@@ -16,9 +16,10 @@ import TaskReportCard from '@/components/task/TaskReportCard.vue'
 import { fetchTaskFullDetail } from '../../api/task'
 import type { TaskFullDetail } from '../../types/task'
 import { resolveTaskDetailActionAccess } from '../../utils/taskActionAccess'
+import { canRetryTasks } from '../../utils/roleAccess'
 import { getAnalysisScopeText, getReviewStatusText, getSourceDomainText, getTaskStatusText, getTaskTypeText } from '../../utils/task'
 import { buildTaskCreateQuery } from '../../utils/taskCreate'
-import { executeTaskCancel, executeTaskRetry } from '../../utils/taskActions'
+import { executeTaskCancel, executeTaskNodeRerun, executeTaskResume, executeTaskRetry } from '../../utils/taskActions'
 import { buildFromQuery, resolveSourcePath } from '../../utils/taskNavigation'
 
 const route = useRoute()
@@ -42,8 +43,12 @@ const text = {
   viewFullReport: '查看完整报告',
   createSimilarTask: '创建类似任务',
   manualRetry: '手工重试',
+  resumeWorkflow: '恢复工作流',
+  rerunNode: '重跑节点',
   cancelTask: '取消任务',
   retryReason: '详情页手工重试',
+  resumeReason: '详情页 checkpoint 恢复',
+  rerunReason: '详情页节点重跑',
   cancelReason: '详情页手工取消',
   empty: '暂无任务详情'
 } as const
@@ -77,6 +82,9 @@ const analysisScopeText = computed(() => {
 })
 
 const actionAccess = computed(() => resolveTaskDetailActionAccess(detail.value))
+const canResumeWorkflow = computed(() => Boolean(detail.value?.checkpoint?.resumable) && canRetryTasks())
+const rerunNodeName = computed(() => detail.value?.checkpoint?.currentNode || detail.value?.workflow?.currentNode || '')
+const canRerunNode = computed(() => Boolean(rerunNodeName.value) && canRetryTasks())
 
 const taskHeadline = computed(() => {
   if (!detail.value?.taskDetail) {
@@ -129,6 +137,22 @@ async function handleRetry() {
 async function handleCancel() {
   const taskId = route.params.taskId as string
   const success = await executeTaskCancel(taskId, text.cancelReason)
+  if (success) {
+    await loadDetail()
+  }
+}
+
+async function handleResume() {
+  const taskId = route.params.taskId as string
+  const success = await executeTaskResume(taskId, text.resumeReason)
+  if (success) {
+    await loadDetail()
+  }
+}
+
+async function handleRerunNode() {
+  const taskId = route.params.taskId as string
+  const success = await executeTaskNodeRerun(taskId, rerunNodeName.value, text.rerunReason)
   if (success) {
     await loadDetail()
   }
@@ -203,6 +227,12 @@ watch(
           <el-button v-if="actionAccess.showRetry" type="danger" @click="handleRetry">
             {{ text.manualRetry }}
           </el-button>
+          <el-button v-if="canResumeWorkflow" type="primary" plain @click="handleResume">
+            {{ text.resumeWorkflow }}
+          </el-button>
+          <el-button v-if="canRerunNode" type="warning" plain @click="handleRerunNode">
+            {{ text.rerunNode }}
+          </el-button>
           <el-button v-if="actionAccess.showCancel" type="warning" @click="handleCancel">
             {{ text.cancelTask }}
           </el-button>
@@ -266,7 +296,7 @@ watch(
       </section>
 
       <section class="detail-section">
-        <TaskWorkflowCard :workflow="detail.workflow" />
+        <TaskWorkflowCard :workflow="detail.workflow" :checkpoint="detail.checkpoint" />
       </section>
 
       <section class="detail-section">

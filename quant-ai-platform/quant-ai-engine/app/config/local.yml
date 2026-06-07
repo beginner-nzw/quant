@@ -9,6 +9,8 @@ app:
 kafka:
   bootstrap_servers: 127.0.0.1:19092
   consumer_group: python-ai-engine-group
+  max_lag_messages: 500
+  lag_log_interval_seconds: 30
   topics:
     dispatch: ai.task.dispatch
     status: ai.task.status
@@ -19,6 +21,8 @@ redis:
   host: 127.0.0.1
   port: 6379
   db: 0
+  socket_timeout_seconds: 1
+  degradation_enabled: true
 
 services:
   ai_orchestrator_base_url: http://127.0.0.1:8082

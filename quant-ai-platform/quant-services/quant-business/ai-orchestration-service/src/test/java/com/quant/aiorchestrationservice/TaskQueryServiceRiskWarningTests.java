@@ -11,7 +11,14 @@ import com.quant.aiorchestrator.domain.vo.RiskWarningPageVO;
 import com.quant.aiorchestrator.domain.vo.RiskWarningStatsVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
 import com.quant.aiorchestrator.domain.vo.TaskReportVO;
+import com.quant.aiorchestrator.manager.ReportCenterProjectionManager;
+import com.quant.aiorchestrator.manager.ReportReviewStatsManager;
+import com.quant.aiorchestrator.manager.FollowUpTaskSummaryManager;
+import com.quant.aiorchestrator.manager.ResearchWorkbenchProjectionManager;
+import com.quant.aiorchestrator.manager.StrategySignalRuleManager;
+import com.quant.aiorchestrator.manager.RiskWarningProjectionManager;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.aiorchestrator.manager.TaskReportProjectionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
 import com.quant.aiorchestrator.mapper.AiWorkflowInstanceMapper;
@@ -481,35 +488,49 @@ class TaskQueryServiceRiskWarningTests {
         ObjectMapper objectMapper = new ObjectMapper();
         StrategySignalMapper strategySignalMapper = mock(StrategySignalMapper.class);
         StrategySignalFactorMapper strategySignalFactorMapper = mock(StrategySignalFactorMapper.class);
+        RiskWarningProjectionManager riskWarningProjectionManager = new RiskWarningProjectionManager(
+                researchTaskMapper,
+                researchReportMapper,
+                riskWarningMapper,
+                riskWarningDetailMapper,
+                strategySignalMapper,
+                new FollowUpTaskSummaryManager(),
+                new StrategySignalRuleManager(objectMapper)
+        );
         return new QueryServices(
-                new RiskQueryServiceImpl(
-                        researchTaskMapper,
-                        researchReportMapper,
-                        riskWarningMapper,
-                        riskWarningDetailMapper,
-                        strategySignalMapper,
-                        objectMapper
-                ),
+                new RiskQueryServiceImpl(riskWarningProjectionManager),
                 new ResearchWorkbenchQueryServiceImpl(
-                        researchTaskMapper,
-                        researchReportMapper,
-                        riskWarningMapper,
-                        riskWarningDetailMapper,
-                        strategySignalMapper,
-                        strategySignalFactorMapper,
-                        objectMapper
+                        new ResearchWorkbenchProjectionManager(
+                                researchTaskMapper,
+                                researchReportMapper,
+                                riskWarningMapper,
+                                riskWarningDetailMapper,
+                                strategySignalMapper,
+                                strategySignalFactorMapper,
+                                new FollowUpTaskSummaryManager(),
+                                new StrategySignalRuleManager(objectMapper)
+                        )
                 ),
                 new ReportQueryServiceImpl(
-                        researchTaskMapper,
-                        researchReportMapper,
-                        stringRedisTemplate,
-                        objectMapper,
-                        riskWarningMapper,
-                        riskWarningDetailMapper,
-                        strategySignalMapper,
-                        mock(ReportEvidenceRefMapper.class),
-                        mock(HumanReviewRecordMapper.class),
-                        mock(ResearchReportSectionMapper.class),
+                        new ReportCenterProjectionManager(
+                                researchTaskMapper,
+                                researchReportMapper,
+                                riskWarningMapper,
+                                objectMapper
+                        ),
+                        new TaskReportProjectionManager(
+                                researchTaskMapper,
+                                researchReportMapper,
+                                stringRedisTemplate,
+                                objectMapper,
+                                riskWarningMapper,
+                                riskWarningDetailMapper,
+                                strategySignalMapper,
+                                mock(ReportEvidenceRefMapper.class),
+                                mock(HumanReviewRecordMapper.class),
+                                mock(ResearchReportSectionMapper.class)
+                        ),
+                        new ReportReviewStatsManager(researchReportMapper),
                         mock(TaskReportService.class),
                         mock(ReportVersionService.class)
                 )

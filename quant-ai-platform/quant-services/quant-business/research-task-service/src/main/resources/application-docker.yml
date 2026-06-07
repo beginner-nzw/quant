@@ -1,9 +1,12 @@
 server:
   port: 8081
+  shutdown: graceful
 
 spring:
   application:
     name: research-task-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   datasource:
     url: jdbc:mysql://mysql:3306/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: quant
@@ -13,11 +16,17 @@ spring:
     redis:
       host: redis
       port: 6379
+      timeout: 1s
+      connect-timeout: 1s
   kafka:
     bootstrap-servers: kafka:9092
     producer:
       acks: all
       retries: 3
+      properties:
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        linger.ms: 10
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
   cloud:
@@ -34,5 +43,26 @@ spring:
 
 quant:
   security:
+    auth:
+      mode: DEMO
     service-actor:
       secret: ${QUANT_SERVICE_ACTOR_SECRET:local-dev-service-actor-secret}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    redis:
+      enabled: true
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

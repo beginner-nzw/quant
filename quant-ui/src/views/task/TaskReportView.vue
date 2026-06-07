@@ -2,11 +2,8 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import {
-  fetchTaskFullDetail,
-  fetchTaskReport,
-  fetchTaskReportReviewLogs
-} from '../../api/task'
+import { fetchTaskFullDetail } from '../../api/task'
+import { fetchTaskReport, fetchTaskReportReviewLogs } from '../../api/report'
 import ReportEvidenceView from '../../components/report/ReportEvidenceView.vue'
 import ReportVersionComparison from '../../components/report/ReportVersionComparison.vue'
 import ReportVersionHistoryPanel from '../../components/report/ReportVersionHistoryPanel.vue'

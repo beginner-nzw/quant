@@ -301,7 +301,6 @@ function goCreateTask() {
         sourceTaskId: data.value?.latestInsight?.taskId,
         sourceReportId: data.value?.latestInsight?.reportId,
         sourceDomain: 'RESEARCH_WORKBENCH',
-        sourceReviewStatus: data.value?.latestInsight?.reviewStatus,
         analysisScope: ANALYSIS_SCOPE.DEEP_RESEARCH,
         from: route.fullPath
       })

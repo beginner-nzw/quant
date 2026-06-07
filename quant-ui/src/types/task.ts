@@ -157,6 +157,20 @@ export interface WorkflowInstance {
   finishTime?: string
 }
 
+export interface WorkflowCheckpoint {
+  taskId?: string
+  workflowInstanceId?: string
+  currentNode?: string
+  status?: TaskStatus | string
+  progress?: number
+  currentStage?: string
+  retryCount?: number
+  updatedAt?: number
+  branchDecisions?: Record<string, any>[]
+  failureMessage?: string
+  resumable?: boolean
+}
+
 export interface AgentExecution {
   executionId: string
   workflowInstanceId: string
@@ -203,6 +217,7 @@ export interface TaskFullDetail {
   report?: TaskReport | null
   steps: TaskStep[]
   workflow: WorkflowInstance | null
+  checkpoint?: WorkflowCheckpoint | null
   agents: AgentExecution[]
   audits: AuditRecord[]
   retries: TaskRetryLog[]
@@ -236,6 +251,10 @@ export interface MarketEventCreateForm {
   eventSummary: string
   sourceChannel?: string
   sourceUrl?: string
+  provenanceType?: string
+  provenanceRef?: string
+  provenanceDetail?: string
+  confidenceScore?: number
   impactLevel: MarketEventImpactLevel | string
   eventStatus: MarketEventStatus | string
   occurredAt: string
@@ -244,9 +263,12 @@ export interface MarketEventCreateForm {
 export interface MarketEventCreateResult {
   eventId: string
   duplicate?: boolean
+  normalizedFingerprint?: string
   autoTriggerStatus?: string
   autoTriggerTaskId?: string
   autoTriggerMessage?: string
+  autoTriggerReason?: string
+  autoTriggerFailureCode?: string
   message?: string
 }
 
@@ -330,6 +352,9 @@ export interface MarketEventBatchPreviewItem {
   normalizedImpactLevel?: string
   normalizedEventStatus?: string
   normalizedSourceChannel?: string
+  normalizedFingerprint?: string
+  provenanceType?: string
+  confidenceScore?: number
   autoTriggerStatus?: string
   autoTriggerRuleCode?: string
   estimatedTaskType?: string
@@ -353,8 +378,11 @@ export interface MarketEventBatchImportItem {
   targetCode?: string
   targetName?: string
   eventTitle?: string
+  normalizedFingerprint?: string
   autoTriggerStatus?: string
   autoTriggerTaskId?: string
+  autoTriggerReason?: string
+  autoTriggerFailureCode?: string
   message?: string
 }
 
@@ -492,6 +520,33 @@ export interface TaskReportEvidenceItem {
   relevance?: string
 }
 
+export interface TaskReportStrategyCandidate {
+  direction?: SignalDirection | string
+  summary?: string
+  confidence?: number
+  trace?: Record<string, any>
+  evidence?: TaskReportEvidenceItem[]
+}
+
+export interface TaskReportStrategyFactor {
+  factorCode?: string
+  factorName?: string
+  factorValue?: string
+  factorWeight?: number
+  factorConclusion?: string
+  evidenceRefs?: string[]
+}
+
+export interface TaskReportAuditSupport {
+  supportType?: string
+  authority?: string
+  policyChecks?: Record<string, any>[]
+  evidenceChecks?: Record<string, any>[]
+  reportReview?: Record<string, any>
+  reviewSuggestions?: string[]
+  trace?: Record<string, any>
+}
+
 export interface TaskReportSection {
   sectionId?: string
   versionNo?: number
@@ -548,6 +603,9 @@ export interface TaskReport {
   sections?: TaskReportSection[]
   evidenceItems?: TaskReportEvidenceItem[]
   evidenceRefs?: string[]
+  strategyCandidate?: TaskReportStrategyCandidate | Record<string, any>
+  strategyFactors?: TaskReportStrategyFactor[]
+  auditSupport?: TaskReportAuditSupport | Record<string, any>
   humanReviewRecords?: TaskReportHumanReviewRecord[]
   reviewSuggestion?: string
   reviewStatus?: ReportReviewStatus
@@ -578,6 +636,61 @@ export interface TaskReportReviewLog {
   revisedHighlights?: string[]
   revisedRiskPoints?: string[]
   createdAt?: string
+}
+
+export interface HumanReviewQueueItem {
+  queueId: string
+  domain: 'REPORT' | 'RISK' | 'COMPLIANCE' | string
+  taskId: string
+  taskTitle?: string
+  taskType?: string
+  targetCode?: string
+  targetName?: string
+  priority?: string
+  reportId?: string
+  reportType?: string
+  relatedObjectType?: string
+  relatedObjectId?: string
+  reviewStatus?: ReportReviewStatus | string
+  riskLevel?: RiskLevel | string
+  needHumanReview?: boolean
+  revised?: boolean
+  rerunnable?: boolean
+  currentNode?: string
+  summary?: string
+  riskPoints?: string[]
+  reviewComment?: string
+  reviewedBy?: string
+  reviewedAt?: string
+  createdAt?: string
+}
+
+export interface HumanReviewQueuePageData {
+  total: number
+  pageNum: number
+  pageSize: number
+  records: HumanReviewQueueItem[]
+}
+
+export interface HumanReviewQueueStats {
+  totalCount: number
+  pendingCount: number
+  approvedCount: number
+  rejectedCount: number
+  reportCount: number
+  riskCount: number
+  complianceCount: number
+}
+
+export interface HumanReviewDecisionForm {
+  decision: ReportReviewStatus | string
+  reviewedBy?: string
+  reviewComment?: string
+  revisedSummary?: string
+  revisedHighlights?: string[]
+  revisedRiskPoints?: string[]
+  rerunWorkflow?: boolean
+  rerunNodeName?: string
 }
 
 export interface ReportVersion {
@@ -846,12 +959,21 @@ export interface MarketEventListItem {
   eventSummary: string
   sourceChannel?: string
   sourceUrl?: string
+  normalizedFingerprint?: string
+  provenanceType?: string
+  provenanceRef?: string
+  provenanceDetail?: string
+  confidenceScore?: number
   impactLevel: MarketEventImpactLevel | string
   eventStatus: MarketEventStatus | string
   autoTriggerRuleCode?: string
   autoTriggerStatus?: string
   autoTriggerTaskId?: string
   autoTriggerMessage?: string
+  autoTriggerReason?: string
+  autoTriggerSource?: string
+  autoTriggerFailureCode?: string
+  autoTriggerRetryCount?: number
   autoTriggerAttemptedAt?: string
   occurredAt?: string
   createdBy?: string
@@ -879,6 +1001,12 @@ export interface MarketEventListItem {
   derivedSignalStrength?: SignalStrength | string
   derivedSignalScore?: number
   derivedIntelligenceType?: MarketIntelligenceType | string
+  analysisId?: string
+  analysisSummary?: string
+  analysisImpactDirection?: string
+  analysisImpactLevel?: string
+  analysisRiskFlag?: boolean
+  analysisConfidenceScore?: number
   relationCount?: number
   relations?: MarketEventRelation[]
 }

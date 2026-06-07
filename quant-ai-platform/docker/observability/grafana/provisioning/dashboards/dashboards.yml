@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Quant Production Baseline
+    orgId: 1
+    folder: Quant AI Platform
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

@@ -27,6 +27,7 @@
 <!--    <module>quant-api/quant-api-ai</module>-->
 
     <module>quant-business/research-task-service</module>
+    <module>quant-business/ai-orchestration-api</module>
     <module>quant-business/ai-orchestration-service</module>
   </modules>
 

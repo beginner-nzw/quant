@@ -30,9 +30,13 @@ class ReportGenerationAgent:
         evidence_items = self._normalize_evidence_items(state.get("evidence_items"))
         plan_result = state.get("plan_result") or {}
         intent_result = state.get("intent_result") or {}
+        event_extraction_result = state.get("event_extraction_result") or {}
+        industry_research_result = state.get("industry_research_result") or {}
         financial_result = state.get("financial_result", {})
         financial_summary = self._normalize_text(financial_result.get("summary"))
         risk_result = state.get("risk_result", {})
+        strategy_result = state.get("strategy_result") or {}
+        audit_result = state.get("audit_result") or {}
         risk_points = self._ensure_live_event_risk_points(
             risk_points=self._normalize_text_list(risk_result.get("riskPoints")),
             market_context=market_context,
@@ -100,6 +104,10 @@ class ReportGenerationAgent:
             need_human_review=final_need_human_review,
             market_context=market_context,
             evidence_items=evidence_items,
+        )
+        final_review_suggestion = self._append_audit_review_suggestions(
+            review_suggestion=final_review_suggestion,
+            audit_result=audit_result,
         )
         (
             final_summary,
@@ -169,8 +177,12 @@ class ReportGenerationAgent:
                 source_context=source_context,
                 plan_result=plan_result,
                 intent_result=intent_result,
+                event_extraction_result=event_extraction_result,
+                industry_research_result=industry_research_result,
                 financial_result=financial_result,
                 risk_result=risk_result,
+                strategy_result=strategy_result,
+                audit_result=audit_result,
                 generation_mode="MODEL_ASSISTED" if model_report else "RULE_FALLBACK",
                 model_name=model_name,
                 llm_framework=llm_framework,
@@ -193,6 +205,20 @@ class ReportGenerationAgent:
             "evidenceItems": evidence_items,
             "evidenceRefs": evidence_refs,
             "reviewSuggestion": final_review_suggestion,
+            "approvedPayload": {
+                "summary": final_summary,
+                "highlights": final_highlights,
+                "riskPoints": final_risk_points,
+                "riskWarnings": self._resolve_text_list(
+                    model_report.get("riskWarnings") if model_report else None,
+                    fallback_report["riskWarnings"],
+                ),
+                "strategyCandidate": self._build_approved_strategy_candidate(strategy_result),
+                "strategyFactors": self._build_approved_strategy_factors(strategy_result),
+                "auditSupport": self._build_audit_support_snapshot(audit_result),
+                "evidenceItems": evidence_items,
+                "evidenceRefs": evidence_refs,
+            },
         }
         state["evidence_items"] = evidence_items
         state["evidence_refs"] = evidence_refs
@@ -373,6 +399,8 @@ class ReportGenerationAgent:
         source_context = state.get("source_context") or {}
         financial_result = state.get("financial_result") or {}
         risk_result = state.get("risk_result") or {}
+        event_extraction_result = state.get("event_extraction_result") or {}
+        industry_research_result = state.get("industry_research_result") or {}
         evidence_items = self._normalize_evidence_items(state.get("evidence_items"))
         priority_live_event = self._extract_priority_live_event(market_context) or {}
         priority_live_event_evidence = self._find_live_event_evidence(
@@ -505,6 +533,19 @@ class ReportGenerationAgent:
             refs.append(f"riskFramework:{risk_result['llmFramework']}")
         if risk_result.get("modelName"):
             refs.append(f"riskModel:{risk_result['modelName']}")
+        if event_extraction_result.get("generationMode"):
+            refs.append(f"eventExtractionGeneration:{event_extraction_result['generationMode']}")
+        if event_extraction_result.get("fallbackReason"):
+            refs.append(f"eventExtractionFallback:{event_extraction_result['fallbackReason']}")
+        for item in event_extraction_result.get("events") or []:
+            if isinstance(item, dict) and self._normalize_text(item.get("eventId")):
+                refs.append(f"extractedEvent:{self._normalize_text(item.get('eventId'))}")
+        if industry_research_result.get("industryName"):
+            refs.append(f"industry:{industry_research_result['industryName']}")
+        if industry_research_result.get("generationMode"):
+            refs.append(f"industryResearchGeneration:{industry_research_result['generationMode']}")
+        if industry_research_result.get("fallbackReason"):
+            refs.append(f"industryResearchFallback:{industry_research_result['fallbackReason']}")
         for item in evidence_items:
             reference_id = self._normalize_text(item.get("referenceId"))
             evidence_type = self._normalize_text(item.get("evidenceType"))
@@ -548,8 +589,12 @@ class ReportGenerationAgent:
         source_context: dict[str, Any],
         plan_result: dict[str, Any],
         intent_result: dict[str, Any],
+        event_extraction_result: dict[str, Any],
+        industry_research_result: dict[str, Any],
         financial_result: dict[str, Any],
         risk_result: dict[str, Any],
+        strategy_result: dict[str, Any],
+        audit_result: dict[str, Any],
         generation_mode: str,
         model_name: str | None,
         llm_framework: str | None,
@@ -662,16 +707,101 @@ class ReportGenerationAgent:
             "intentModelName": intent_result.get("modelName"),
             "intentGenerationMode": intent_result.get("generationMode"),
             "intentFallbackReason": intent_result.get("fallbackReason"),
+            "eventExtractionGenerationMode": event_extraction_result.get("generationMode"),
+            "eventExtractionFallbackReason": event_extraction_result.get("fallbackReason"),
+            "eventExtractionProvenance": event_extraction_result.get("provenance") or {},
+            "eventExtractionEvidenceCount": len(event_extraction_result.get("evidence") or []),
+            "extractedEventCount": len(event_extraction_result.get("events") or []),
+            "eventThemes": event_extraction_result.get("eventThemes") or [],
+            "industryName": industry_research_result.get("industryName"),
+            "industryResearchGenerationMode": industry_research_result.get("generationMode"),
+            "industryResearchFallbackReason": industry_research_result.get("fallbackReason"),
+            "industryResearchProvenance": industry_research_result.get("provenance") or {},
+            "industryEvidenceCount": len(industry_research_result.get("evidence") or []),
             "financialGenerationMode": financial_result.get("generationMode"),
             "financialFallbackReason": financial_result.get("fallbackReason"),
             "riskGenerationMode": risk_result.get("generationMode"),
             "riskFallbackReason": risk_result.get("fallbackReason"),
+            "strategyTrace": (strategy_result.get("trace") or {}),
+            "strategyCandidateDirection": strategy_result.get("direction"),
+            "strategyCandidateConfidence": strategy_result.get("confidence"),
+            "strategyEvidenceCount": len(strategy_result.get("evidence") or []),
+            "strategyFactorCount": len(strategy_result.get("factors") or []),
+            "auditTrace": (audit_result.get("trace") or {}),
+            "auditAuthority": audit_result.get("authority"),
+            "auditPolicyCheckCount": len(audit_result.get("policyChecks") or []),
+            "auditEvidenceCheckCount": len(audit_result.get("evidenceChecks") or []),
+            "auditReportReviewSupport": (audit_result.get("reportReview") or {}),
+            "auditReviewSuggestions": audit_result.get("reviewSuggestions") or [],
             "generationMode": generation_mode,
             "modelName": model_name,
             "llmFramework": llm_framework,
             "reportGenerationPath": generation_path,
             "reportFallbackReason": fallback_reason,
         }
+
+    def _build_approved_strategy_candidate(self, strategy_result: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(strategy_result, dict) or not strategy_result:
+            return {}
+        return {
+            "direction": self._normalize_text(strategy_result.get("direction")),
+            "summary": self._normalize_text(strategy_result.get("summary")),
+            "confidence": self._resolve_confidence_score(
+                strategy_result.get("confidence"),
+                0.0,
+            ),
+            "trace": strategy_result.get("trace") or {},
+            "evidence": strategy_result.get("evidence") or [],
+        }
+
+    def _build_approved_strategy_factors(self, strategy_result: dict[str, Any]) -> list[dict[str, Any]]:
+        raw_factors = strategy_result.get("factors") if isinstance(strategy_result, dict) else None
+        if not isinstance(raw_factors, list):
+            return []
+        factors = []
+        for item in raw_factors:
+            if not isinstance(item, dict):
+                continue
+            factors.append({
+                "factorCode": self._normalize_text(item.get("factorCode")),
+                "factorName": self._normalize_text(item.get("factorName")),
+                "factorValue": self._normalize_text(item.get("factorValue")),
+                "factorWeight": self._resolve_confidence_score(item.get("factorWeight"), 0.0),
+                "factorConclusion": self._normalize_text(item.get("factorConclusion")),
+                "evidenceRefs": self._normalize_text_list(item.get("evidenceRefs")),
+            })
+        return factors[:8]
+
+    def _build_audit_support_snapshot(self, audit_result: dict[str, Any]) -> dict[str, Any]:
+        if not isinstance(audit_result, dict) or not audit_result:
+            return {}
+        return {
+            "supportType": audit_result.get("supportType"),
+            "authority": audit_result.get("authority"),
+            "policyChecks": audit_result.get("policyChecks") or [],
+            "evidenceChecks": audit_result.get("evidenceChecks") or [],
+            "reportReview": audit_result.get("reportReview") or {},
+            "reviewSuggestions": audit_result.get("reviewSuggestions") or [],
+            "trace": audit_result.get("trace") or {},
+        }
+
+    def _append_audit_review_suggestions(
+        self,
+        *,
+        review_suggestion: str,
+        audit_result: dict[str, Any],
+    ) -> str:
+        suggestions = self._normalize_text_list(
+            audit_result.get("reviewSuggestions") if isinstance(audit_result, dict) else None
+        )
+        if not suggestions:
+            return review_suggestion
+        audit_suffix = " ".join(suggestions[:2])
+        if not review_suggestion:
+            return audit_suffix
+        if audit_suffix in review_suggestion:
+            return review_suggestion
+        return f"{review_suggestion} {audit_suffix}"
 
     def _resolve_market_data_fallback_reason(self, market_context: dict[str, Any]) -> str | None:
         existing_reason = self._normalize_text(market_context.get("marketDataFallbackReason"))

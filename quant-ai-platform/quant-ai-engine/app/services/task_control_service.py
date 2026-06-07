@@ -10,17 +10,23 @@ class TaskControlService:
         self.redis_client = RedisClient()
 
     def check_cancelled(self, task_id: str):
-        raw = self.redis_client.get(TASK_CONTROL_KEY.format(task_id=task_id))
-        if not raw:
-            return
-
-        try:
-            data = json.loads(raw)
-        except Exception:
-            return
-
-        if not isinstance(data, dict):
+        data = self.load_control_signal(task_id)
+        if not data:
             return
 
         if data.get("cancelled") is True:
             raise TaskCancelledException(data.get("reason", "task cancelled"))
+
+    def load_control_signal(self, task_id: str) -> dict:
+        raw = self.redis_client.get(TASK_CONTROL_KEY.format(task_id=task_id))
+        if not raw:
+            return {}
+
+        try:
+            data = json.loads(raw)
+        except Exception:
+            return {}
+
+        if not isinstance(data, dict):
+            return {}
+        return data

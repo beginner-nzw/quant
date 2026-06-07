@@ -158,6 +158,7 @@ class AiKafkaProducer:
         workflow_instance_id: str | None = None,
         tenant_id: str | None = None,
         biz_key: str | None = None,
+        event_id: str | None = None,
         retry_count: int = 0,
         task_title: str | None = None,
         analysis_scope: str | None = None,
@@ -173,6 +174,11 @@ class AiKafkaProducer:
         actor_provenance: dict[str, Any] | None = None
     ) -> AiTaskResultMessage:
         source_context = source_context or {}
+        if event_id and not source_context.get("sourceEventId"):
+            source_context = {
+                **source_context,
+                "sourceEventId": event_id,
+            }
         envelope = self._build_envelope(
             task_id=task_id,
             trace_id=trace_id,
@@ -321,6 +327,7 @@ class AiKafkaProducer:
         workflow_instance_id: str | None = None,
         tenant_id: str | None = None,
         biz_key: str | None = None,
+        event_id: str | None = None,
         retry_count: int = 0,
         task_title: str | None = None,
         analysis_scope: str | None = None,
@@ -341,6 +348,7 @@ class AiKafkaProducer:
             workflow_instance_id=workflow_instance_id,
             tenant_id=tenant_id,
             biz_key=biz_key,
+            event_id=event_id,
             retry_count=retry_count,
             task_title=task_title,
             analysis_scope=analysis_scope,

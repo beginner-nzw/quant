@@ -5,6 +5,8 @@ import com.quant.aiorchestrator.service.impl.MarketEventStandardizedPublisherSer
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
+import com.quant.aiorchestrator.manager.KafkaMessagePublisherManager;
+import com.quant.aiorchestrator.manager.MarketEventStandardizedMessageManager;
 import com.quant.aiorchestrator.service.MarketEventStandardizedPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -37,9 +39,8 @@ class MarketEventStandardizedPublisherServiceTests {
         doReturn(CompletableFuture.completedFuture(null)).when(kafkaTemplate).send(anyString(), anyString(), anyString());
 
         MarketEventStandardizedPublisherService service = new MarketEventStandardizedPublisherServiceImpl(
-                objectMapper,
-                kafkaTemplate,
-                taskMessageLogService
+                new MarketEventStandardizedMessageManager(),
+                new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
         );
 
         MarketEventDO event = new MarketEventDO();

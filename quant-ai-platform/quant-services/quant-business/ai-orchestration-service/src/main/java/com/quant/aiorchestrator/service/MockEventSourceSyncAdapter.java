@@ -1,5 +1,8 @@
 package com.quant.aiorchestrator.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.dataingest.SourceProvenance;
+import com.quant.aiorchestrator.dataingest.SourceRawPayload;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventMockIngestDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventSourceSyncDTO;
@@ -13,9 +16,12 @@ import java.util.List;
 public class MockEventSourceSyncAdapter implements EventSourceSyncAdapter {
 
     private final MarketEventMockIngestGenerator marketEventMockIngestGenerator;
+    private final ObjectMapper objectMapper;
 
-    public MockEventSourceSyncAdapter(MarketEventMockIngestGenerator marketEventMockIngestGenerator) {
+    public MockEventSourceSyncAdapter(MarketEventMockIngestGenerator marketEventMockIngestGenerator,
+                                      ObjectMapper objectMapper) {
         this.marketEventMockIngestGenerator = marketEventMockIngestGenerator;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -26,7 +32,28 @@ public class MockEventSourceSyncAdapter implements EventSourceSyncAdapter {
     }
 
     @Override
-    public List<MarketEventCreateDTO> sync(EventSourceConfigItemVO sourceConfig, MarketEventSourceSyncDTO request) {
+    public SourceRawPayload fetchRaw(EventSourceConfigItemVO sourceConfig, MarketEventSourceSyncDTO request) {
+        try {
+            return SourceRawPayload.builder()
+                    .provenance(SourceProvenance.from(sourceConfig, request == null ? null : request.getTargetCode()))
+                    .requestMethod("LOCAL_DEMO")
+                    .requestUrl("local-demo://mock-event-source/" + (sourceConfig == null ? "unknown" : sourceConfig.getSourceCode()))
+                    .body(objectMapper.writeValueAsString(request))
+                    .build();
+        } catch (Exception e) {
+            return SourceRawPayload.builder()
+                    .provenance(SourceProvenance.from(sourceConfig, request == null ? null : request.getTargetCode()))
+                    .requestMethod("LOCAL_DEMO")
+                    .requestUrl("local-demo://mock-event-source/" + (sourceConfig == null ? "unknown" : sourceConfig.getSourceCode()))
+                    .body("{}")
+                    .build();
+        }
+    }
+
+    @Override
+    public List<MarketEventCreateDTO> standardize(SourceRawPayload rawPayload,
+                                                  EventSourceConfigItemVO sourceConfig,
+                                                  MarketEventSourceSyncDTO request) {
         MarketEventMockIngestDTO dto = new MarketEventMockIngestDTO();
         dto.setTargetType(request == null ? null : request.getTargetType());
         dto.setTargetCode(request == null ? null : request.getTargetCode());

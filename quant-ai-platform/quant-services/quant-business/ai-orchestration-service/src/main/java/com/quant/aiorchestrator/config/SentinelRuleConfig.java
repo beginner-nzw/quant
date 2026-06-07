@@ -1,6 +1,8 @@
 package com.quant.aiorchestrator.config;
 
 import com.alibaba.csp.sentinel.slots.block.RuleConstant;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRule;
+import com.alibaba.csp.sentinel.slots.block.degrade.DegradeRuleManager;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRule;
 import com.alibaba.csp.sentinel.slots.block.flow.FlowRuleManager;
 import com.alibaba.csp.sentinel.slots.block.flow.param.ParamFlowRule;
@@ -42,5 +44,25 @@ public class SentinelRuleConfig {
         paramRules.add(taskDetailHotRule);
 
         ParamFlowRuleManager.loadRules(paramRules);
+
+        List<DegradeRule> degradeRules = new ArrayList<>();
+
+        DegradeRule pageTasksCircuitBreaker = new DegradeRule("pageTasks")
+                .setGrade(RuleConstant.DEGRADE_GRADE_EXCEPTION_RATIO)
+                .setCount(0.2)
+                .setMinRequestAmount(20)
+                .setStatIntervalMs(60_000)
+                .setTimeWindow(30);
+        degradeRules.add(pageTasksCircuitBreaker);
+
+        DegradeRule fullDetailCircuitBreaker = new DegradeRule("getTaskFullDetail")
+                .setGrade(RuleConstant.DEGRADE_GRADE_EXCEPTION_RATIO)
+                .setCount(0.2)
+                .setMinRequestAmount(20)
+                .setStatIntervalMs(60_000)
+                .setTimeWindow(30);
+        degradeRules.add(fullDetailCircuitBreaker);
+
+        DegradeRuleManager.loadRules(degradeRules);
     }
 }

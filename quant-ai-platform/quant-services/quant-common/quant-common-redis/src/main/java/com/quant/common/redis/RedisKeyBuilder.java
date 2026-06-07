@@ -22,6 +22,14 @@ public final class RedisKeyBuilder {
         return String.format(RedisKeyConstants.TASK_META, taskId);
     }
 
+    public static String taskWorkflowCheckpoint(String taskId) {
+        return String.format(RedisKeyConstants.TASK_WORKFLOW_CHECKPOINT, taskId);
+    }
+
+    public static String taskWorkflowNode(String taskId, String nodeName) {
+        return String.format(RedisKeyConstants.TASK_WORKFLOW_NODE, taskId, nodeName);
+    }
+
     public static String signalLatest(String entityCode) {
         return String.format(RedisKeyConstants.SIGNAL_LATEST, entityCode);
     }

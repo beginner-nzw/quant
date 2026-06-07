@@ -3,6 +3,8 @@ package com.quant.aiorchestrationservice;
 import com.quant.aiorchestrator.service.impl.TaskMessageLogServiceImpl;
 
 import com.quant.aiorchestrator.domain.entity.TaskMessageLogDO;
+import com.quant.aiorchestrator.manager.TaskMessageConsumeLogManager;
+import com.quant.aiorchestrator.manager.TaskMessageLogManager;
 import com.quant.aiorchestrator.mapper.TaskMessageLogMapper;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -25,7 +27,7 @@ class TaskMessageLogServiceTests {
     @Test
     void beginConsumeShouldInsertProcessingForFirstDelivery() {
         TaskMessageLogMapper mapper = mock(TaskMessageLogMapper.class);
-        TaskMessageLogService service = new TaskMessageLogServiceImpl(mapper);
+        TaskMessageLogService service = newService(mapper);
         SimpleMessageEnvelope message = buildMessage();
 
         when(mapper.selectConsumerLog(any(), any(), any())).thenReturn(null);
@@ -42,7 +44,7 @@ class TaskMessageLogServiceTests {
     @Test
     void beginConsumeShouldSkipSuccessfulDelivery() {
         TaskMessageLogMapper mapper = mock(TaskMessageLogMapper.class);
-        TaskMessageLogService service = new TaskMessageLogServiceImpl(mapper);
+        TaskMessageLogService service = newService(mapper);
         TaskMessageLogDO existing = new TaskMessageLogDO();
         existing.setId(1L);
         existing.setConsumeStatus(MessageConsumeStatusConstants.SUCCESS);
@@ -57,7 +59,7 @@ class TaskMessageLogServiceTests {
     @Test
     void beginConsumeShouldResetFailedDeliveryToProcessing() {
         TaskMessageLogMapper mapper = mock(TaskMessageLogMapper.class);
-        TaskMessageLogService service = new TaskMessageLogServiceImpl(mapper);
+        TaskMessageLogService service = newService(mapper);
         TaskMessageLogDO existing = new TaskMessageLogDO();
         existing.setId(7L);
         existing.setRetryCount(0);
@@ -76,7 +78,7 @@ class TaskMessageLogServiceTests {
     @Test
     void recordConsumedShouldCompleteProcessingAsSuccess() {
         TaskMessageLogMapper mapper = mock(TaskMessageLogMapper.class);
-        TaskMessageLogService service = new TaskMessageLogServiceImpl(mapper);
+        TaskMessageLogService service = newService(mapper);
         SimpleMessageEnvelope message = buildMessage();
 
         when(mapper.completeConsumerLog(
@@ -97,6 +99,14 @@ class TaskMessageLogServiceTests {
                 null
         );
         verify(mapper, never()).insert(any(TaskMessageLogDO.class));
+    }
+
+    private TaskMessageLogService newService(TaskMessageLogMapper mapper) {
+        TaskMessageLogManager taskMessageLogManager = new TaskMessageLogManager(mapper);
+        return new TaskMessageLogServiceImpl(
+                taskMessageLogManager,
+                new TaskMessageConsumeLogManager(taskMessageLogManager)
+        );
     }
 
     private SimpleMessageEnvelope buildMessage() {

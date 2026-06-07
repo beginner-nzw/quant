@@ -13,6 +13,7 @@ public class SourceFetchResult {
     private SourceProvenance provenance;
     private List<MarketEventCreateDTO> standardizedEvents;
     private Integer httpStatus;
+    private String rawPayloadRef;
     private Integer attemptNo;
     private Integer maxAttempts;
     private String errorCode;

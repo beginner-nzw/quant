@@ -1,5 +1,7 @@
 package com.quant.aiorchestrationservice;
 
+import com.quant.aiorchestrator.manager.AiTaskInboundMessageManager;
+import com.quant.aiorchestrator.manager.InboundMessageEnvelopeManager;
 import com.quant.aiorchestrator.service.impl.AiTaskInboundMessageSupportServiceImpl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,9 +29,7 @@ class AiTaskInboundMessageSupportServiceTests {
         AiTaskDeadLetterPublisherService deadLetterPublisherService = mock(AiTaskDeadLetterPublisherService.class);
 
         AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportServiceImpl(
-                new ObjectMapper(),
-                taskMessageLogService,
-                deadLetterPublisherService
+                newInboundMessageManager(taskMessageLogService, deadLetterPublisherService)
         );
 
         String malformedMessage = "{messageId:deadletter-msg-1,traceId:deadletter-trace-1,taskId:deadletter-task-1,eventId:deadletter-event-1,messageType:AI_TASK_STATUS,sourceService:manual-test,targetService:ai-orchestration-service,tenantId:default,bizKey:deadletter-test,timestamp:1778131148942,version:1.0,retryCount:0}";
@@ -70,9 +70,10 @@ class AiTaskInboundMessageSupportServiceTests {
     @Test
     void missingPayloadShouldBeRejected() {
         AiTaskInboundMessageSupportService service = new AiTaskInboundMessageSupportServiceImpl(
-                new ObjectMapper(),
-                mock(TaskMessageLogService.class),
-                mock(AiTaskDeadLetterPublisherService.class)
+                newInboundMessageManager(
+                        mock(TaskMessageLogService.class),
+                        mock(AiTaskDeadLetterPublisherService.class)
+                )
         );
 
         AiTaskStatusMessage message = new AiTaskStatusMessage();
@@ -89,5 +90,18 @@ class AiTaskInboundMessageSupportServiceTests {
         );
 
         assertTrue(rejected);
+    }
+
+    private AiTaskInboundMessageManager newInboundMessageManager(
+            TaskMessageLogService taskMessageLogService,
+            AiTaskDeadLetterPublisherService deadLetterPublisherService
+    ) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return new AiTaskInboundMessageManager(
+                objectMapper,
+                taskMessageLogService,
+                deadLetterPublisherService,
+                new InboundMessageEnvelopeManager(objectMapper)
+        );
     }
 }

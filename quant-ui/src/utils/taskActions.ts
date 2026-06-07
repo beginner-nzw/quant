@@ -1,5 +1,6 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { cancelTask, retryTask, reviewTaskReport } from '../api/task'
+import { cancelTask, rerunTaskNode, resumeTask, retryTask } from '../api/task'
+import { reviewTaskReport } from '../api/report'
 import { getCurrentUser } from './auth'
 import { canCancelTasks, canRetryTasks } from './roleAccess'
 import { REPORT_REVIEW_STATUS, type ReportReviewStatus } from '../types/taskEnums'
@@ -58,13 +59,18 @@ export async function executeTaskRetry(taskId: string, retryReason: string) {
     return false
   }
 
-  const res = await retryTask(taskId, {
-    retryReason,
-    operatorId: getOperatorId()
-  })
+  try {
+    const res = await retryTask(taskId, {
+      retryReason,
+      operatorId: getOperatorId()
+    })
 
-  if (!res.success) {
-    ElMessage.error(res.message)
+    if (!res.success) {
+      ElMessage.error(res.message || '任务重试失败')
+      return false
+    }
+  } catch (e: any) {
+    ElMessage.error(getExceptionMessage(e, '任务重试请求异常'))
     return false
   }
 
@@ -88,17 +94,77 @@ export async function executeTaskCancel(taskId: string, cancelReason: string) {
     return false
   }
 
-  const res = await cancelTask(taskId, {
-    cancelReason,
-    operatorId: getOperatorId()
-  })
+  try {
+    const res = await cancelTask(taskId, {
+      cancelReason,
+      operatorId: getOperatorId()
+    })
 
-  if (!res.success) {
-    ElMessage.error(res.message)
+    if (!res.success) {
+      ElMessage.error(res.message || '任务取消失败')
+      return false
+    }
+  } catch (e: any) {
+    ElMessage.error(getExceptionMessage(e, '任务取消请求异常'))
     return false
   }
 
   ElMessage.success(text.taskCancelled)
+  return true
+}
+
+export async function executeTaskResume(taskId: string, reason: string) {
+  if (!canRetryTasks()) {
+    ElMessage.warning(text.retryForbidden)
+    return false
+  }
+
+  try {
+    const res = await resumeTask(taskId, {
+      reason,
+      operatorId: getOperatorId()
+    })
+
+    if (!res.success) {
+      ElMessage.error(res.message || '工作流恢复失败')
+      return false
+    }
+  } catch (e: any) {
+    ElMessage.error(getExceptionMessage(e, '工作流恢复请求异常'))
+    return false
+  }
+
+  ElMessage.success('工作流恢复已提交')
+  return true
+}
+
+export async function executeTaskNodeRerun(taskId: string, nodeName: string, reason: string) {
+  if (!canRetryTasks()) {
+    ElMessage.warning(text.retryForbidden)
+    return false
+  }
+  if (!nodeName) {
+    ElMessage.warning('请选择要重跑的节点')
+    return false
+  }
+
+  try {
+    const res = await rerunTaskNode(taskId, {
+      nodeName,
+      reason,
+      operatorId: getOperatorId()
+    })
+
+    if (!res.success) {
+      ElMessage.error(res.message || '节点重跑失败')
+      return false
+    }
+  } catch (e: any) {
+    ElMessage.error(getExceptionMessage(e, '节点重跑请求异常'))
+    return false
+  }
+
+  ElMessage.success('节点重跑已提交')
   return true
 }
 
@@ -196,4 +262,8 @@ function getErrorText(mode: 'save' | 'approve' | 'reject') {
     default:
       return text.saveError
   }
+}
+
+function getExceptionMessage(error: any, fallback: string) {
+  return error?.response?.data?.message || error?.message || fallback
 }

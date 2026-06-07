@@ -2,14 +2,44 @@
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { read, utils, write, type WorkBook } from 'xlsx'
-import { batchImportMarketEvents, createMarketEvent, fetchMarketEvent, fetchMarketEventIngestHistory, fetchMarketEventSourceConfigs, fetchMarketEventStats, fetchMarketEvents, mockIngestMarketEvents, previewBatchImportMarketEvents, syncMarketEventSource } from '../../api/task'
+import { read, utils, type WorkBook } from 'xlsx'
+import {
+  batchImportCsvTemplate,
+  batchImportExample,
+  createTemplateWorkbook,
+  downloadTextFile,
+  escapeCsvValue,
+  exportWorkbook,
+  normalizeBatchImportRecord,
+  parseBatchImportCsv
+} from './market-event-center/batchImport'
+import { marketEventCenterText as text } from './market-event-center/text'
+import {
+  autoTriggerStatusTagTypeMap,
+  autoTriggerStatusTextMap,
+  defaultMockSourceOptions,
+  defaultStats,
+  duplicateSourceTextMap,
+  eventStatusOptions,
+  eventStatusValueSet,
+  eventTypeOptions,
+  eventTypeValueSet,
+  followUpStatusTagTypeMap,
+  followUpStatusTextMap,
+  impactLevelOptions,
+  impactLevelValueSet,
+  ingestSourceTagTypeMap,
+  previewInvalidFieldTextMap
+} from './market-event-center/options'
+import { batchImportMarketEvents, createMarketEvent, diagnoseMarketEventSource, fetchMarketEvent, fetchMarketEventIngestHistory, fetchMarketEventSourceConfigs, fetchMarketEventStats, fetchMarketEvents, mockIngestMarketEvents, previewBatchImportMarketEvents, previewMarketEventSource, syncMarketEventSource } from '../../api/task'
 import type {
   MarketEventBatchImportResult,
   MarketEventBatchPreviewResult,
   MarketEventCreateForm,
   MarketEventCreateResult,
   EventSourceConfigItem,
+  EventSourcePreviewResult,
+  EventSourceRequestDiagnosticResult,
   MarketEventIngestHistoryItem,
   MarketEventListItem,
   MarketEventMockIngestForm,
@@ -55,267 +85,6 @@ import { buildFromQuery, resolveSourcePath } from '../../utils/taskNavigation'
 
 const route = useRoute()
 const router = useRouter()
-
-const text = {
-  title: '市场事件中心',
-  backToSource: '返回来源页',
-  createEvent: '录入事件',
-  sourceSync: '事件源同步',
-  batchImport: '批量导入',
-  targetCode: '标的代码',
-  targetCodePlaceholder: '如 600519.SH / 01929.HK',
-  targetName: '标的名称',
-  targetNamePlaceholder: '如 贵州茅台 / 周大福',
-  eventType: '事件类型',
-  eventTypePlaceholder: '全部类型',
-  impactLevel: '影响等级',
-  impactLevelPlaceholder: '全部等级',
-  eventStatus: '事件状态',
-  eventStatusPlaceholder: '全部状态',
-  search: '查询',
-  reset: '重置',
-  refresh: '刷新',
-  empty: '暂无市场事件数据',
-  totalCount: '事件总数',
-  activeCount: '活跃事件',
-  highImpactCount: '高影响事件',
-  trackedCount: '已跟踪事件',
-  todayCount: '今日事件',
-  eventId: '事件 ID',
-  eventTitle: '事件标题',
-  eventSummary: '事件摘要',
-  sourceChannel: '来源渠道',
-  impactTag: '影响等级',
-  autoTriggerStatus: '自动触发',
-  autoTriggerRuleCode: '触发规则',
-  autoTriggerTask: '自动触发任务',
-  autoTriggerAttemptedAt: '触发时间',
-  autoTriggerMessage: '触发结果',
-  followUpStatus: '跟踪状态',
-  followUpTaskCount: '跟踪任务数',
-  latestFollowUpTask: '最近跟踪任务',
-  latestFollowUpCreatedAt: '最近跟踪时间',
-  relatedReportCount: '关联报告数',
-  latestReport: '最新报告',
-  latestReportType: '报告类型',
-  latestReportReviewStatus: '报告审核状态',
-  latestReportConfidenceScore: '报告置信度',
-  latestNeedHumanReview: '人工复核',
-  latestReportCreatedAt: '报告生成时间',
-  latestReportSummary: '报告摘要',
-  relationCount: '关联实体数',
-  relations: '关联实体',
-  derivedRisk: '派生风险',
-  derivedRiskLevel: '风险等级',
-  derivedRiskCount: '风险总数',
-  derivedWarningCount: '风险预警数',
-  derivedRiskPointCount: '风险点数',
-  derivedSignal: '派生信号',
-  derivedSignalDirection: '信号方向',
-  derivedSignalStrength: '信号强度',
-  derivedSignalScore: '信号分数',
-  derivedIntelligence: '派生情报',
-  derivedIntelligenceType: '情报类型',
-  occurredAt: '事件发生时间',
-  createdAt: '录入时间',
-  action: '操作',
-  openDetail: '查看事件',
-  openLatestFollowUpTask: '查看跟踪任务',
-  openAutoTriggerTask: '查看自动任务',
-  openLatestReport: '查看最新报告',
-  createTask: '发起研究',
-  workbench: '投研工作台',
-  detailTitle: '事件详情',
-  sourceUrl: '来源链接',
-  createdBy: '录入人',
-  noSourceUrl: '无来源链接',
-  noSummary: '暂无事件摘要',
-  noLatestReport: '暂无关联报告',
-  createDialogTitle: '录入市场事件',
-  createResultDialogTitle: '录入结果',
-  batchImportDialogTitle: '批量导入事件',
-  batchImportHint: '支持直接粘贴 JSON 数组。每一项结构与单条录入一致，后端会逐条导入并返回成功/失败结果。',
-  batchImportContent: '导入内容',
-  batchImportPlaceholder: '请粘贴事件 JSON 数组',
-  batchImportExample: '填充示例',
-  batchImportTemplate: '下载模板',
-  batchImportCsvTemplate: '下载 CSV 模板',
-  batchImportUpload: '上传文件',
-  batchImportUploadSuccess: '文件内容已载入',
-  batchImportUploadFailed: '导入文件解析失败',
-  batchImportFileTypeError: '请上传 JSON 或 CSV 文件',
-  previewBatchImport: '预校验预览',
-  submitBatchImport: '开始导入',
-  batchPreviewTitle: '预校验结果',
-  batchPreviewValidCount: '有效数',
-  batchPreviewInvalidCount: '无效数',
-  batchPreviewDuplicateCount: '预估去重数',
-  batchPreviewAutoTriggerCount: '预估自动入队数',
-  batchPreviewResult: '校验结果',
-  batchPreviewDuplicateSource: '去重判断',
-  batchPreviewNormalized: '标准化结果',
-  batchPreviewEstimatedTaskType: '预估任务类型',
-  batchPreviewEmpty: '请先执行预校验预览',
-  batchPreviewSuccess: '预校验完成',
-  batchPreviewFailed: '预校验失败',
-  batchPreviewError: '预校验异常',
-  batchPreviewApplyImportable: '只保留可导入项',
-  batchPreviewImportImportable: '仅导入可导入项',
-  exportBatchPreviewJson: '导出预校验 JSON',
-  exportBatchPreviewCsv: '导出预校验 CSV',
-  exportImportableEventsJson: '导出可导入项 JSON',
-  batchPreviewImportableEmpty: '预校验结果中没有可导入项',
-  batchPreviewApplySuccess: '已仅保留可导入项',
-  batchImportResultDialogTitle: '批量导入结果',
-  batchImportTotalCount: '总条数',
-  batchImportSuccessCount: '成功数',
-  batchImportFailedCount: '失败数',
-  batchImportAutoTriggeredCount: '自动入队数',
-  exportBatchImportJson: '导出 JSON',
-  exportBatchImportCsv: '导出 CSV',
-  batchImportItemNo: '序号',
-  batchImportMessage: '结果摘要',
-  submitEvent: '保存事件',
-  eventTitlePlaceholder: '例如：公司发布年报后利润增速不及预期',
-  eventSummaryPlaceholder: '请填写事件摘要、影响判断和关注点',
-  sourceChannelPlaceholder: '例如：公告 / 新闻 / 手工录入',
-  sourceUrlPlaceholder: '可选，填写原始链接',
-  occurredAtPlaceholder: '请选择事件发生时间',
-  eventTypeRequired: '请选择事件类型',
-  eventTitleRequired: '请输入事件标题',
-  eventSummaryRequired: '请输入事件摘要',
-  impactLevelRequired: '请选择影响等级',
-  occurredAtRequired: '请选择事件发生时间',
-  targetCodeRequired: '请输入标的代码',
-  targetNameRequired: '请输入标的名称',
-  createEventSuccess: '事件录入成功',
-  createEventFailed: '事件录入失败',
-  createEventError: '事件录入异常',
-  batchImportParseFailed: '批量导入内容不是合法 JSON 数组',
-  batchImportEmpty: '请先填写批量导入内容',
-  batchImportSuccess: '批量导入完成',
-  batchImportFailed: '批量导入失败',
-  batchImportError: '批量导入异常',
-  loadCreatedEventFailed: '事件详情获取失败',
-  loadCreatedEventError: '事件详情获取异常',
-  loadStatsFailed: '市场事件统计加载失败',
-  loadStatsError: '市场事件统计加载异常',
-  loadListFailed: '市场事件列表加载失败',
-  loadListError: '市场事件列表加载异常',
-  viewEventDetail: '查看事件详情',
-  ingestHistoryTitle: '事件接入历史',
-  ingestHistoryEmpty: '暂无事件接入历史',
-  ingestSource: '接入来源',
-  ingestDetail: '接入明细',
-  ingestTotalCount: '接入条数',
-  ingestSuccessCount: '成功条数',
-  ingestFailedCount: '失败条数',
-  ingestDuplicateCount: '去重条数',
-  ingestAutoTriggeredCount: '自动入队数',
-  ingestResultStatus: '结果状态',
-  ingestErrorMessage: '错误信息',
-  ingestOperator: '操作人',
-  ingestCreatedAt: '接入时间',
-  ingestSummary: '接入摘要',
-  ingestSourceStatsTitle: '按来源统计',
-  ingestSourceStatsEmpty: '暂无来源统计',
-  ingestSourceSummary: '来源汇总',
-  loadIngestHistoryFailed: '事件接入历史加载失败',
-  loadIngestHistoryError: '事件接入历史加载异常',
-  sourceSyncDialogTitle: '事件源手动同步',
-  sourceSyncSource: '同步来源',
-  sourceSyncItemCount: '同步条数',
-  sourceSyncSubmit: '开始同步',
-  sourceSyncSuccess: '事件源同步完成',
-  sourceSyncFailed: '事件源同步失败',
-  sourceSyncError: '事件源同步异常'
-} as const
-
-const defaultStats: MarketEventStats = {
-  totalCount: 0,
-  activeCount: 0,
-  highImpactCount: 0,
-  trackedCount: 0,
-  todayCount: 0
-}
-
-const eventTypeOptions = Object.values(MARKET_EVENT_TYPE).map((value) => ({
-  label: getMarketEventTypeText(value),
-  value
-}))
-
-const impactLevelOptions = Object.values(MARKET_EVENT_IMPACT_LEVEL).map((value) => ({
-  label: getMarketEventImpactText(value),
-  value
-}))
-
-const eventStatusOptions = Object.values(MARKET_EVENT_STATUS).map((value) => ({
-  label: getMarketEventStatusText(value),
-  value
-}))
-
-const eventTypeValueSet = new Set<string>(Object.values(MARKET_EVENT_TYPE))
-const impactLevelValueSet = new Set<string>(Object.values(MARKET_EVENT_IMPACT_LEVEL))
-const eventStatusValueSet = new Set<string>(Object.values(MARKET_EVENT_STATUS))
-
-const followUpStatusTextMap: Record<string, string> = {
-  NOT_TRACKED: '未跟踪',
-  TRACKING: '跟踪中',
-  COMPLETED: '已完成',
-  FAILED: '跟踪失败'
-}
-
-const followUpStatusTagTypeMap: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
-  NOT_TRACKED: 'info',
-  TRACKING: 'warning',
-  COMPLETED: 'success',
-  FAILED: 'danger'
-}
-
-const autoTriggerStatusTextMap: Record<string, string> = {
-  DISABLED: '已关闭',
-  NO_MATCH: '未命中',
-  SUCCESS: '已创建任务',
-  FAILED: '触发失败',
-  WILL_TRIGGER: '已入队',
-  SKIPPED_DUPLICATE: '重复跳过',
-  INVALID: '校验失败'
-}
-
-const autoTriggerStatusTagTypeMap: Record<string, 'info' | 'warning' | 'success' | 'danger'> = {
-  DISABLED: 'info',
-  NO_MATCH: 'warning',
-  SUCCESS: 'success',
-  FAILED: 'danger',
-  WILL_TRIGGER: 'success',
-  SKIPPED_DUPLICATE: 'warning',
-  INVALID: 'danger'
-}
-
-const duplicateSourceTextMap: Record<string, string> = {
-  EXISTING_EVENT: '命中已有事件',
-  SAME_BATCH: '批次内重复'
-}
-
-const ingestSourceTagTypeMap: Record<string, 'info' | 'warning' | 'success' | 'primary' | 'danger'> = {
-  MANUAL_CREATE: 'primary',
-  BATCH_IMPORT: 'info',
-  MOCK_INGEST: 'success',
-  MANUAL: 'primary',
-  IMPORT: 'info',
-  NEWS: 'success',
-  ANNOUNCEMENT: 'warning',
-  POLICY: 'primary',
-  RISK: 'danger',
-  MOCK: 'success'
-}
-
-const defaultMockSourceOptions = [
-  { label: '新闻快讯源', value: 'NEWS_WIRE' },
-  { label: '交易所公告源', value: 'EXCHANGE_ANNOUNCEMENT' },
-  { label: '政策跟踪源', value: 'POLICY_TRACKER' },
-  { label: '风险监测源', value: 'RISK_MONITOR' }
-]
 
 const statsCards = computed(() => [
   { label: text.totalCount, value: stats.value.totalCount, color: '#303133' },
@@ -396,6 +165,10 @@ const batchImportResult = ref<MarketEventBatchImportResult | null>(null)
 const batchImportFileInput = ref<HTMLInputElement | null>(null)
 const mockIngesting = ref(false)
 const sourceSyncing = ref(false)
+const sourcePreviewing = ref(false)
+const sourceDiagnosing = ref(false)
+const sourcePreviewResult = ref<EventSourcePreviewResult | null>(null)
+const sourceDiagnosticResult = ref<EventSourceRequestDiagnosticResult | null>(null)
 const batchImportWorkbook = ref<WorkBook | null>(null)
 const batchImportSheetNames = ref<string[]>([])
 const batchImportSelectedSheet = ref('')
@@ -461,39 +234,6 @@ const sourceSyncForm = reactive<MarketEventSourceSyncForm>({
   sourceCode: '',
   itemCount: 3
 })
-
-const batchImportExample = `[
-  {
-    "targetType": "STOCK",
-    "targetCode": "600519.SH",
-    "targetName": "贵州茅台",
-    "eventType": "ANNOUNCEMENT",
-    "eventTitle": "贵州茅台披露季度经营数据",
-    "eventSummary": "公司披露季度经营数据，营收与利润保持稳健增长，市场关注后续估值消化情况。",
-    "sourceChannel": "MANUAL_IMPORT",
-    "sourceUrl": "",
-    "impactLevel": "HIGH",
-    "eventStatus": "ACTIVE",
-    "occurredAt": "2026-04-04T09:30"
-  },
-  {
-    "targetType": "STOCK",
-    "targetCode": "000001.SZ",
-    "targetName": "平安银行",
-    "eventType": "EARNINGS",
-    "eventTitle": "平安银行发布业绩快报",
-    "eventSummary": "业绩快报显示净利润承压，市场关注零售业务修复节奏和拨备变化。",
-    "sourceChannel": "MANUAL_IMPORT",
-    "sourceUrl": "",
-    "impactLevel": "MEDIUM",
-    "eventStatus": "ACTIVE",
-    "occurredAt": "2026-04-04T10:00"
-  }
-]`
-
-const batchImportCsvTemplate = `targetType,targetCode,targetName,eventType,eventTitle,eventSummary,sourceChannel,sourceUrl,impactLevel,eventStatus,occurredAt
-STOCK,600519.SH,贵州茅台,ANNOUNCEMENT,贵州茅台披露季度经营数据,公司披露季度经营数据，营收与利润保持稳健增长，市场关注后续估值消化情况。,MANUAL_IMPORT,,HIGH,ACTIVE,2026-04-04T09:30
-STOCK,000001.SZ,平安银行,EARNINGS,平安银行发布业绩快报,业绩快报显示净利润承压，市场关注零售业务修复节奏和拨备变化。,MANUAL_IMPORT,,MEDIUM,ACTIVE,2026-04-04T10:00`
 
 const actionAccess = computed(() => resolveCenterActionAccess())
 const sourcePath = computed(() => resolveSourcePath(route.query.from))
@@ -761,6 +501,8 @@ function openSourceSyncDialog() {
   sourceSyncForm.targetName = query.targetName || ''
   sourceSyncForm.sourceCode = syncSourceOptions.value[0]?.value || ''
   sourceSyncForm.itemCount = 3
+  sourcePreviewResult.value = null
+  sourceDiagnosticResult.value = null
   sourceSyncDialogVisible.value = true
 }
 
@@ -809,24 +551,7 @@ function downloadBatchImportCsvTemplate() {
 }
 
 function downloadBatchImportExcelTemplate() {
-  const worksheet = utils.json_to_sheet(JSON.parse(batchImportExample) as MarketEventCreateForm[])
-  const workbook = utils.book_new()
-  utils.book_append_sheet(workbook, worksheet, 'market_events')
-  const content = write(workbook, {
-    bookType: 'xlsx',
-    type: 'array'
-  })
-  const blob = new Blob([content], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'market-event-import-template.xlsx'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  exportWorkbook(createTemplateWorkbook(), 'market-event-import-template.xlsx')
 }
 
 function openBatchImportFilePicker() {
@@ -924,151 +649,6 @@ function parseBatchImportPayload(): MarketEventCreateForm[] | null {
   return parsed as MarketEventCreateForm[]
 }
 
-function parseBatchImportExcel(content: ArrayBuffer): MarketEventCreateForm[] {
-  const workbook = read(content, { type: 'array' })
-  const sheetName = workbook.SheetNames[0]
-  if (!sheetName) {
-    throw new Error('empty workbook')
-  }
-  const worksheet = workbook.Sheets[sheetName]
-  if (!worksheet) {
-    throw new Error('empty worksheet')
-  }
-  const rows = utils.sheet_to_json<Record<string, unknown>>(worksheet, { defval: '' })
-  if (!rows.length) {
-    throw new Error('empty worksheet')
-  }
-  return rows.map((row) => normalizeBatchImportRecord(row))
-}
-
-function parseBatchImportCsv(content: string): MarketEventCreateForm[] {
-  const rows = content
-    .replace(/^\uFEFF/, '')
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean)
-  if (rows.length < 2) {
-    throw new Error('empty csv')
-  }
-
-  const headerRow = rows[0]
-  if (!headerRow) {
-    throw new Error('empty csv header')
-  }
-
-  const headers = parseCsvLine(headerRow).map((item) => resolveCsvHeader(item))
-  return rows.slice(1).map((line) => {
-    const values = parseCsvLine(line)
-    const record: Record<string, string> = {}
-    headers.forEach((header, index) => {
-      if (header) {
-        record[header] = values[index] ?? ''
-      }
-    })
-    return normalizeBatchImportRecord(record)
-  })
-}
-
-function normalizeBatchImportRecord(record: Record<string, unknown>): MarketEventCreateForm {
-  const normalized: Record<string, string> = {}
-  Object.entries(record).forEach(([key, value]) => {
-    const resolvedKey = resolveCsvHeader(key)
-    if (resolvedKey) {
-      normalized[resolvedKey] = String(value ?? '').trim()
-    }
-  })
-  return {
-    targetType: normalized.targetType || 'STOCK',
-    targetCode: normalized.targetCode || '',
-    targetName: normalized.targetName || '',
-    eventType: normalized.eventType || '',
-    eventTitle: normalized.eventTitle || '',
-    eventSummary: normalized.eventSummary || '',
-    sourceChannel: normalized.sourceChannel || '',
-    sourceUrl: normalized.sourceUrl || '',
-    impactLevel: normalized.impactLevel || '',
-    eventStatus: normalized.eventStatus || 'ACTIVE',
-    occurredAt: normalized.occurredAt || ''
-  }
-}
-
-function parseCsvLine(line: string) {
-  const values: string[] = []
-  let current = ''
-  let inQuotes = false
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    const next = line[i + 1]
-    if (char === '"') {
-      if (inQuotes && next === '"') {
-        current += '"'
-        i++
-      } else {
-        inQuotes = !inQuotes
-      }
-      continue
-    }
-    if (char === ',' && !inQuotes) {
-      values.push(current.trim())
-      current = ''
-      continue
-    }
-    current += char
-  }
-
-  values.push(current.trim())
-  return values
-}
-
-function resolveCsvHeader(header: string) {
-  const normalized = header.trim().toLowerCase()
-  const mapping: Record<string, string> = {
-    targettype: 'targetType',
-    type: 'targetType',
-    '标的类型': 'targetType',
-    targetcode: 'targetCode',
-    code: 'targetCode',
-    symbol: 'targetCode',
-    ticker: 'targetCode',
-    '标的代码': 'targetCode',
-    targetname: 'targetName',
-    name: 'targetName',
-    '标的名称': 'targetName',
-    eventtype: 'eventType',
-    event: 'eventType',
-    '事件类型': 'eventType',
-    eventtitle: 'eventTitle',
-    title: 'eventTitle',
-    '事件标题': 'eventTitle',
-    eventsummary: 'eventSummary',
-    summary: 'eventSummary',
-    content: 'eventSummary',
-    '事件摘要': 'eventSummary',
-    sourcechannel: 'sourceChannel',
-    source: 'sourceChannel',
-    channel: 'sourceChannel',
-    '来源渠道': 'sourceChannel',
-    sourceurl: 'sourceUrl',
-    url: 'sourceUrl',
-    link: 'sourceUrl',
-    '来源链接': 'sourceUrl',
-    impactlevel: 'impactLevel',
-    impact: 'impactLevel',
-    level: 'impactLevel',
-    '影响等级': 'impactLevel',
-    eventstatus: 'eventStatus',
-    status: 'eventStatus',
-    '事件状态': 'eventStatus',
-    occurredat: 'occurredAt',
-    occurred_at: 'occurredAt',
-    datetime: 'occurredAt',
-    time: 'occurredAt',
-    '发生时间': 'occurredAt'
-  }
-  return mapping[normalized] || ''
-}
-
 function exportBatchImportResultJson() {
   if (!batchImportResult.value) {
     return
@@ -1111,24 +691,6 @@ function exportBatchImportResultCsv() {
   downloadTextFile(lines.join('\n'), 'market-event-import-result.csv', 'text/csv;charset=utf-8')
 }
 
-function exportWorkbook(workbook: ReturnType<typeof utils.book_new>, fileName: string) {
-  const content = write(workbook, {
-    bookType: 'xlsx',
-    type: 'array'
-  })
-  const blob = new Blob([content], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
 function exportBatchImportResultExcel() {
   if (!batchImportResult.value) {
     return
@@ -1137,25 +699,25 @@ function exportBatchImportResultExcel() {
   const workbook = utils.book_new()
   const summarySheet = utils.json_to_sheet([
     {
-      总条数: batchImportResult.value.totalCount,
-      成功数: batchImportResult.value.successCount,
-      失败数: batchImportResult.value.failedCount,
-      去重数: batchImportResult.value.duplicateCount,
-      自动入队数: batchImportResult.value.autoTriggeredCount
+      '\u603b\u6761\u6570': batchImportResult.value.totalCount,
+      '\u6210\u529f\u6570': batchImportResult.value.successCount,
+      '\u5931\u8d25\u6570': batchImportResult.value.failedCount,
+      '\u53bb\u91cd\u6570': batchImportResult.value.duplicateCount,
+      '\u81ea\u52a8\u5165\u961f\u6570': batchImportResult.value.autoTriggeredCount
     }
   ])
   const detailSheet = utils.json_to_sheet(
     batchImportResult.value.items.map((item) => ({
-      序号: item.itemNo,
-      录入成功: item.success ? '是' : '否',
-      命中已有事件: item.duplicate ? '是' : '否',
-      事件ID: item.eventId || '',
-      标的代码: item.targetCode || '',
-      标的名称: item.targetName || '',
-      事件标题: item.eventTitle || '',
-      自动触发状态: getAutoTriggerStatusText(item.autoTriggerStatus),
-      自动触发任务: item.autoTriggerTaskId || '',
-      结果摘要: item.message || ''
+      '\u5e8f\u53f7': item.itemNo,
+      '\u5f55\u5165\u6210\u529f': item.success ? '\u662f' : '\u5426',
+      '\u547d\u4e2d\u5df2\u6709\u4e8b\u4ef6': item.duplicate ? '\u662f' : '\u5426',
+      '\u4e8b\u4ef6ID': item.eventId || '',
+      '\u6807\u7684\u4ee3\u7801': item.targetCode || '',
+      '\u6807\u7684\u540d\u79f0': item.targetName || '',
+      '\u4e8b\u4ef6\u6807\u9898': item.eventTitle || '',
+      '\u81ea\u52a8\u89e6\u53d1\u72b6\u6001': getAutoTriggerStatusText(item.autoTriggerStatus),
+      '\u81ea\u52a8\u89e6\u53d1\u4efb\u52a1': item.autoTriggerTaskId || '',
+      '\u7ed3\u679c\u6458\u8981': item.message || ''
     }))
   )
   utils.book_append_sheet(workbook, summarySheet, 'summary')
@@ -1259,40 +821,40 @@ function exportBatchPreviewResultExcel() {
   const workbook = utils.book_new()
   const summarySheet = utils.json_to_sheet([
     {
-      总条数: batchImportPreviewResult.value.totalCount,
-      有效数: batchImportPreviewResult.value.validCount,
-      无效数: batchImportPreviewResult.value.invalidCount,
-      预估去重数: batchImportPreviewResult.value.duplicateCount,
-      预估自动入队数: batchImportPreviewResult.value.autoTriggerCandidateCount
+      '\u603b\u6761\u6570': batchImportPreviewResult.value.totalCount,
+      '\u6709\u6548\u6570': batchImportPreviewResult.value.validCount,
+      '\u65e0\u6548\u6570': batchImportPreviewResult.value.invalidCount,
+      '\u9884\u8ba1\u53bb\u91cd\u6570': batchImportPreviewResult.value.duplicateCount,
+      '\u9884\u8ba1\u81ea\u52a8\u5165\u961f\u6570': batchImportPreviewResult.value.autoTriggerCandidateCount
     }
   ])
   const issueSummarySheet = utils.json_to_sheet(
     previewIssueSummary.value.map((item) => ({
-      问题类型: item.label,
-      数量: item.count,
-      级别: item.type === 'warning' ? '警告' : '错误'
+      '\u95ee\u9898\u7c7b\u578b': item.label,
+      '\u6570\u91cf': item.count,
+      '\u7ea7\u522b': item.type === 'warning' ? '\u8b66\u544a' : '\u9519\u8bef'
     }))
   )
   const detailSheet = utils.json_to_sheet(
     batchImportPreviewResult.value.items.map((item) => ({
-      序号: item.itemNo,
-      校验结果: item.valid ? '通过' : '失败',
-      可导入: getPreviewImportableText(item.importable),
-      问题字段: getPreviewInvalidFieldText(item.invalidField),
-      去重判断: getDuplicateSourceText(item.duplicateSource),
-      已有事件ID: item.existingEventId || '',
-      标的代码: item.targetCode || '',
-      标的名称: item.targetName || '',
-      事件标题: item.eventTitle || '',
-      标准化标的代码: item.normalizedTargetCode || '',
-      标准化事件类型: item.normalizedEventType || '',
-      标准化影响等级: item.normalizedImpactLevel || '',
-      标准化事件状态: item.normalizedEventStatus || '',
-      标准化来源渠道: item.normalizedSourceChannel || '',
-      自动触发状态: getAutoTriggerStatusText(item.autoTriggerStatus),
-      触发规则: item.autoTriggerRuleCode || '',
-      预估任务类型: item.estimatedTaskType || '',
-      结果摘要: item.message || ''
+      '\u5e8f\u53f7': item.itemNo,
+      '\u6821\u9a8c\u7ed3\u679c': item.valid ? '\u901a\u8fc7' : '\u5931\u8d25',
+      '\u53ef\u5bfc\u5165': getPreviewImportableText(item.importable),
+      '\u95ee\u9898\u5b57\u6bb5': getPreviewInvalidFieldText(item.invalidField),
+      '\u53bb\u91cd\u5224\u65ad': getDuplicateSourceText(item.duplicateSource),
+      '\u5df2\u6709\u4e8b\u4ef6ID': item.existingEventId || '',
+      '\u6807\u7684\u4ee3\u7801': item.targetCode || '',
+      '\u6807\u7684\u540d\u79f0': item.targetName || '',
+      '\u4e8b\u4ef6\u6807\u9898': item.eventTitle || '',
+      '\u6807\u51c6\u5316\u6807\u7684\u4ee3\u7801': item.normalizedTargetCode || '',
+      '\u6807\u51c6\u5316\u4e8b\u4ef6\u7c7b\u578b': item.normalizedEventType || '',
+      '\u6807\u51c6\u5316\u5f71\u54cd\u7b49\u7ea7': item.normalizedImpactLevel || '',
+      '\u6807\u51c6\u5316\u4e8b\u4ef6\u72b6\u6001': item.normalizedEventStatus || '',
+      '\u6807\u51c6\u5316\u6765\u6e90\u6e20\u9053': item.normalizedSourceChannel || '',
+      '\u81ea\u52a8\u89e6\u53d1\u72b6\u6001': getAutoTriggerStatusText(item.autoTriggerStatus),
+      '\u89e6\u53d1\u89c4\u5219': item.autoTriggerRuleCode || '',
+      '\u9884\u8ba1\u4efb\u52a1\u7c7b\u578b': item.estimatedTaskType || '',
+      '\u7ed3\u679c\u6458\u8981': item.message || ''
     }))
   )
   utils.book_append_sheet(workbook, summarySheet, 'summary')
@@ -1468,28 +1030,19 @@ async function submitMockIngest() {
 }
 
 async function submitSourceSync() {
+  const payload = buildSourceOperationPayload()
+  if (!payload) {
+    return
+  }
+
   if (!sourceSyncForm.sourceCode) {
     ElMessage.warning('请选择同步来源')
-    return
-  }
-  if (!sourceSyncForm.targetCode.trim()) {
-    ElMessage.warning('请输入标的代码')
-    return
-  }
-  if (!sourceSyncForm.targetName.trim()) {
-    ElMessage.warning('请输入标的名称')
     return
   }
 
   sourceSyncing.value = true
   try {
-    const res = await syncMarketEventSource(sourceSyncForm.sourceCode, {
-      targetType: sourceSyncForm.targetType || 'STOCK',
-      targetCode: sourceSyncForm.targetCode.trim(),
-      targetName: sourceSyncForm.targetName.trim(),
-      sourceCode: sourceSyncForm.sourceCode,
-      itemCount: sourceSyncForm.itemCount || 3
-    })
+    const res = await syncMarketEventSource(sourceSyncForm.sourceCode, payload)
     if (!res.success) {
       ElMessage.error(res.message || text.sourceSyncFailed)
       return
@@ -1507,6 +1060,70 @@ async function submitSourceSync() {
   }
 }
 
+function buildSourceOperationPayload(): MarketEventSourceSyncForm | null {
+  if (!sourceSyncForm.sourceCode) {
+    ElMessage.warning('请选择同步来源')
+    return null
+  }
+  if (!sourceSyncForm.targetCode.trim()) {
+    ElMessage.warning('请输入标的代码')
+    return null
+  }
+  if (!sourceSyncForm.targetName.trim()) {
+    ElMessage.warning('请输入标的名称')
+    return null
+  }
+  return {
+    targetType: sourceSyncForm.targetType || 'STOCK',
+    targetCode: sourceSyncForm.targetCode.trim(),
+    targetName: sourceSyncForm.targetName.trim(),
+    sourceCode: sourceSyncForm.sourceCode,
+    itemCount: sourceSyncForm.itemCount || 3
+  }
+}
+
+async function handleSourcePreview() {
+  const payload = buildSourceOperationPayload()
+  if (!payload) {
+    return
+  }
+
+  sourcePreviewing.value = true
+  try {
+    const res = await previewMarketEventSource(sourceSyncForm.sourceCode, payload)
+    if (!res.success) {
+      ElMessage.error(res.message || text.sourceOperationFailed)
+      return
+    }
+    sourcePreviewResult.value = res.data || null
+  } catch (error: any) {
+    ElMessage.error(error?.message || text.sourceOperationFailed)
+  } finally {
+    sourcePreviewing.value = false
+  }
+}
+
+async function handleSourceDiagnose() {
+  const payload = buildSourceOperationPayload()
+  if (!payload) {
+    return
+  }
+
+  sourceDiagnosing.value = true
+  try {
+    const res = await diagnoseMarketEventSource(sourceSyncForm.sourceCode, payload)
+    if (!res.success) {
+      ElMessage.error(res.message || text.sourceOperationFailed)
+      return
+    }
+    sourceDiagnosticResult.value = res.data || null
+  } catch (error: any) {
+    ElMessage.error(error?.message || text.sourceOperationFailed)
+  } finally {
+    sourceDiagnosing.value = false
+  }
+}
+
 async function submitPreviewImportableBatchImport() {
   const importableEvents = getPreviewImportableEvents()
   if (!importableEvents) {
@@ -1514,26 +1131,6 @@ async function submitPreviewImportableBatchImport() {
   }
 
   await submitBatchImportRequest(importableEvents)
-}
-
-function escapeCsvValue(value: string | number) {
-  const normalized = String(value ?? '')
-  if (/[",\n]/.test(normalized)) {
-    return `"${normalized.replace(/"/g, '""')}"`
-  }
-  return normalized
-}
-
-function downloadTextFile(content: string, fileName: string, mimeType: string) {
-  const blob = new Blob([content], { type: mimeType })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
 }
 
 async function submitEvent() {
@@ -2024,6 +1621,23 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
           </template>
         </el-table-column>
 
+        <el-table-column :label="text.autoTriggerReason" min-width="180" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.autoTriggerReason || row.autoTriggerMessage || '-' }}
+          </template>
+        </el-table-column>
+
+        <el-table-column :label="text.autoTriggerFailureCode" min-width="150" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-tag v-if="row.autoTriggerFailureCode" type="danger">
+              {{ row.autoTriggerFailureCode }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="autoTriggerRetryCount" :label="text.autoTriggerRetryCount" width="100" align="center" />
+
         <el-table-column prop="followUpTaskCount" :label="text.followUpTaskCount" width="110" align="center" />
         <el-table-column :label="text.occurredAt" min-width="170">
           <template #default="{ row }">
@@ -2210,6 +1824,15 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
           </el-descriptions-item>
           <el-descriptions-item :label="text.autoTriggerRuleCode">
             {{ createdEventFeedback?.autoTriggerRuleCode || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerReason">
+            {{ createdEventFeedback?.autoTriggerReason || createdEventResult?.autoTriggerReason || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerFailureCode">
+            {{ createdEventFeedback?.autoTriggerFailureCode || createdEventResult?.autoTriggerFailureCode || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.normalizedFingerprint" :span="2">
+            {{ createdEventFeedback?.normalizedFingerprint || createdEventResult?.normalizedFingerprint || '-' }}
           </el-descriptions-item>
           <el-descriptions-item :label="text.autoTriggerAttemptedAt">
             {{ formatDateTime(createdEventFeedback?.autoTriggerAttemptedAt) }}
@@ -2554,6 +2177,16 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
               <span v-else>-</span>
             </template>
           </el-table-column>
+          <el-table-column :label="text.autoTriggerReason" min-width="180" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.autoTriggerReason || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column :label="text.autoTriggerFailureCode" min-width="150" show-overflow-tooltip>
+            <template #default="{ row }">
+              {{ row.autoTriggerFailureCode || '-' }}
+            </template>
+          </el-table-column>
           <el-table-column :label="text.batchImportMessage" min-width="220" show-overflow-tooltip>
             <template #default="{ row }">
               {{ row.message || '-' }}
@@ -2638,8 +2271,40 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
 
       <template #footer>
         <el-button @click="sourceSyncDialogVisible = false">取消</el-button>
+        <el-button :loading="sourceDiagnosing" @click="handleSourceDiagnose">{{ text.sourceDiagnose }}</el-button>
+        <el-button :loading="sourcePreviewing" @click="handleSourcePreview">{{ text.sourcePreview }}</el-button>
         <el-button type="primary" :loading="sourceSyncing" @click="submitSourceSync">{{ text.sourceSyncSubmit }}</el-button>
       </template>
+
+      <el-tabs
+        v-if="sourcePreviewResult || sourceDiagnosticResult"
+        style="margin-top: 14px;"
+      >
+        <el-tab-pane :label="text.sourcePreviewTitle" name="preview">
+          <el-empty
+            v-if="!sourcePreviewResult?.items?.length"
+            :description="text.sourcePreviewEmpty"
+          />
+          <el-table v-else :data="sourcePreviewResult.items" border size="small">
+            <el-table-column prop="targetCode" :label="text.targetCode" width="120" />
+            <el-table-column prop="eventTitle" :label="text.eventTitle" min-width="220" />
+            <el-table-column prop="sourceChannel" :label="text.sourceChannel" width="140" />
+            <el-table-column prop="occurredAt" :label="text.occurredAt" width="170" />
+          </el-table>
+        </el-tab-pane>
+        <el-tab-pane :label="text.sourceDiagnoseTitle" name="diagnose">
+          <el-empty
+            v-if="!sourceDiagnosticResult?.items?.length"
+            :description="text.sourceDiagnoseEmpty"
+          />
+          <el-table v-else :data="sourceDiagnosticResult.items" border size="small">
+            <el-table-column prop="stageName" label="阶段" width="120" />
+            <el-table-column prop="requestMethod" label="方法" width="90" />
+            <el-table-column prop="requestUrl" label="URL" min-width="240" show-overflow-tooltip />
+            <el-table-column prop="requestTimeoutSeconds" label="超时" width="80" />
+          </el-table>
+        </el-tab-pane>
+      </el-tabs>
     </el-dialog>
 
     <el-dialog
@@ -2750,6 +2415,18 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
           <el-descriptions-item :label="text.autoTriggerRuleCode">
             {{ selectedEvent.autoTriggerRuleCode || '-' }}
           </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerReason">
+            {{ selectedEvent.autoTriggerReason || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerSource">
+            {{ selectedEvent.autoTriggerSource || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerFailureCode">
+            {{ selectedEvent.autoTriggerFailureCode || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.autoTriggerRetryCount">
+            {{ selectedEvent.autoTriggerRetryCount ?? 0 }}
+          </el-descriptions-item>
           <el-descriptions-item :label="text.autoTriggerAttemptedAt">
             {{ formatDateTime(selectedEvent.autoTriggerAttemptedAt) }}
           </el-descriptions-item>
@@ -2773,6 +2450,15 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
           </el-descriptions-item>
           <el-descriptions-item :label="text.sourceChannel">
             {{ selectedEvent.sourceChannel || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.provenance">
+            {{ selectedEvent.provenanceType || '-' }} / {{ selectedEvent.provenanceRef || '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.confidenceScore">
+            {{ selectedEvent.confidenceScore ?? '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.normalizedFingerprint" :span="2">
+            {{ selectedEvent.normalizedFingerprint || '-' }}
           </el-descriptions-item>
           <el-descriptions-item :label="text.sourceUrl">
             <a
@@ -2896,6 +2582,12 @@ watch(batchImportSelectedSheet, (sheetName, previousSheetName) => {
               {{ getMarketIntelligenceTypeText(selectedEvent.derivedIntelligenceType) }}
             </el-tag>
             <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.analysisRiskFlag">
+            {{ selectedEvent.analysisRiskFlag ? 'YES' : 'NO' }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="text.analysisSummary" :span="2">
+            {{ selectedEvent.analysisSummary || '-' }}
           </el-descriptions-item>
           <el-descriptions-item :label="text.eventSummary" :span="2">
             {{ selectedEvent.eventSummary || text.noSummary }}

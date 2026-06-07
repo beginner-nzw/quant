@@ -5,6 +5,7 @@ import com.quant.aiorchestrator.dataingest.DataIngestService;
 import com.quant.aiorchestrator.domain.dto.MarketEventCreateDTO;
 import com.quant.aiorchestrator.domain.dto.MarketEventMockIngestDTO;
 import com.quant.aiorchestrator.domain.entity.MarketEventDO;
+import com.quant.aiorchestrator.domain.entity.MarketEventAnalysisDO;
 import com.quant.aiorchestrator.domain.entity.MarketEventRelationDO;
 import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
@@ -15,15 +16,25 @@ import com.quant.aiorchestrator.domain.vo.MarketEventListItemVO;
 import com.quant.aiorchestrator.domain.dto.MarketEventPageQueryDTO;
 import com.quant.aiorchestrator.domain.vo.EventSourceConfigItemVO;
 import com.quant.aiorchestrator.mapper.MarketEventMapper;
+import com.quant.aiorchestrator.mapper.MarketEventAnalysisMapper;
 import com.quant.aiorchestrator.mapper.MarketEventRelationMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
+import com.quant.aiorchestrator.manager.MarketEventNormalizationManager;
+import com.quant.aiorchestrator.manager.MarketEventBatchImportManager;
+import com.quant.aiorchestrator.manager.MarketEventBatchPreviewManager;
+import com.quant.aiorchestrator.manager.MarketEventCommandManager;
+import com.quant.aiorchestrator.manager.MarketEventCreateManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestOrchestrationManager;
+import com.quant.aiorchestrator.manager.MarketEventProjectionManager;
+import com.quant.aiorchestrator.manager.MarketEventQueryManager;
+import com.quant.aiorchestrator.manager.MarketEventStatsManager;
+import com.quant.aiorchestrator.manager.MarketEventWriteManager;
 import com.quant.aiorchestrator.service.CninfoProxyAnnouncementService;
 import com.quant.aiorchestrator.service.EventAutoTriggerConfigService;
 import com.quant.aiorchestrator.service.EventSourceConfigService;
-import com.quant.aiorchestrator.service.EventSourceSyncAdapter;
 import com.quant.aiorchestrator.service.MarketEventAutoTriggerService;
 import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
 import com.quant.aiorchestrator.service.MarketEventMockIngestGenerator;
@@ -52,6 +63,7 @@ class MarketEventServiceImplTests {
     @Test
     void createMarketEventPublishesStandardizedEventAfterPersistingAutoTriggerState() {
         MarketEventMapper marketEventMapper = mock(MarketEventMapper.class);
+        MarketEventAnalysisMapper marketEventAnalysisMapper = mock(MarketEventAnalysisMapper.class);
         MarketEventRelationMapper marketEventRelationMapper = mock(MarketEventRelationMapper.class);
         ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
         ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
@@ -67,8 +79,9 @@ class MarketEventServiceImplTests {
         MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
         DataIngestService dataIngestService = mock(DataIngestService.class);
 
-        MarketEventServiceImpl service = new MarketEventServiceImpl(
+        MarketEventServiceImpl service = newService(
                 marketEventMapper,
+                marketEventAnalysisMapper,
                 marketEventRelationMapper,
                 researchTaskMapper,
                 researchReportMapper,
@@ -80,7 +93,6 @@ class MarketEventServiceImplTests {
                 marketEventMockIngestGenerator,
                 marketEventIngestHistoryService,
                 eventSourceConfigService,
-                List.<EventSourceSyncAdapter>of(),
                 cninfoProxyAnnouncementService,
                 marketEventStandardizedPublisherService,
                 dataIngestService
@@ -133,11 +145,80 @@ class MarketEventServiceImplTests {
         assertEquals(publisherCaptor.getValue().getEventId(), relationCaptor.getValue().getEventId());
         assertEquals("STOCK", relationCaptor.getValue().getRelationType());
         assertEquals("600519", relationCaptor.getValue().getRelationCode());
+
+        ArgumentCaptor<MarketEventAnalysisDO> analysisCaptor = ArgumentCaptor.forClass(MarketEventAnalysisDO.class);
+        verify(marketEventAnalysisMapper).insert(analysisCaptor.capture());
+        assertEquals(publisherCaptor.getValue().getEventId(), analysisCaptor.getValue().getEventId());
+        assertNotNull(publisherCaptor.getValue().getNormalizedFingerprint());
+        assertEquals("MANUAL", publisherCaptor.getValue().getProvenanceType());
+    }
+
+    @Test
+    void createMarketEventReturnsDuplicateWhenNormalizedFingerprintAlreadyExists() {
+        MarketEventMapper marketEventMapper = mock(MarketEventMapper.class);
+        MarketEventAnalysisMapper marketEventAnalysisMapper = mock(MarketEventAnalysisMapper.class);
+        MarketEventRelationMapper marketEventRelationMapper = mock(MarketEventRelationMapper.class);
+        ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
+        ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
+        RiskWarningMapper riskWarningMapper = mock(RiskWarningMapper.class);
+        RiskWarningDetailMapper riskWarningDetailMapper = mock(RiskWarningDetailMapper.class);
+        EventAutoTriggerConfigService eventAutoTriggerConfigService = mock(EventAutoTriggerConfigService.class);
+        MarketEventAutoTriggerService marketEventAutoTriggerService = mock(MarketEventAutoTriggerService.class);
+        MarketEventMockIngestGenerator marketEventMockIngestGenerator = mock(MarketEventMockIngestGenerator.class);
+        MarketEventIngestHistoryService marketEventIngestHistoryService = mock(MarketEventIngestHistoryService.class);
+        EventSourceConfigService eventSourceConfigService = mock(EventSourceConfigService.class);
+        CninfoProxyAnnouncementService cninfoProxyAnnouncementService = mock(CninfoProxyAnnouncementService.class);
+        MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
+        DataIngestService dataIngestService = mock(DataIngestService.class);
+
+        MarketEventServiceImpl service = newService(
+                marketEventMapper,
+                marketEventAnalysisMapper,
+                marketEventRelationMapper,
+                researchTaskMapper,
+                researchReportMapper,
+                riskWarningMapper,
+                riskWarningDetailMapper,
+                new ObjectMapper(),
+                eventAutoTriggerConfigService,
+                marketEventAutoTriggerService,
+                marketEventMockIngestGenerator,
+                marketEventIngestHistoryService,
+                eventSourceConfigService,
+                cninfoProxyAnnouncementService,
+                marketEventStandardizedPublisherService,
+                dataIngestService
+        );
+
+        MarketEventDO duplicated = new MarketEventDO();
+        duplicated.setEventId("event-existing");
+        duplicated.setAutoTriggerStatus("SUCCESS");
+        duplicated.setNormalizedFingerprint("fingerprint-existing");
+        when(marketEventMapper.selectOne(any())).thenReturn(duplicated);
+
+        MarketEventCreateDTO dto = new MarketEventCreateDTO();
+        dto.setTargetCode("600519");
+        dto.setTargetName("Kweichow Moutai");
+        dto.setEventType("ANNOUNCEMENT");
+        dto.setEventTitle("Annual report published");
+        dto.setEventSummary("Company published annual report.");
+        dto.setImpactLevel("HIGH");
+        dto.setOccurredAt(LocalDateTime.of(2026, 5, 7, 13, 55));
+
+        MarketEventCreateResultVO result = service.createMarketEvent(dto);
+
+        assertEquals(Boolean.TRUE, result.getDuplicate());
+        assertEquals("event-existing", result.getEventId());
+        verify(marketEventMapper, never()).insert(any(MarketEventDO.class));
+        verify(marketEventAnalysisMapper, never()).insert(any(MarketEventAnalysisDO.class));
+        verify(marketEventAutoTriggerService, never()).prepareAutoTrigger(any(MarketEventDO.class));
+        verify(marketEventStandardizedPublisherService, never()).publish(any(MarketEventDO.class));
     }
 
     @Test
     void pageMarketEventsPrefersDomainRiskProjectionForDerivedFields() {
         MarketEventMapper marketEventMapper = mock(MarketEventMapper.class);
+        MarketEventAnalysisMapper marketEventAnalysisMapper = mock(MarketEventAnalysisMapper.class);
         MarketEventRelationMapper marketEventRelationMapper = mock(MarketEventRelationMapper.class);
         ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
         ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
@@ -153,8 +234,9 @@ class MarketEventServiceImplTests {
         MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
         DataIngestService dataIngestService = mock(DataIngestService.class);
 
-        MarketEventServiceImpl service = new MarketEventServiceImpl(
+        MarketEventServiceImpl service = newService(
                 marketEventMapper,
+                marketEventAnalysisMapper,
                 marketEventRelationMapper,
                 researchTaskMapper,
                 researchReportMapper,
@@ -166,7 +248,6 @@ class MarketEventServiceImplTests {
                 marketEventMockIngestGenerator,
                 marketEventIngestHistoryService,
                 eventSourceConfigService,
-                List.<EventSourceSyncAdapter>of(),
                 cninfoProxyAnnouncementService,
                 marketEventStandardizedPublisherService,
                 dataIngestService
@@ -183,6 +264,12 @@ class MarketEventServiceImplTests {
         event.setOccurredAt(LocalDateTime.of(2026, 5, 7, 13, 0));
         when(marketEventMapper.selectList(any())).thenReturn(List.of(event));
         when(marketEventRelationMapper.selectList(any())).thenReturn(List.of());
+        MarketEventAnalysisDO analysis = new MarketEventAnalysisDO();
+        analysis.setEventId("event-1");
+        analysis.setAnalysisId("analysis-1");
+        analysis.setAnalysisSummary("event analysis");
+        analysis.setRiskFlag(1);
+        when(marketEventAnalysisMapper.selectList(any())).thenReturn(List.of(analysis));
 
         ResearchTaskDO followUpTask = new ResearchTaskDO();
         followUpTask.setId(1L);
@@ -230,11 +317,14 @@ class MarketEventServiceImplTests {
         assertEquals(1, result.getDerivedWarningCount());
         assertEquals(1, result.getDerivedRiskPointCount());
         assertEquals(Boolean.TRUE, result.getLatestNeedHumanReview());
+        assertEquals("analysis-1", result.getAnalysisId());
+        assertEquals(Boolean.TRUE, result.getAnalysisRiskFlag());
     }
 
     @Test
     void mockIngestIsDisabledUnlessLocalDemoFlagEnablesIt() {
         MarketEventMapper marketEventMapper = mock(MarketEventMapper.class);
+        MarketEventAnalysisMapper marketEventAnalysisMapper = mock(MarketEventAnalysisMapper.class);
         MarketEventRelationMapper marketEventRelationMapper = mock(MarketEventRelationMapper.class);
         ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
         ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
@@ -249,8 +339,9 @@ class MarketEventServiceImplTests {
         MarketEventStandardizedPublisherService marketEventStandardizedPublisherService = mock(MarketEventStandardizedPublisherService.class);
         DataIngestService dataIngestService = mock(DataIngestService.class);
 
-        MarketEventServiceImpl service = new MarketEventServiceImpl(
+        MarketEventServiceImpl service = newService(
                 marketEventMapper,
+                marketEventAnalysisMapper,
                 marketEventRelationMapper,
                 researchTaskMapper,
                 researchReportMapper,
@@ -262,7 +353,6 @@ class MarketEventServiceImplTests {
                 marketEventMockIngestGenerator,
                 marketEventIngestHistoryService,
                 eventSourceConfigService,
-                List.<EventSourceSyncAdapter>of(),
                 cninfoProxyAnnouncementService,
                 marketEventStandardizedPublisherService,
                 dataIngestService
@@ -274,5 +364,87 @@ class MarketEventServiceImplTests {
         dto.setSourcePreset("LOCAL_DEMO_EXCHANGE_ANNOUNCEMENT");
 
         assertThrows(Exception.class, () -> service.mockIngestMarketEvents(dto));
+    }
+
+    private static MarketEventServiceImpl newService(
+            MarketEventMapper marketEventMapper,
+            MarketEventAnalysisMapper marketEventAnalysisMapper,
+            MarketEventRelationMapper marketEventRelationMapper,
+            ResearchTaskMapper researchTaskMapper,
+            ResearchReportMapper researchReportMapper,
+            RiskWarningMapper riskWarningMapper,
+            RiskWarningDetailMapper riskWarningDetailMapper,
+            ObjectMapper objectMapper,
+            EventAutoTriggerConfigService eventAutoTriggerConfigService,
+            MarketEventAutoTriggerService marketEventAutoTriggerService,
+            MarketEventMockIngestGenerator marketEventMockIngestGenerator,
+            MarketEventIngestHistoryService marketEventIngestHistoryService,
+            EventSourceConfigService eventSourceConfigService,
+            CninfoProxyAnnouncementService cninfoProxyAnnouncementService,
+            MarketEventStandardizedPublisherService marketEventStandardizedPublisherService,
+            DataIngestService dataIngestService) {
+        MarketEventNormalizationManager normalizationManager = new MarketEventNormalizationManager();
+        MarketEventProjectionManager projectionManager = new MarketEventProjectionManager(
+                marketEventMapper,
+                marketEventAnalysisMapper,
+                marketEventRelationMapper,
+                researchTaskMapper,
+                researchReportMapper,
+                riskWarningMapper,
+                riskWarningDetailMapper,
+                objectMapper,
+                normalizationManager
+        );
+        MarketEventWriteManager writeManager = new MarketEventWriteManager(
+                marketEventAnalysisMapper,
+                marketEventRelationMapper,
+                normalizationManager
+        );
+        MarketEventBatchImportManager batchImportManager = new MarketEventBatchImportManager(
+                normalizationManager,
+                marketEventAutoTriggerService
+        );
+        MarketEventBatchPreviewManager batchPreviewManager = new MarketEventBatchPreviewManager(
+                eventAutoTriggerConfigService,
+                normalizationManager
+        );
+        MarketEventCreateManager createManager = new MarketEventCreateManager(
+                marketEventMapper,
+                normalizationManager,
+                writeManager
+        );
+        MarketEventCommandManager commandManager = new MarketEventCommandManager(
+                marketEventAutoTriggerService,
+                marketEventIngestHistoryService,
+                marketEventStandardizedPublisherService,
+                normalizationManager,
+                createManager
+        );
+        MarketEventIngestOrchestrationManager ingestOrchestrationManager = new MarketEventIngestOrchestrationManager(
+                marketEventMockIngestGenerator,
+                marketEventIngestHistoryService,
+                eventSourceConfigService,
+                normalizationManager,
+                batchImportManager,
+                dataIngestService
+        );
+        MarketEventStatsManager statsManager = new MarketEventStatsManager(
+                marketEventMapper,
+                researchTaskMapper
+        );
+        MarketEventQueryManager queryManager = new MarketEventQueryManager(
+                marketEventMapper,
+                projectionManager
+        );
+        return new MarketEventServiceImpl(
+                marketEventIngestHistoryService,
+                cninfoProxyAnnouncementService,
+                batchPreviewManager,
+                commandManager,
+                createManager,
+                ingestOrchestrationManager,
+                queryManager,
+                statsManager
+        );
     }
 }

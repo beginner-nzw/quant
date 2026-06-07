@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { MARKET_DATA_INGEST_ROUTE_CONTRACTS } from '../api/marketDataIngestContracts'
 import BasicLayout from '../layout/BasicLayout.vue'
 import {
   getCurrentUser
@@ -69,7 +70,7 @@ const router = createRouter({
           component: TaskReportView
         },
         {
-          path: '/market-events',
+          path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketEvents,
           name: 'MarketEventCenter',
           meta: {
             requiredMenuKey: MENU_KEY.MARKET_EVENTS
@@ -77,7 +78,7 @@ const router = createRouter({
           component: MarketEventCenterView
         },
         {
-          path: '/intelligence',
+          path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketIntelligence,
           name: 'MarketIntelligenceCenter',
           component: MarketIntelligenceCenterView
         },

@@ -1,15 +1,23 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { fetchReportReviewStats, fetchTasks } from '../api/task'
-import type { ReportReviewStats, TaskListItem } from '../types/task'
-import { ANALYSIS_SCOPE, REPORT_REVIEW_STATUS, TASK_TYPE } from '../types/taskEnums'
+import { fetchReportCenter, fetchReportReviewStats } from '../api/report'
+import type { ReportCenterListItem, ReportReviewStats } from '../types/task'
+import { ANALYSIS_SCOPE, isPendingReviewStatus, REPORT_REVIEW_STATUS, TASK_TYPE } from '../types/taskEnums'
 import { buildResearchWorkbenchQuery } from './researchWorkbench'
-import { resolveCenterActionAccess, resolveReportWorkbenchActionAccess } from './taskActionAccess'
+import { canReviewReports } from './roleAccess'
+import { resolveCenterActionAccess } from './taskActionAccess'
 import { buildFollowUpTaskTitle, buildTaskCreateQuery } from './taskCreate'
 import { buildFromQuery } from './taskNavigation'
 
 export type ReportWorkbenchMode = 'pending' | 'approved' | 'rejected'
+
+type ReportWorkbenchListItem = ReportCenterListItem & {
+  reportReviewStatus?: ReportCenterListItem['reviewStatus']
+  reportReviewedBy?: string
+  reportReviewedAt?: string
+  reportReviewComment?: string
+}
 
 export const REPORT_WORKBENCH_TABS = [
   {
@@ -55,7 +63,7 @@ export function useReportWorkbench(options: {
     total: 0,
     pageNum: 1,
     pageSize: 10,
-    records: [] as TaskListItem[]
+    records: [] as ReportWorkbenchListItem[]
   })
 
   const query = reactive({
@@ -92,10 +100,10 @@ export function useReportWorkbench(options: {
   async function loadReports() {
     loading.value = true
     try {
-      const res = await fetchTasks(buildFetchParams(options.mode, pageData, query))
+      const res = await fetchReportCenter(buildFetchParams(options.mode, pageData, query))
       if (res.success) {
         pageData.total = res.data?.total || 0
-        pageData.records = res.data?.records || []
+        pageData.records = (res.data?.records || []).map(toReportWorkbenchListItem)
       } else {
         pageData.total = 0
         pageData.records = []
@@ -175,7 +183,7 @@ export function useReportWorkbench(options: {
     })
   }
 
-  function goWorkbench(task: TaskListItem) {
+  function goWorkbench(task: ReportWorkbenchListItem) {
     router.push({
       path: '/research-workbench',
       query: buildResearchWorkbenchQuery({
@@ -186,20 +194,18 @@ export function useReportWorkbench(options: {
     })
   }
 
-  function goCreateTask(task: TaskListItem) {
+  function goCreateTask(task: ReportWorkbenchListItem) {
     router.push({
       path: '/tasks/create',
       query: buildTaskCreateQuery({
         taskType: options.mode === 'approved' ? TASK_TYPE.FOLLOW_UP_RESEARCH : TASK_TYPE.REPORT_REVIEW,
         taskTitle: resolveFollowUpTaskTitle(options.mode, task),
-        targetType: task.targetType,
         targetCode: task.targetCode,
         targetName: task.targetName,
         priority: resolveFollowUpTaskPriority(options.mode, task),
         sourceTaskId: task.taskId,
-        sourceReportId: task.reportId || task.sourceReportId,
+        sourceReportId: task.reportId,
         sourceDomain: 'REPORT_WORKBENCH',
-        sourceReviewStatus: task.reportReviewStatus,
         analysisScope: options.mode === 'approved'
           ? ANALYSIS_SCOPE.REPORT_FOLLOW_UP
           : ANALYSIS_SCOPE.REPORT_REVIEW_RECHECK,
@@ -208,8 +214,8 @@ export function useReportWorkbench(options: {
     })
   }
 
-  function canReviewTask(task: TaskListItem) {
-    return resolveReportWorkbenchActionAccess(task).showReview
+  function canReviewTask(task: ReportWorkbenchListItem) {
+    return isPendingReviewStatus(task.reviewStatus) && canReviewReports()
   }
 
   watch([
@@ -256,24 +262,29 @@ function buildFetchParams(
     targetName: normalizeQueryValue(query.targetName)
   }
 
-  const reportReviewedBy = normalizeQueryValue(query.reportReviewedBy)
-  if (reportReviewedBy) {
-    params.reportReviewedBy = reportReviewedBy
-  }
-
   switch (mode) {
     case 'pending':
-      params.onlyPendingReview = true
+      params.reviewStatus = REPORT_REVIEW_STATUS.PENDING
       break
     case 'approved':
-      params.reportReviewStatus = REPORT_REVIEW_STATUS.APPROVED
+      params.reviewStatus = REPORT_REVIEW_STATUS.APPROVED
       break
     case 'rejected':
-      params.reportReviewStatus = REPORT_REVIEW_STATUS.REJECTED
+      params.reviewStatus = REPORT_REVIEW_STATUS.REJECTED
       break
   }
 
   return params
+}
+
+function toReportWorkbenchListItem(item: ReportCenterListItem): ReportWorkbenchListItem {
+  return {
+    ...item,
+    reportReviewStatus: item.reviewStatus,
+    reportReviewedBy: item.reviewedBy,
+    reportReviewedAt: item.reviewedAt,
+    reportReviewComment: undefined
+  }
 }
 
 function buildRouteQuery(
@@ -333,7 +344,7 @@ function normalizeQueryValue(value: string) {
   return normalized || undefined
 }
 
-function resolveFollowUpTaskTitle(mode: ReportWorkbenchMode, task: TaskListItem) {
+function resolveFollowUpTaskTitle(mode: ReportWorkbenchMode, task: ReportWorkbenchListItem) {
   switch (mode) {
     case 'pending':
       return buildFollowUpTaskTitle(task.targetName, task.targetCode, '待审核报告复核研究')
@@ -344,7 +355,7 @@ function resolveFollowUpTaskTitle(mode: ReportWorkbenchMode, task: TaskListItem)
   }
 }
 
-function resolveFollowUpTaskPriority(mode: ReportWorkbenchMode, task: TaskListItem) {
+function resolveFollowUpTaskPriority(mode: ReportWorkbenchMode, task: ReportWorkbenchListItem) {
   if (mode === 'pending' || mode === 'rejected') {
     return 'HIGH'
   }

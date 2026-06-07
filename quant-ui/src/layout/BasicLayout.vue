@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { MARKET_DATA_INGEST_ROUTE_CONTRACTS } from '../api/marketDataIngestContracts'
 import {
   ROLE_OPTIONS,
+  clearAuthSession,
   getCurrentUser,
   getDefaultUserIdByRole,
+  getAuthSession,
+  getSessionMode,
+  hasActiveAuthSession,
   setCurrentUser,
   type UserRole
 } from '../utils/auth'
@@ -40,6 +45,7 @@ interface ModuleItem {
 const route = useRoute()
 const router = useRouter()
 const currentUser = ref(getCurrentUser())
+const authSession = ref(getAuthSession())
 const accessVersion = ref(0)
 
 const modules: ModuleItem[] = [
@@ -78,7 +84,7 @@ const modules: ModuleItem[] = [
     workspace: 'front',
     label: '事件雷达',
     subtitle: '新闻、公告、舆情、政策事件接入',
-    path: '/market-events',
+    path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketEvents,
     glyph: 'E',
     accent: '#ff8764',
     menuKey: MENU_KEY.MARKET_EVENTS
@@ -88,7 +94,7 @@ const modules: ModuleItem[] = [
     workspace: 'front',
     label: '情报中枢',
     subtitle: '风险、信号、报告洞察聚合',
-    path: '/intelligence',
+    path: MARKET_DATA_INGEST_ROUTE_CONTRACTS.marketIntelligence,
     glyph: 'I',
     accent: '#41b883',
     menuKey: MENU_KEY.MARKET_INTELLIGENCE
@@ -204,6 +210,14 @@ const visibleModules = computed(() => modules.filter(canShowModule))
 const frontModules = computed(() => visibleModules.value.filter((item) => item.workspace === 'front'))
 const governanceModules = computed(() => visibleModules.value.filter((item) => item.workspace === 'governance'))
 const hasGovernance = computed(() => governanceModules.value.length > 0)
+const activeSession = computed(() => hasActiveAuthSession(authSession.value))
+const sessionMode = computed(() => getSessionMode(authSession.value))
+const sessionModeLabel = computed(() => {
+  if (sessionMode.value === 'APPROVED_SSO') return 'Approved SSO'
+  if (sessionMode.value === 'JWT') return 'JWT session'
+  return 'Demo headers'
+})
+const canSwitchDemoRole = computed(() => !activeSession.value)
 
 const activeWorkspace = computed<WorkspaceKey>(() => {
   if (governanceModules.value.some(isActiveModule)) {
@@ -270,11 +284,20 @@ function switchWorkspace(workspace: WorkspaceKey) {
 }
 
 function changeRole(role: UserRole) {
+  if (!canSwitchDemoRole.value) {
+    return
+  }
   currentUser.value = {
     userId: getDefaultUserIdByRole(role),
     userRole: role
   }
   setCurrentUser(currentUser.value)
+  window.location.reload()
+}
+
+function resetDemoSession() {
+  clearAuthSession()
+  authSession.value = getAuthSession()
   window.location.reload()
 }
 
@@ -335,16 +358,23 @@ onBeforeUnmount(() => {
         <el-dropdown>
           <button type="button" class="role-button">
             <span>{{ currentRoleLabel }}</span>
-            <small>{{ currentUser.userRole }}</small>
+            <small>{{ currentUser.userRole }} · {{ sessionModeLabel }}</small>
           </button>
           <template #dropdown>
             <el-dropdown-menu>
+              <el-dropdown-item disabled>
+                权限以后端校验为准
+              </el-dropdown-item>
               <el-dropdown-item
                 v-for="option in ROLE_OPTIONS"
                 :key="option.role"
+                :disabled="!canSwitchDemoRole"
                 @click="changeRole(option.role)"
               >
                 {{ option.label }} ({{ option.role }})
+              </el-dropdown-item>
+              <el-dropdown-item v-if="activeSession" divided @click="resetDemoSession">
+                清除本地 session
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
@@ -397,7 +427,8 @@ onBeforeUnmount(() => {
         <div class="role-brief">
           <span>权限身份</span>
           <strong>{{ currentRoleLabel }}</strong>
-          <p>{{ currentRoleDescription || '使用当前角色的默认菜单和能力权限。' }}</p>
+          <p>{{ currentRoleDescription || '使用当前身份渲染菜单和动作状态，实际权限由后端校验。' }}</p>
+          <small>{{ sessionModeLabel }} · UI gating is advisory</small>
         </div>
 
         <div v-if="siblingModules.length" class="nearby">
@@ -774,6 +805,14 @@ onBeforeUnmount(() => {
   color: #667589;
   font-size: 13px;
   line-height: 1.7;
+}
+
+.role-brief small {
+  display: block;
+  margin-top: 8px;
+  color: #8a97a8;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .pipeline {

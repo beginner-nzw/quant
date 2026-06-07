@@ -1,0 +1,42 @@
+app:
+  env: docker
+  host: 0.0.0.0
+  port: 8090
+  workflow_timeout_seconds: 90
+  workflow_timeout_buffer_seconds: 30
+  model_node_timeout_buffer_seconds: 15
+
+kafka:
+  bootstrap_servers: kafka:9092
+  consumer_group: python-ai-engine-group
+  max_lag_messages: 500
+  lag_log_interval_seconds: 30
+  topics:
+    dispatch: ai.task.dispatch
+    status: ai.task.status
+    result: ai.task.result
+    audit: ai.task.audit
+
+redis:
+  host: redis
+  port: 6379
+  db: 0
+  socket_timeout_seconds: 1
+  degradation_enabled: true
+
+services:
+  ai_orchestrator_base_url: http://ai-orchestration-service:8082
+  request_timeout_seconds: 5
+  user_id: ai-engine
+  user_role: ADMIN
+  config_store_fallback_enabled: true
+
+model:
+  enabled: false
+  provider: openai-compatible
+  base_url: http://127.0.0.1:11434/v1
+  api_key: local-dev-key
+  model: qwen2.5:7b-instruct
+  request_timeout_seconds: 20
+  temperature: 0.2
+  max_tokens: 1200

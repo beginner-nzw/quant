@@ -20,6 +20,9 @@ public class MarketEventBatchPreviewItemVO {
     private String normalizedImpactLevel;
     private String normalizedEventStatus;
     private String normalizedSourceChannel;
+    private String normalizedFingerprint;
+    private String provenanceType;
+    private java.math.BigDecimal confidenceScore;
     private String autoTriggerStatus;
     private String autoTriggerRuleCode;
     private String estimatedTaskType;

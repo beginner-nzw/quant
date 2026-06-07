@@ -19,6 +19,15 @@ import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
 import com.quant.aiorchestrator.domain.vo.*;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
+import com.quant.aiorchestrator.manager.AuditComplianceProjectionManager;
+import com.quant.aiorchestrator.manager.MarketIntelligenceProjectionManager;
+import com.quant.aiorchestrator.manager.ReportCenterProjectionManager;
+import com.quant.aiorchestrator.manager.ReportReviewStatsManager;
+import com.quant.aiorchestrator.manager.TaskReportProjectionManager;
+import com.quant.aiorchestrator.manager.ResearchWorkbenchProjectionManager;
+import com.quant.aiorchestrator.manager.FollowUpTaskSummaryManager;
+import com.quant.aiorchestrator.manager.StrategySignalProjectionManager;
+import com.quant.aiorchestrator.manager.StrategySignalRuleManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
 import com.quant.aiorchestrator.mapper.AiWorkflowInstanceMapper;
 import com.quant.aiorchestrator.mapper.AuditRecordMapper;
@@ -473,7 +482,13 @@ class TaskQueryServiceRiskProjectionTests {
 
     private QueryServices newService(TestDeps deps) {
         ObjectMapper objectMapper = new ObjectMapper();
-        ReportQueryServiceImpl reportQueryService = new ReportQueryServiceImpl(
+        ReportCenterProjectionManager reportCenterProjectionManager = new ReportCenterProjectionManager(
+                deps.researchTaskMapper,
+                deps.researchReportMapper,
+                deps.riskWarningMapper,
+                objectMapper
+        );
+        TaskReportProjectionManager taskReportProjectionManager = new TaskReportProjectionManager(
                 deps.researchTaskMapper,
                 deps.researchReportMapper,
                 deps.stringRedisTemplate,
@@ -483,30 +498,43 @@ class TaskQueryServiceRiskProjectionTests {
                 deps.strategySignalMapper,
                 mock(ReportEvidenceRefMapper.class),
                 mock(HumanReviewRecordMapper.class),
-                mock(ResearchReportSectionMapper.class),
+                mock(ResearchReportSectionMapper.class)
+        );
+        ReportQueryServiceImpl reportQueryService = new ReportQueryServiceImpl(
+                reportCenterProjectionManager,
+                taskReportProjectionManager,
+                new ReportReviewStatsManager(deps.researchReportMapper),
                 mock(TaskReportService.class),
                 mock(ReportVersionService.class)
         );
-        StrategyQueryServiceImpl strategyQueryService = new StrategyQueryServiceImpl(
+        StrategySignalProjectionManager strategySignalProjectionManager = new StrategySignalProjectionManager(
                 deps.researchTaskMapper,
                 deps.researchReportMapper,
                 deps.riskWarningMapper,
                 deps.riskWarningDetailMapper,
                 deps.strategySignalMapper,
                 deps.strategySignalFactorMapper,
-                mock(StrategySignalService.class),
-                objectMapper
+                new FollowUpTaskSummaryManager(),
+                new StrategySignalRuleManager(objectMapper)
         );
-        MarketQueryServiceImpl marketQueryService = new MarketQueryServiceImpl(
-                mock(MarketEventService.class),
+        StrategyQueryServiceImpl strategyQueryService = new StrategyQueryServiceImpl(
+                strategySignalProjectionManager,
+                mock(StrategySignalService.class)
+        );
+        MarketIntelligenceProjectionManager marketIntelligenceProjectionManager = new MarketIntelligenceProjectionManager(
                 deps.researchTaskMapper,
                 deps.researchReportMapper,
                 deps.riskWarningMapper,
                 deps.riskWarningDetailMapper,
                 deps.strategySignalMapper,
-                objectMapper
+                new FollowUpTaskSummaryManager(),
+                new StrategySignalRuleManager(objectMapper)
         );
-        AuditComplianceQueryServiceImpl auditComplianceQueryService = new AuditComplianceQueryServiceImpl(
+        MarketQueryServiceImpl marketQueryService = new MarketQueryServiceImpl(
+                mock(MarketEventService.class),
+                marketIntelligenceProjectionManager
+        );
+        AuditComplianceProjectionManager auditComplianceProjectionManager = new AuditComplianceProjectionManager(
                 deps.researchTaskMapper,
                 deps.researchReportMapper,
                 deps.aiWorkflowInstanceMapper,
@@ -515,14 +543,21 @@ class TaskQueryServiceRiskProjectionTests {
                 deps.riskWarningMapper,
                 objectMapper
         );
-        ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService = new ResearchWorkbenchQueryServiceImpl(
+        AuditComplianceQueryServiceImpl auditComplianceQueryService = new AuditComplianceQueryServiceImpl(
+                auditComplianceProjectionManager
+        );
+        ResearchWorkbenchProjectionManager researchWorkbenchProjectionManager = new ResearchWorkbenchProjectionManager(
                 deps.researchTaskMapper,
                 deps.researchReportMapper,
                 deps.riskWarningMapper,
                 deps.riskWarningDetailMapper,
                 deps.strategySignalMapper,
                 deps.strategySignalFactorMapper,
-                objectMapper
+                new FollowUpTaskSummaryManager(),
+                new StrategySignalRuleManager(objectMapper)
+        );
+        ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService = new ResearchWorkbenchQueryServiceImpl(
+                researchWorkbenchProjectionManager
         );
         return new QueryServices(
                 reportQueryService,

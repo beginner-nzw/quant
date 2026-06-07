@@ -6,6 +6,9 @@ import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
 import com.quant.aiorchestrator.domain.entity.ResearchTaskRetryLogDO;
 import com.quant.aiorchestrator.domain.entity.TaskMessageLogDO;
 import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.aiorchestrator.manager.TaskRetryCommandManager;
+import com.quant.aiorchestrator.manager.TaskRetryDispatchManager;
+import com.quant.aiorchestrator.manager.TaskRetryStateManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskRetryLogMapper;
@@ -159,16 +162,21 @@ class TaskRetryServiceTests {
         private final FakeStringRedisTemplate stringRedisTemplate = new FakeStringRedisTemplate();
         private final FakeTaskCacheVersionManager taskCacheVersionManager = new FakeTaskCacheVersionManager();
         private final FakeTaskMessageLogService taskMessageLogService = new FakeTaskMessageLogService();
-        private final TaskRetryServiceImpl service = new TaskRetryServiceImpl(
-                researchTaskMapper,
-                retryLogMapper,
+        private final TaskRetryStateManager taskRetryStateManager = new TaskRetryStateManager(retryLogMapper);
+        private final TaskRetryDispatchManager taskRetryDispatchManager = new TaskRetryDispatchManager(
                 kafkaTemplate,
                 new ObjectMapper(),
+                taskMessageLogService
+        );
+        private final TaskRetryCommandManager taskRetryCommandManager = new TaskRetryCommandManager(
+                researchTaskMapper,
                 stringRedisTemplate,
                 taskCacheVersionManager,
                 new TaskStateManager(),
-                taskMessageLogService
+                taskRetryStateManager,
+                taskRetryDispatchManager
         );
+        private final TaskRetryServiceImpl service = new TaskRetryServiceImpl(taskRetryCommandManager);
     }
 
     private static class FakeResearchTaskMapper {
