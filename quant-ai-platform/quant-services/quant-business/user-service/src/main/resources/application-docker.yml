@@ -1,0 +1,50 @@
+server:
+  port: 8080
+  shutdown: graceful
+
+spring:
+  application:
+    name: user-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: jdbc:mysql://mysql:3306/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+      config:
+        server-addr: nacos:8848
+        import-check:
+          enabled: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+quant:
+  security:
+    auth:
+      mode: DEMO
+    service-actor:
+      secret: ${QUANT_SERVICE_ACTOR_SECRET:local-dev-service-actor-secret}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

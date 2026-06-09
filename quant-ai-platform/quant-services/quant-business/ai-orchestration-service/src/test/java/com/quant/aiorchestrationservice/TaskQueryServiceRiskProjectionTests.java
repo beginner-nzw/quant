@@ -1,6 +1,11 @@
 package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.audit.AuditComplianceAgentExecutionProjection;
+import com.quant.aiorchestrator.audit.AuditComplianceReportProjection;
+import com.quant.aiorchestrator.audit.AuditComplianceRiskProjection;
+import com.quant.aiorchestrator.audit.AuditComplianceTaskProjection;
+import com.quant.aiorchestrator.audit.AuditComplianceWorkflowProjection;
 import com.quant.aiorchestrator.domain.dto.AuditCompliancePageQueryDTO;
 import com.quant.aiorchestrator.domain.dto.MarketIntelligencePageQueryDTO;
 import com.quant.aiorchestrator.domain.dto.ReportCenterPageQueryDTO;
@@ -17,7 +22,7 @@ import com.quant.aiorchestrator.domain.entity.StrategySignalDO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchInsightVO;
 import com.quant.aiorchestrator.domain.vo.ResearchWorkbenchVO;
 import com.quant.aiorchestrator.domain.vo.*;
-import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.task.port.TaskCacheVersionPort;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.manager.AuditComplianceProjectionManager;
 import com.quant.aiorchestrator.manager.MarketIntelligenceProjectionManager;
@@ -27,6 +32,9 @@ import com.quant.aiorchestrator.manager.TaskReportProjectionManager;
 import com.quant.aiorchestrator.manager.ResearchWorkbenchProjectionManager;
 import com.quant.aiorchestrator.manager.FollowUpTaskSummaryManager;
 import com.quant.aiorchestrator.manager.StrategySignalProjectionManager;
+import com.quant.aiorchestrator.manager.StrategySignalFollowUpSummaryManager;
+import com.quant.aiorchestrator.manager.StrategySignalItemAssembler;
+import com.quant.aiorchestrator.manager.StrategySignalReadManager;
 import com.quant.aiorchestrator.manager.StrategySignalRuleManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
 import com.quant.aiorchestrator.mapper.AiWorkflowInstanceMapper;
@@ -36,7 +44,6 @@ import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskRetryLogMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskStepMapper;
-import com.quant.aiorchestrator.mapper.HumanReviewRecordMapper;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
@@ -46,12 +53,10 @@ import com.quant.aiorchestrator.service.AgentConfigService;
 import com.quant.aiorchestrator.service.ConfigChangeAuditService;
 import com.quant.aiorchestrator.service.EventAutoTriggerConfigService;
 import com.quant.aiorchestrator.service.EventSourceConfigService;
-import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
 import com.quant.aiorchestrator.service.ModelStrategyConfigService;
 import com.quant.aiorchestrator.service.PromptTemplateConfigService;
 import com.quant.aiorchestrator.service.RoleAccessConfigService;
 import com.quant.aiorchestrator.service.WorkflowConfigService;
-import com.quant.aiorchestrator.service.MarketEventService;
 import com.quant.aiorchestrator.service.ReportVersionService;
 import com.quant.aiorchestrator.service.StrategySignalService;
 import com.quant.aiorchestrator.service.TaskReportService;
@@ -60,11 +65,23 @@ import com.quant.aiorchestrator.service.impl.MarketQueryServiceImpl;
 import com.quant.aiorchestrator.service.impl.ReportQueryServiceImpl;
 import com.quant.aiorchestrator.service.impl.ResearchWorkbenchQueryServiceImpl;
 import com.quant.aiorchestrator.service.impl.StrategyQueryServiceImpl;
+import com.quant.aiorchestrator.report.ReportCenterRiskProjection;
+import com.quant.aiorchestrator.report.ReportCenterTaskProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskDetailProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskProjectionProvider;
+import com.quant.aiorchestrator.report.TaskReportReadPort;
+import com.quant.aiorchestrator.risk.StrategySignalReadPort;
+import com.quant.aiorchestrator.risk.StrategySignalReadProjection;
 import com.quant.common.model.enums.MarketIntelligenceTypeEnum;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
 import com.quant.common.model.enums.RiskLevelEnum;
 import com.quant.common.model.enums.SignalDirectionEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
+import com.quant.task.market.MarketEventTaskProjection;
+import com.quant.task.market.MarketEventTaskReadPort;
+import com.quant.task.risk.RiskWarningTaskProjection;
+import com.quant.task.risk.RiskWarningTaskReadPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -72,6 +89,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -483,22 +503,22 @@ class TaskQueryServiceRiskProjectionTests {
     private QueryServices newService(TestDeps deps) {
         ObjectMapper objectMapper = new ObjectMapper();
         ReportCenterProjectionManager reportCenterProjectionManager = new ReportCenterProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
-                deps.riskWarningMapper,
+                taskIds -> toReportCenterTaskMap(deps.researchTaskMapper.selectList(null)),
+                new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(deps.researchReportMapper),
+                taskIds -> toReportCenterRiskMap(deps.riskWarningMapper.selectList(null)),
                 objectMapper
         );
         TaskReportProjectionManager taskReportProjectionManager = new TaskReportProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
+                new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(deps.researchReportMapper),
                 deps.stringRedisTemplate,
                 objectMapper,
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                mock(ReportEvidenceRefMapper.class),
-                mock(HumanReviewRecordMapper.class),
-                mock(ResearchReportSectionMapper.class)
+                new com.quant.aiorchestrator.manager.TaskReportDomainHydrationManager(
+                        mock(ReportEvidenceRefMapper.class),
+                        reportId -> List.of(),
+                        mock(ResearchReportSectionMapper.class),
+                        objectMapper
+                ),
+                taskReportRiskProvider(deps.riskWarningMapper, deps.riskWarningDetailMapper)
         );
         ReportQueryServiceImpl reportQueryService = new ReportQueryServiceImpl(
                 reportCenterProjectionManager,
@@ -508,56 +528,73 @@ class TaskQueryServiceRiskProjectionTests {
                 mock(ReportVersionService.class)
         );
         StrategySignalProjectionManager strategySignalProjectionManager = new StrategySignalProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                deps.strategySignalFactorMapper,
-                new FollowUpTaskSummaryManager(),
-                new StrategySignalRuleManager(objectMapper)
+                new StrategySignalReadManager(
+                        taskReadPort(deps.researchTaskMapper),
+                        new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(deps.researchReportMapper),
+                        taskReportRiskProvider(deps.riskWarningMapper, deps.riskWarningDetailMapper),
+                        deps.strategySignalMapper,
+                        deps.strategySignalFactorMapper
+                ),
+                new StrategySignalFollowUpSummaryManager(),
+                new StrategySignalRuleManager(objectMapper),
+                new StrategySignalItemAssembler(new StrategySignalRuleManager(objectMapper))
         );
         StrategyQueryServiceImpl strategyQueryService = new StrategyQueryServiceImpl(
                 strategySignalProjectionManager,
                 mock(StrategySignalService.class)
         );
         MarketIntelligenceProjectionManager marketIntelligenceProjectionManager = new MarketIntelligenceProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                new FollowUpTaskSummaryManager(),
-                new StrategySignalRuleManager(objectMapper)
+                marketEventTaskReadPort(deps.researchTaskMapper),
+                taskReportReadPort(deps.researchReportMapper),
+                new com.quant.aiorchestrator.manager.MarketEventFollowUpTaskSummaryManager(),
+                new com.quant.aiorchestrator.manager.MarketIntelligenceReadManager(
+                        taskReportRiskProvider(deps.riskWarningMapper, deps.riskWarningDetailMapper),
+                        strategySignalReadPort(deps.strategySignalMapper)
+                ),
+                new com.quant.aiorchestrator.manager.MarketIntelligenceItemAssembler(
+                        new com.quant.aiorchestrator.manager.MarketStrategySignalRuleManager(objectMapper)
+                )
         );
         MarketQueryServiceImpl marketQueryService = new MarketQueryServiceImpl(
-                mock(MarketEventService.class),
                 marketIntelligenceProjectionManager
         );
         AuditComplianceProjectionManager auditComplianceProjectionManager = new AuditComplianceProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
-                deps.aiWorkflowInstanceMapper,
-                deps.aiAgentExecutionMapper,
-                deps.auditRecordMapper,
-                deps.riskWarningMapper,
-                objectMapper
+                taskIds -> toAuditComplianceTaskMap(deps.researchTaskMapper.selectList(null)),
+                () -> toAuditComplianceReports(deps.researchReportMapper.selectList(null)),
+                new com.quant.aiorchestrator.audit.AuditComplianceWorkflowProvider() {
+                    @Override
+                    public Map<String, AuditComplianceWorkflowProjection> loadLatestWorkflowInstanceMapByTaskIds(Set<String> taskIds) {
+                        return toAuditComplianceWorkflowMap(deps.aiWorkflowInstanceMapper.selectList(null));
+                    }
+
+                    @Override
+                    public Map<String, List<AuditComplianceAgentExecutionProjection>> loadAgentExecutionMapByTaskIds(Set<String> taskIds) {
+                        return toAuditComplianceAgentExecutionMap(deps.aiAgentExecutionMapper.selectList(null));
+                    }
+                },
+                new com.quant.aiorchestrator.manager.AuditTaskReadManager(deps.auditRecordMapper),
+                taskIds -> toAuditComplianceRiskMap(deps.riskWarningMapper.selectList(null)),
+                new com.quant.aiorchestrator.manager.AuditComplianceItemAssembler(objectMapper)
         );
         AuditComplianceQueryServiceImpl auditComplianceQueryService = new AuditComplianceQueryServiceImpl(
                 auditComplianceProjectionManager
         );
-        ResearchWorkbenchProjectionManager researchWorkbenchProjectionManager = new ResearchWorkbenchProjectionManager(
-                deps.researchTaskMapper,
-                deps.researchReportMapper,
-                deps.riskWarningMapper,
-                deps.riskWarningDetailMapper,
-                deps.strategySignalMapper,
-                deps.strategySignalFactorMapper,
-                new FollowUpTaskSummaryManager(),
-                new StrategySignalRuleManager(objectMapper)
+        com.quant.aiorchestrator.manager.ResearchWorkbenchRuleManager workbenchRuleManager =
+                new com.quant.aiorchestrator.manager.ResearchWorkbenchRuleManager(objectMapper);
+        ResearchWorkbenchProjectionManager finalResearchWorkbenchProjectionManager = new ResearchWorkbenchProjectionManager(
+                new com.quant.aiorchestrator.manager.TaskQueryReadManager(deps.researchTaskMapper, null, null),
+                taskReportReadPort(deps.researchReportMapper),
+                newResearchWorkbenchReadManager(deps),
+                new com.quant.aiorchestrator.manager.ResearchWorkbenchDispositionManager(
+                        newResearchWorkbenchReadManager(deps),
+                        new FollowUpTaskSummaryManager(),
+                        workbenchRuleManager
+                ),
+                workbenchRuleManager,
+                new com.quant.aiorchestrator.manager.ResearchWorkbenchItemAssembler(workbenchRuleManager)
         );
         ResearchWorkbenchQueryServiceImpl researchWorkbenchQueryService = new ResearchWorkbenchQueryServiceImpl(
-                researchWorkbenchProjectionManager
+                finalResearchWorkbenchProjectionManager
         );
         return new QueryServices(
                 reportQueryService,
@@ -566,6 +603,437 @@ class TaskQueryServiceRiskProjectionTests {
                 auditComplianceQueryService,
                 researchWorkbenchQueryService
         );
+    }
+
+    private static com.quant.aiorchestrator.manager.ResearchWorkbenchReadManager newResearchWorkbenchReadManager(TestDeps deps) {
+        return new com.quant.aiorchestrator.manager.ResearchWorkbenchReadManager(
+                new com.quant.aiorchestrator.manager.TaskQueryReadManager(deps.researchTaskMapper, null, null),
+                new com.quant.task.workbench.ResearchWorkbenchRiskProvider() {
+                    @Override
+                    public Map<String, com.quant.task.workbench.ResearchWorkbenchRiskProjection> loadLatestRiskWarningMapByTaskIds(Set<String> taskIds) {
+                        return deps.riskWarningMapper.selectList(null).stream()
+                                .filter(item -> taskIds == null || taskIds.contains(item.getTaskId()))
+                                .collect(Collectors.toMap(
+                                        RiskWarningDO::getTaskId,
+                                        item -> new com.quant.task.workbench.ResearchWorkbenchRiskProjection(
+                                                item.getTaskId(),
+                                                item.getWarningId(),
+                                                item.getWarningLevel(),
+                                                item.getWarningSummary(),
+                                                item.getWarningReason(),
+                                                item.getSuggestAction(),
+                                                item.getReviewStatus(),
+                                                item.getReviewerId(),
+                                                item.getReviewTime(),
+                                                item.getCreatedAt()
+                                        ),
+                                        (left, right) -> left
+                                ));
+                    }
+
+                    @Override
+                    public Map<String, List<com.quant.task.workbench.ResearchWorkbenchRiskDetailProjection>> loadRiskWarningDetailMapByWarningIds(Set<String> warningIds) {
+                        return deps.riskWarningDetailMapper.selectList(null).stream()
+                                .filter(item -> warningIds == null || warningIds.contains(item.getWarningId()))
+                                .collect(Collectors.groupingBy(
+                                        RiskWarningDetailDO::getWarningId,
+                                        Collectors.mapping(
+                                                item -> new com.quant.task.workbench.ResearchWorkbenchRiskDetailProjection(
+                                                        item.getWarningId(),
+                                                        item.getDetailDesc(),
+                                                        item.getIndicatorName(),
+                                                        item.getIndicatorValue()
+                                                ),
+                                                Collectors.toList()
+                                        )
+                                ));
+                    }
+                },
+                taskIds -> deps.strategySignalMapper.selectList(null).stream()
+                        .filter(item -> taskIds == null || taskIds.contains(item.getTaskId()))
+                        .collect(Collectors.toMap(
+                                StrategySignalDO::getTaskId,
+                                item -> new com.quant.task.workbench.ResearchWorkbenchStrategyProjection(
+                                        item.getTaskId(),
+                                        item.getSignalDirection(),
+                                        item.getSignalLevel(),
+                                        item.getSignalScore(),
+                                        item.getConfidenceScore(),
+                                        item.getReasonSummary()
+                                ),
+                                (left, right) -> left
+                        ))
+        );
+    }
+
+    private static Map<String, ReportCenterTaskProjection> toReportCenterTaskMap(List<ResearchTaskDO> tasks) {
+        if (tasks == null) {
+            return Map.of();
+        }
+        return tasks.stream().collect(Collectors.toMap(
+                ResearchTaskDO::getTaskId,
+                task -> new ReportCenterTaskProjection(
+                        task.getTaskId(),
+                        task.getTaskTitle(),
+                        task.getTaskType(),
+                        task.getTargetCode(),
+                        task.getTargetName(),
+                        task.getPriority(),
+                        task.getCreatedAt()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static Map<String, ReportCenterRiskProjection> toReportCenterRiskMap(List<RiskWarningDO> risks) {
+        if (risks == null) {
+            return Map.of();
+        }
+        return risks.stream().collect(Collectors.toMap(
+                RiskWarningDO::getTaskId,
+                risk -> new ReportCenterRiskProjection(
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus(),
+                        risk.getCreatedAt()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static TaskReportRiskProjectionProvider taskReportRiskProvider(RiskWarningMapper riskWarningMapper,
+                                                                           RiskWarningDetailMapper riskWarningDetailMapper) {
+        return new TaskReportRiskProjectionProvider() {
+            @Override
+            public Map<String, TaskReportRiskProjection> loadLatestRiskWarningMapByTaskIds(Set<String> taskIds) {
+                return toTaskReportRiskMap(riskWarningMapper.selectList(null));
+            }
+
+            @Override
+            public Map<String, List<TaskReportRiskDetailProjection>> loadRiskWarningDetailMapByWarningIds(Set<String> warningIds) {
+                List<RiskWarningDetailDO> details = riskWarningDetailMapper.selectList(null);
+                if (details == null) {
+                    return Map.of();
+                }
+                return details.stream().collect(Collectors.groupingBy(
+                        RiskWarningDetailDO::getWarningId,
+                        Collectors.mapping(
+                                detail -> new TaskReportRiskDetailProjection(detail.getWarningId(), detail.getDetailDesc()),
+                                Collectors.toList()
+                        )
+                ));
+            }
+        };
+    }
+
+    private static Map<String, TaskReportRiskProjection> toTaskReportRiskMap(List<RiskWarningDO> risks) {
+        if (risks == null) {
+            return Map.of();
+        }
+        return risks.stream().collect(Collectors.toMap(
+                RiskWarningDO::getTaskId,
+                risk -> new TaskReportRiskProjection(
+                        risk.getWarningId(),
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getWarningSummary(),
+                        risk.getWarningReason(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static List<AuditComplianceReportProjection> toAuditComplianceReports(List<ResearchReportDO> reports) {
+        if (reports == null) {
+            return List.of();
+        }
+        return reports.stream()
+                .map(report -> new AuditComplianceReportProjection(
+                        report.getReportId(),
+                        report.getTaskId(),
+                        report.getTaskType(),
+                        report.getReportType(),
+                        report.getFinalStatus(),
+                        report.getReviewStatus(),
+                        report.getReviewedBy(),
+                        report.getReviewedAt(),
+                        report.getReviewComment(),
+                        report.getNeedHumanReview(),
+                        report.getSummary(),
+                        report.getRevisedSummary(),
+                        report.getHighlights(),
+                        report.getRevisedHighlights(),
+                        report.getRiskPoints(),
+                        report.getRevisedRiskPoints(),
+                        report.getRiskWarnings(),
+                        report.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    private static TaskReportReadPort taskReportReadPort(ResearchReportMapper researchReportMapper) {
+        return new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(researchReportMapper);
+    }
+
+    private static MarketEventTaskReadPort marketEventTaskReadPort(ResearchTaskMapper researchTaskMapper) {
+        return new MarketEventTaskReadPort() {
+            @Override
+            public long countDistinctSourceEvents(String sourceDomain) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return 0L;
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .map(ResearchTaskDO::getSourceEventId)
+                        .filter(sourceEventId -> sourceEventId != null && !sourceEventId.isBlank())
+                        .distinct()
+                        .count();
+            }
+
+            @Override
+            public Map<String, MarketEventTaskProjection> loadTaskMapByTaskIds(Set<String> taskIds) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return Map.of();
+                }
+                return tasks.stream()
+                        .filter(task -> taskIds == null || taskIds.contains(task.getTaskId()))
+                        .collect(Collectors.toMap(
+                                ResearchTaskDO::getTaskId,
+                                TaskQueryServiceRiskProjectionTests::toMarketEventTaskProjection,
+                                (left, right) -> left
+                        ));
+            }
+
+            @Override
+            public MarketEventTaskProjection selectLatestTaskBySourceEvent(String sourceDomain, String sourceEventId) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return null;
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .filter(task -> sourceEventId == null || sourceEventId.equals(task.getSourceEventId()))
+                        .sorted((left, right) -> right.getCreatedAt().compareTo(left.getCreatedAt()))
+                        .findFirst()
+                        .map(TaskQueryServiceRiskProjectionTests::toMarketEventTaskProjection)
+                        .orElse(null);
+            }
+
+            @Override
+            public Map<String, List<MarketEventTaskProjection>> loadFollowUpTasksBySourceEvents(String sourceDomain,
+                                                                                                 List<String> sourceEventIds) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return Map.of();
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .filter(task -> sourceEventIds == null || sourceEventIds.contains(task.getSourceEventId()))
+                        .map(TaskQueryServiceRiskProjectionTests::toMarketEventTaskProjection)
+                        .collect(Collectors.groupingBy(MarketEventTaskProjection::sourceEventId));
+            }
+
+            @Override
+            public List<MarketEventTaskProjection> loadFollowUpTasks(String sourceDomain,
+                                                                      Set<String> sourceTaskIds,
+                                                                      Set<String> sourceReportIds) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return List.of();
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .filter(task -> sourceTaskIds == null || sourceTaskIds.contains(task.getSourceTaskId())
+                                || sourceReportIds == null || sourceReportIds.contains(task.getSourceReportId()))
+                        .map(TaskQueryServiceRiskProjectionTests::toMarketEventTaskProjection)
+                        .toList();
+            }
+        };
+    }
+
+    private static StrategySignalReadPort strategySignalReadPort(StrategySignalMapper strategySignalMapper) {
+        return taskIds -> {
+            List<StrategySignalDO> signals = strategySignalMapper.selectList(null);
+            if (signals == null) {
+                return Map.of();
+            }
+            return signals.stream()
+                    .filter(signal -> taskIds == null || taskIds.contains(signal.getTaskId()))
+                    .collect(Collectors.toMap(
+                            StrategySignalDO::getTaskId,
+                            TaskQueryServiceRiskProjectionTests::toStrategySignalReadProjection,
+                            (left, right) -> left
+                    ));
+        };
+    }
+
+    private static RiskWarningTaskReadPort taskReadPort(ResearchTaskMapper researchTaskMapper) {
+        return new RiskWarningTaskReadPort() {
+            @Override
+            public Map<String, RiskWarningTaskProjection> loadTaskMapByTaskIds(Set<String> taskIds) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return Map.of();
+                }
+                return tasks.stream()
+                        .filter(task -> taskIds == null || taskIds.contains(task.getTaskId()))
+                        .collect(Collectors.toMap(
+                                ResearchTaskDO::getTaskId,
+                                TaskQueryServiceRiskProjectionTests::toTaskProjection,
+                                (left, right) -> left
+                        ));
+            }
+
+            @Override
+            public List<RiskWarningTaskProjection> loadRiskWarningFollowUpTasks() {
+                return loadFollowUpTasksBySourceDomain("RISK_WARNING");
+            }
+
+            @Override
+            public List<RiskWarningTaskProjection> loadFollowUpTasksBySourceDomain(String sourceDomain) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return List.of();
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .map(TaskQueryServiceRiskProjectionTests::toTaskProjection)
+                        .toList();
+            }
+        };
+    }
+
+    private static RiskWarningTaskProjection toTaskProjection(ResearchTaskDO task) {
+        return new RiskWarningTaskProjection(
+                task.getId(),
+                task.getTaskId(),
+                task.getTaskType(),
+                task.getTaskTitle(),
+                task.getTargetCode(),
+                task.getTargetName(),
+                task.getPriority(),
+                task.getStatus(),
+                task.getCurrentStage(),
+                task.getSourceTaskId(),
+                task.getSourceReportId(),
+                task.getSourceDomain(),
+                task.getCreatedAt()
+        );
+    }
+
+    private static MarketEventTaskProjection toMarketEventTaskProjection(ResearchTaskDO task) {
+        return new MarketEventTaskProjection(
+                task.getId(),
+                task.getTaskId(),
+                task.getTaskType(),
+                task.getTaskTitle(),
+                task.getTargetCode(),
+                task.getTargetName(),
+                task.getPriority(),
+                task.getStatus(),
+                task.getCurrentStage(),
+                task.getSourceTaskId(),
+                task.getSourceReportId(),
+                task.getSourceDomain(),
+                task.getSourceEventId(),
+                task.getCreatedAt()
+        );
+    }
+
+    private static StrategySignalReadProjection toStrategySignalReadProjection(StrategySignalDO signal) {
+        return new StrategySignalReadProjection(
+                signal.getId(),
+                signal.getSignalId(),
+                signal.getTaskId(),
+                signal.getSignalType(),
+                signal.getEntityCode(),
+                signal.getEntityName(),
+                signal.getSignalDate(),
+                signal.getSignalScore(),
+                signal.getSignalLevel(),
+                signal.getSignalDirection(),
+                signal.getReasonSummary(),
+                signal.getConfidenceScore(),
+                signal.getSourceEventId(),
+                signal.getStatus(),
+                signal.getCreatedAt()
+        );
+    }
+
+    private static Map<String, AuditComplianceTaskProjection> toAuditComplianceTaskMap(List<ResearchTaskDO> tasks) {
+        if (tasks == null) {
+            return Map.of();
+        }
+        return tasks.stream().collect(Collectors.toMap(
+                ResearchTaskDO::getTaskId,
+                task -> new AuditComplianceTaskProjection(
+                        task.getTaskId(),
+                        task.getTaskTitle(),
+                        task.getTaskType(),
+                        task.getTargetCode(),
+                        task.getTargetName(),
+                        task.getPriority(),
+                        task.getTraceId(),
+                        task.getCreatedAt()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static Map<String, AuditComplianceRiskProjection> toAuditComplianceRiskMap(List<RiskWarningDO> risks) {
+        if (risks == null) {
+            return Map.of();
+        }
+        return risks.stream().collect(Collectors.toMap(
+                RiskWarningDO::getTaskId,
+                risk -> new AuditComplianceRiskProjection(
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static Map<String, AuditComplianceWorkflowProjection> toAuditComplianceWorkflowMap(List<AiWorkflowInstanceDO> workflows) {
+        if (workflows == null) {
+            return Map.of();
+        }
+        return workflows.stream().collect(Collectors.toMap(
+                AiWorkflowInstanceDO::getTaskId,
+                workflow -> new AuditComplianceWorkflowProjection(
+                        workflow.getWorkflowInstanceId(),
+                        workflow.getWorkflowCode(),
+                        workflow.getWorkflowVersion(),
+                        workflow.getStatus(),
+                        workflow.getCurrentNode()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static Map<String, List<AuditComplianceAgentExecutionProjection>> toAuditComplianceAgentExecutionMap(List<AiAgentExecutionDO> executions) {
+        if (executions == null) {
+            return Map.of();
+        }
+        return executions.stream().collect(Collectors.groupingBy(
+                AiAgentExecutionDO::getTaskId,
+                Collectors.mapping(
+                        execution -> new AuditComplianceAgentExecutionProjection(
+                                execution.getInputRef(),
+                                execution.getOutputRef(),
+                                execution.getDecisionRef(),
+                                execution.getNeedHumanReview()
+                        ),
+                        Collectors.toList()
+                )
+        ));
     }
 
     private static final class QueryServices {

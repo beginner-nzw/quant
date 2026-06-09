@@ -4,7 +4,7 @@ import com.quant.aiorchestrator.service.impl.AiResultDomainProjectionServiceImpl
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
+import com.quant.aiorchestrator.domain.dto.ResearchReportSnapshot;
 import com.quant.aiorchestrator.domain.entity.RiskWarningDO;
 import com.quant.aiorchestrator.domain.entity.RiskWarningDetailDO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalFactorDO;
@@ -264,8 +264,8 @@ class AiResultDomainProjectionServiceTests {
         return message;
     }
 
-    private static ResearchReportDO buildReport(String reportId, String taskId) {
-        ResearchReportDO report = new ResearchReportDO();
+    private static ResearchReportSnapshot buildReport(String reportId, String taskId) {
+        ResearchReportSnapshot report = new ResearchReportSnapshot();
         report.setReportId(reportId);
         report.setTaskId(taskId);
         report.setReportType("RESEARCH");

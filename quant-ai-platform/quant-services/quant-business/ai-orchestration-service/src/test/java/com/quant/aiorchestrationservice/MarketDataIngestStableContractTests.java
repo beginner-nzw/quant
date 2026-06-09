@@ -1,6 +1,8 @@
 package com.quant.aiorchestrationservice;
 
-import com.quant.aiorchestrator.controller.MarketEventController;
+import com.quant.aiorchestrator.controller.DataIngestMarketEventController;
+import com.quant.aiorchestrator.controller.MarketEventSourceConfigController;
+import com.quant.aiorchestrator.controller.MarketEventCoreController;
 import com.quant.aiorchestrator.dataingest.DataIngestService;
 import com.quant.aiorchestrator.dataingest.RawPayloadStore;
 import com.quant.aiorchestrator.dataingest.SourceRawPayload;
@@ -81,9 +83,16 @@ class MarketDataIngestStableContractTests {
     }
 
     private static Set<String> marketEventMappings() {
-        String basePath = MarketEventController.class.getAnnotation(RequestMapping.class).value()[0];
         Set<String> mappings = new TreeSet<>();
-        for (Method method : MarketEventController.class.getDeclaredMethods()) {
+        addMarketEventMappings(mappings, MarketEventCoreController.class);
+        addMarketEventMappings(mappings, DataIngestMarketEventController.class);
+        addMarketEventMappings(mappings, MarketEventSourceConfigController.class);
+        return mappings;
+    }
+
+    private static void addMarketEventMappings(Set<String> mappings, Class<?> controllerClass) {
+        String basePath = controllerClass.getAnnotation(RequestMapping.class).value()[0];
+        for (Method method : controllerClass.getDeclaredMethods()) {
             GetMapping getMapping = method.getAnnotation(GetMapping.class);
             if (getMapping != null) {
                 mappings.add("GET " + basePath + getMapping.value()[0]);
@@ -93,6 +102,5 @@ class MarketDataIngestStableContractTests {
                 mappings.add("POST " + basePath + postMapping.value()[0]);
             }
         }
-        return mappings;
     }
 }

@@ -25,7 +25,27 @@
         </dependency>
         <dependency>
             <groupId>com.quant</groupId>
+            <artifactId>quant-api-task</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-ai</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
             <artifactId>quant-common-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-report</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-audit</artifactId>
             <version>${project.version}</version>
         </dependency>
 <!--        <dependency>-->

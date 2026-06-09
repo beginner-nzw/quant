@@ -2,7 +2,7 @@ groups:
   - name: quant-platform-baseline
     rules:
       - alert: QuantServiceDown
-        expr: up{job=~"ai-orchestration-service|research-task-service|ai-engine-worker|kafka-exporter|redis-exporter|nginx-exporter"} == 0
+        expr: up{job=~"ai-orchestration-service|research-task-service|user-service|subscription-service|ai-engine-worker|kafka-exporter|redis-exporter|nginx-exporter"} == 0
         for: 2m
         labels:
           severity: critical

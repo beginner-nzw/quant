@@ -1,6 +1,10 @@
 package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.quant.aiorchestrator.audit.HumanReviewRiskDecisionResult;
+import com.quant.aiorchestrator.audit.HumanReviewQueueReportProjection;
+import com.quant.aiorchestrator.audit.HumanReviewQueueRiskProjection;
+import com.quant.aiorchestrator.audit.HumanReviewQueueTaskProjection;
 import com.quant.aiorchestrator.domain.dto.HumanReviewDecisionDTO;
 import com.quant.aiorchestrator.domain.dto.HumanReviewQueueQueryDTO;
 import com.quant.aiorchestrator.domain.dto.TaskReportReviewDTO;
@@ -11,7 +15,6 @@ import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
 import com.quant.aiorchestrator.domain.entity.RiskWarningDO;
 import com.quant.aiorchestrator.domain.vo.HumanReviewQueuePageVO;
 import com.quant.aiorchestrator.manager.HumanReviewCommandManager;
-import com.quant.aiorchestrator.manager.HumanReviewDecisionManager;
 import com.quant.aiorchestrator.manager.HumanReviewQueueManager;
 import com.quant.aiorchestrator.mapper.HumanReviewRecordMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportMapper;
@@ -19,6 +22,7 @@ import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
 import com.quant.aiorchestrator.service.TaskControlService;
 import com.quant.aiorchestrator.service.TaskReportService;
+import com.quant.aiorchestrator.service.HumanReviewService;
 import com.quant.aiorchestrator.service.impl.HumanReviewServiceImpl;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
 import org.junit.jupiter.api.Test;
@@ -26,8 +30,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.lang.reflect.Proxy;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -143,28 +149,67 @@ class HumanReviewServiceTests {
         private final List<ResearchReportDO> reports = new ArrayList<>();
         private final List<RiskWarningDO> risks = new ArrayList<>();
         private final List<HumanReviewRecordDO> insertedReviews = new ArrayList<>();
-        private final FakeTaskReportService taskReportService = new FakeTaskReportService();
+        private final FakeTaskReportService taskReportService = new FakeTaskReportService(risks);
         private final FakeTaskControlService taskControlService = new FakeTaskControlService();
         private final ObjectMapper objectMapper = new ObjectMapper();
         private final ResearchTaskMapper researchTaskMapper = mapperProxy(ResearchTaskMapper.class, tasks);
         private final ResearchReportMapper researchReportMapper = mapperProxy(ResearchReportMapper.class, reports);
         private final RiskWarningMapper riskWarningMapper = mapperProxy(RiskWarningMapper.class, risks);
         private final HumanReviewQueueManager queueManager = new HumanReviewQueueManager(
-                researchTaskMapper,
-                researchReportMapper,
-                riskWarningMapper,
+                taskIds -> tasks.stream()
+                        .filter(task -> taskIds.contains(task.getTaskId()))
+                        .collect(Collectors.toMap(
+                                ResearchTaskDO::getTaskId,
+                                task -> new HumanReviewQueueTaskProjection(
+                                        task.getTaskId(),
+                                        task.getTaskTitle(),
+                                        task.getTaskType(),
+                                        task.getTargetCode(),
+                                        task.getTargetName(),
+                                        task.getPriority()
+                                ),
+                                (left, right) -> left
+                        )),
+                () -> reports.stream().map(report -> new HumanReviewQueueReportProjection(
+                        report.getReportId(),
+                        report.getTaskId(),
+                        report.getTaskType(),
+                        report.getReportType(),
+                        report.getReviewStatus(),
+                        report.getReviewedBy(),
+                        report.getReviewedAt(),
+                        report.getReviewComment(),
+                        report.getNeedHumanReview(),
+                        report.getSummary(),
+                        report.getRevisedSummary(),
+                        report.getRiskPoints(),
+                        report.getRevisedRiskPoints(),
+                        report.getRiskWarnings(),
+                        report.getCreatedAt()
+                )).toList(),
+                () -> risks.stream().map(risk -> new HumanReviewQueueRiskProjection(
+                        risk.getWarningId(),
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getWarningSummary(),
+                        risk.getWarningReason(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus(),
+                        risk.getReviewerId(),
+                        risk.getReviewTime(),
+                        risk.getCreatedAt()
+                )).toList(),
                 objectMapper
         );
-        private final HumanReviewDecisionManager decisionManager = new HumanReviewDecisionManager(
-                riskWarningMapper,
-                humanReviewMapperProxy(insertedReviews),
-                taskReportService,
-                taskControlService,
+        private final HumanReviewCommandManager commandManager = new HumanReviewCommandManager(
+                taskReportService::reviewReportDecision,
+                taskReportService::reviewRiskDecision,
+                taskControlService::rerunWorkflow,
+                new com.quant.aiorchestrator.manager.HumanReviewRecordWriteManager(humanReviewMapperProxy(insertedReviews)),
                 new FakeStringRedisTemplate(),
                 objectMapper
         );
-        private final HumanReviewCommandManager commandManager = new HumanReviewCommandManager(decisionManager);
-        private final HumanReviewServiceImpl service = new HumanReviewServiceImpl(
+        private final HumanReviewService service = new HumanReviewServiceImpl(
                 queueManager,
                 commandManager
         );
@@ -178,7 +223,46 @@ class HumanReviewServiceTests {
     }
 
     private static class FakeTaskReportService implements TaskReportService {
+        private final List<RiskWarningDO> risks;
         private TaskReportReviewDTO lastReview;
+
+        private FakeTaskReportService(List<RiskWarningDO> risks) {
+            this.risks = risks;
+        }
+
+        private void reviewReportDecision(String taskId, HumanReviewDecisionDTO dto, ReportReviewStatusEnum decision) {
+            TaskReportReviewDTO reviewDTO = new TaskReportReviewDTO();
+            reviewDTO.setReviewStatus(decision.name());
+            reviewDTO.setReviewedBy(dto.getReviewedBy());
+            reviewDTO.setReviewComment(dto.getReviewComment());
+            reviewDTO.setRevisedSummary(dto.getRevisedSummary());
+            reviewDTO.setRevisedHighlights(dto.getRevisedHighlights());
+            reviewDTO.setRevisedRiskPoints(dto.getRevisedRiskPoints());
+            reviewReport(taskId, reviewDTO);
+        }
+
+        private HumanReviewRiskDecisionResult reviewRiskDecision(String taskId,
+                                                                 String reviewerId,
+                                                                 String reviewComment,
+                                                                 ReportReviewStatusEnum decision) {
+            RiskWarningDO risk = risks.stream()
+                    .filter(item -> taskId.equals(item.getTaskId()))
+                    .findFirst()
+                    .orElseThrow();
+            java.util.Map<String, Object> beforeSnapshot = riskSnapshot(risk);
+            risk.setReviewStatus(decision.name());
+            risk.setReviewerId(reviewerId);
+            risk.setReviewTime(LocalDateTime.now());
+            risk.setSuggestAction(reviewComment);
+            return new HumanReviewRiskDecisionResult(
+                    risk.getWarningId(),
+                    risk.getReviewerId(),
+                    beforeSnapshot,
+                    riskSnapshot(risk),
+                    risk.getTraceId(),
+                    risk.getTenantId()
+            );
+        }
 
         @Override
         public String reviewReport(String taskId, TaskReportReviewDTO dto) {
@@ -190,11 +274,29 @@ class HumanReviewServiceTests {
         public List<com.quant.aiorchestrator.domain.vo.TaskReportReviewLogVO> listReviewLogs(String taskId) {
             return List.of();
         }
+
+        private java.util.Map<String, Object> riskSnapshot(RiskWarningDO risk) {
+            java.util.Map<String, Object> snapshot = new LinkedHashMap<>();
+            snapshot.put("warningId", risk.getWarningId());
+            snapshot.put("taskId", risk.getTaskId());
+            snapshot.put("reviewStatus", risk.getReviewStatus());
+            snapshot.put("reviewerId", risk.getReviewerId());
+            snapshot.put("suggestAction", risk.getSuggestAction());
+            return snapshot;
+        }
     }
 
     private static class FakeTaskControlService implements TaskControlService {
         private String rerunTaskId;
         private TaskWorkflowControlDTO rerunDto;
+
+        private void rerunWorkflow(String taskId, HumanReviewDecisionDTO dto) {
+            TaskWorkflowControlDTO controlDTO = new TaskWorkflowControlDTO();
+            controlDTO.setOperatorId(dto.getReviewedBy());
+            controlDTO.setReason(dto.getReviewComment());
+            controlDTO.setNodeName(dto.getRerunNodeName());
+            rerunNode(taskId, controlDTO);
+        }
 
         @Override
         public String cancelTask(String taskId, com.quant.aiorchestrator.domain.dto.TaskCancelDTO dto) {

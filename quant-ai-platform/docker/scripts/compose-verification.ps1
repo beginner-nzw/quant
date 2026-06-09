@@ -9,6 +9,8 @@ $requiredServices = @(
     "gateway",
     "ai-orchestration-service",
     "research-task-service",
+    "user-service",
+    "subscription-service",
     "ai-engine-worker",
     "mysql",
     "redis",
@@ -33,7 +35,7 @@ $profileMatrix = @(
     @{
         Name = "runtime";
         Profiles = @("runtime");
-        Required = @("gateway", "ai-orchestration-service", "research-task-service", "ai-engine-worker", "mysql", "redis", "zookeeper", "kafka", "kafka-init", "nacos")
+        Required = @("gateway", "ai-orchestration-service", "research-task-service", "user-service", "subscription-service", "ai-engine-worker", "mysql", "redis", "zookeeper", "kafka", "kafka-init", "nacos")
     },
     @{
         Name = "observability";
@@ -43,7 +45,7 @@ $profileMatrix = @(
     @{
         Name = "infra-runtime";
         Profiles = @("infra", "runtime");
-        Required = @("gateway", "ai-orchestration-service", "research-task-service", "ai-engine-worker", "mysql", "redis", "zookeeper", "kafka", "kafka-init", "nacos")
+        Required = @("gateway", "ai-orchestration-service", "research-task-service", "user-service", "subscription-service", "ai-engine-worker", "mysql", "redis", "zookeeper", "kafka", "kafka-init", "nacos")
     },
     @{
         Name = "full";
@@ -83,9 +85,13 @@ if (-not $RuntimeChecks) {
 $checks = @(
     @{ Name = "gateway"; Url = "http://127.0.0.1:18080/health"; Pattern = "gateway" },
     @{ Name = "research-task-service"; Url = "http://127.0.0.1:8081/actuator/health/readiness"; Pattern = "UP" },
+    @{ Name = "user-service"; Url = "http://127.0.0.1:8080/actuator/health/readiness"; Pattern = "UP" },
+    @{ Name = "subscription-service"; Url = "http://127.0.0.1:8088/actuator/health/readiness"; Pattern = "UP" },
     @{ Name = "ai-orchestration-service"; Url = "http://127.0.0.1:8082/actuator/health/readiness"; Pattern = "UP" },
     @{ Name = "ai-engine-worker"; Url = "http://127.0.0.1:8090/ready"; Pattern = "ready" },
     @{ Name = "research-task-service-prometheus"; Url = "http://127.0.0.1:8081/actuator/prometheus"; Pattern = "jvm_|http_server_requests|process_uptime" },
+    @{ Name = "user-service-prometheus"; Url = "http://127.0.0.1:8080/actuator/prometheus"; Pattern = "jvm_|http_server_requests|process_uptime" },
+    @{ Name = "subscription-service-prometheus"; Url = "http://127.0.0.1:8088/actuator/prometheus"; Pattern = "jvm_|http_server_requests|process_uptime" },
     @{ Name = "ai-orchestration-service-prometheus"; Url = "http://127.0.0.1:8082/actuator/prometheus"; Pattern = "jvm_|http_server_requests|process_uptime" },
     @{ Name = "ai-engine-worker-metrics"; Url = "http://127.0.0.1:8090/metrics"; Pattern = "ai_engine_http_requests_total|ai_engine_tasks_total|ai_engine_redis_degraded" },
     @{ Name = "kafka-exporter"; Url = "http://127.0.0.1:9308/metrics"; Pattern = "kafka_brokers|kafka_consumergroup_lag|kafka_topic_partitions" },
@@ -114,6 +120,8 @@ $promTargets = (Invoke-WebRequest -Uri "http://127.0.0.1:9090/api/v1/targets" -U
 $expectedJobs = @(
     "ai-orchestration-service",
     "research-task-service",
+    "user-service",
+    "subscription-service",
     "ai-engine-worker",
     "kafka-exporter",
     "redis-exporter",

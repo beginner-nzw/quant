@@ -2,14 +2,11 @@ package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quant.aiorchestrator.consumer.AiTaskResultConsumer;
-import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
-import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.task.port.TaskCacheVersionPort;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.manager.TaskTraceManager;
-import com.quant.aiorchestrator.mapper.ResearchReportMapper;
-import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
-import com.quant.aiorchestrator.mapper.ResearchTaskRetryLogMapper;
 import com.quant.aiorchestrator.service.AiResultDomainProjectionService;
+import com.quant.aiorchestrator.service.AiResultReportService;
 import com.quant.aiorchestrator.service.AiTaskInboundMessageSupportService;
 import com.quant.aiorchestrator.service.TaskDomainEventPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
@@ -17,6 +14,8 @@ import com.quant.common.messaging.KafkaTopicConstants;
 import com.quant.common.model.enums.TaskStageEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
 import com.quant.common.model.message.AiTaskResultMessage;
+import com.quant.task.api.AiTaskStateSnapshot;
+import com.quant.task.port.AiTaskResultStatePort;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -35,7 +34,7 @@ class AiTaskResultConsumerTests {
         TestDeps deps = new TestDeps();
         AiTaskResultConsumer consumer = newConsumer(deps);
         AiTaskResultMessage message = buildSuccessMessage("msg-stale-final", 1);
-        ResearchTaskDO task = buildTask(TaskStatusEnum.RUNNING.name(), 1);
+        AiTaskStateSnapshot task = buildTask(TaskStatusEnum.RUNNING.name(), 1);
 
         when(deps.inboundMessageSupportService.parseOrNull(
                 eq("raw-message"),
@@ -54,14 +53,14 @@ class AiTaskResultConsumerTests {
         )).thenReturn(false);
         when(deps.taskMessageLogService.beginConsume(KafkaTopicConstants.AI_TASK_RESULT, message, "ai-orchestration-service"))
                 .thenReturn(true);
-        when(deps.researchTaskMapper.selectOne(any())).thenReturn(task);
+        when(deps.aiTaskResultStateManager.selectTask(message.getTaskId())).thenReturn(task);
         when(deps.taskStateManager.canTransfer(TaskStatusEnum.RUNNING.name(), TaskStatusEnum.SUCCESS.name()))
                 .thenReturn(true);
-        when(deps.researchTaskMapper.update(any(ResearchTaskDO.class), any())).thenReturn(0);
+        when(deps.aiTaskResultStateManager.updateFinalState(message, task, TaskStageEnum.FINISHED.name())).thenReturn(0);
 
         consumer.onMessage("raw-message");
 
-        verify(deps.researchTaskMapper).update(any(ResearchTaskDO.class), any());
+        verify(deps.aiTaskResultStateManager).updateFinalState(message, task, TaskStageEnum.FINISHED.name());
         verify(deps.taskMessageLogService).recordSkipped(
                 KafkaTopicConstants.AI_TASK_RESULT,
                 message,
@@ -103,7 +102,7 @@ class AiTaskResultConsumerTests {
                 "ai-orchestration-service",
                 "DUPLICATE_MESSAGE"
         );
-        verifyNoInteractions(deps.researchTaskMapper);
+        verifyNoInteractions(deps.aiTaskResultStateManager);
         verifyNoProjectionSideEffects(deps);
     }
 
@@ -112,7 +111,7 @@ class AiTaskResultConsumerTests {
         TestDeps deps = new TestDeps();
         AiTaskResultConsumer consumer = newConsumer(deps);
         AiTaskResultMessage message = buildSuccessMessage("msg-stale-retry", 1);
-        ResearchTaskDO task = buildTask(TaskStatusEnum.RUNNING.name(), 2);
+        AiTaskStateSnapshot task = buildTask(TaskStatusEnum.RUNNING.name(), 2);
 
         when(deps.inboundMessageSupportService.parseOrNull(
                 eq("raw-message"),
@@ -131,11 +130,11 @@ class AiTaskResultConsumerTests {
         )).thenReturn(false);
         when(deps.taskMessageLogService.beginConsume(KafkaTopicConstants.AI_TASK_RESULT, message, "ai-orchestration-service"))
                 .thenReturn(true);
-        when(deps.researchTaskMapper.selectOne(any())).thenReturn(task);
+        when(deps.aiTaskResultStateManager.selectTask(message.getTaskId())).thenReturn(task);
 
         consumer.onMessage("raw-message");
 
-        verify(deps.researchTaskMapper, never()).update(any(ResearchTaskDO.class), any());
+        verify(deps.aiTaskResultStateManager, never()).updateFinalState(any(), any(), any());
         verify(deps.taskMessageLogService).recordSkipped(
                 KafkaTopicConstants.AI_TASK_RESULT,
                 message,
@@ -148,13 +147,12 @@ class AiTaskResultConsumerTests {
     private static AiTaskResultConsumer newConsumer(TestDeps deps) {
         return new AiTaskResultConsumer(
                 new ObjectMapper(),
-                deps.researchTaskMapper,
+                deps.aiTaskResultStateManager,
                 deps.taskStateManager,
                 deps.taskTraceManager,
                 deps.stringRedisTemplate,
                 deps.taskCacheVersionManager,
-                deps.researchReportMapper,
-                deps.retryLogMapper,
+                deps.aiResultReportService,
                 deps.aiResultDomainProjectionService,
                 deps.taskDomainEventPublisherService,
                 deps.taskMessageLogService,
@@ -185,33 +183,31 @@ class AiTaskResultConsumerTests {
         return message;
     }
 
-    private static ResearchTaskDO buildTask(String status, int retryCount) {
-        ResearchTaskDO task = new ResearchTaskDO();
+    private static AiTaskStateSnapshot buildTask(String status, int retryCount) {
+        AiTaskStateSnapshot task = new AiTaskStateSnapshot();
         task.setTaskId("task-1");
         task.setStatus(status);
         task.setRetryCount(retryCount);
-        task.setDeleted(0);
         return task;
     }
 
     private static void verifyNoProjectionSideEffects(TestDeps deps) {
-        verifyNoInteractions(deps.researchReportMapper);
+        verifyNoInteractions(deps.aiResultReportService);
         verifyNoInteractions(deps.aiResultDomainProjectionService);
         verifyNoInteractions(deps.taskDomainEventPublisherService);
         verifyNoInteractions(deps.taskTraceManager);
         verifyNoInteractions(deps.stringRedisTemplate);
         verifyNoInteractions(deps.taskCacheVersionManager);
-        verifyNoInteractions(deps.retryLogMapper);
+        verify(deps.aiTaskResultStateManager, never()).updateRetryLogStatus(any(), any());
     }
 
     private static final class TestDeps {
-        private final ResearchTaskMapper researchTaskMapper = mock(ResearchTaskMapper.class);
+        private final AiTaskResultStatePort aiTaskResultStateManager = mock(AiTaskResultStatePort.class);
         private final TaskStateManager taskStateManager = mock(TaskStateManager.class);
         private final TaskTraceManager taskTraceManager = mock(TaskTraceManager.class);
         private final StringRedisTemplate stringRedisTemplate = mock(StringRedisTemplate.class);
-        private final TaskCacheVersionManager taskCacheVersionManager = mock(TaskCacheVersionManager.class);
-        private final ResearchReportMapper researchReportMapper = mock(ResearchReportMapper.class);
-        private final ResearchTaskRetryLogMapper retryLogMapper = mock(ResearchTaskRetryLogMapper.class);
+        private final TaskCacheVersionPort taskCacheVersionManager = mock(TaskCacheVersionPort.class);
+        private final AiResultReportService aiResultReportService = mock(AiResultReportService.class);
         private final AiResultDomainProjectionService aiResultDomainProjectionService = mock(AiResultDomainProjectionService.class);
         private final TaskDomainEventPublisherService taskDomainEventPublisherService = mock(TaskDomainEventPublisherService.class);
         private final TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);

@@ -1,0 +1,102 @@
+package com.quant.dataingest;
+
+import com.quant.aiorchestrator.domain.entity.MarketEventIngestRunDO;
+import com.quant.aiorchestrator.domain.vo.MarketEventIngestHistoryItemVO;
+import com.quant.aiorchestrator.dataingest.DataIngestService;
+import com.quant.aiorchestrator.dataingest.FileRawPayloadStore;
+import com.quant.aiorchestrator.dataingest.MarketEventDataIngestService;
+import com.quant.aiorchestrator.dataingest.RawPayloadStore;
+import com.quant.aiorchestrator.dataingest.SourceFetchResult;
+import com.quant.aiorchestrator.dataingest.SourceFetchStatus;
+import com.quant.aiorchestrator.dataingest.SourceIngestResult;
+import com.quant.aiorchestrator.dataingest.SourceProvenance;
+import com.quant.aiorchestrator.dataingest.SourceRawPayload;
+import com.quant.aiorchestrator.domain.vo.CninfoProxyAnnouncementResponseVO;
+import com.quant.aiorchestrator.domain.vo.EventSourcePreviewResultVO;
+import com.quant.aiorchestrator.domain.vo.EventSourceRequestDiagnosticResultVO;
+import com.quant.aiorchestrator.controller.DataIngestMarketEventController;
+import com.quant.aiorchestrator.manager.CninfoProxyEventProjectionManager;
+import com.quant.aiorchestrator.manager.CsrcRiskEventProjectionManager;
+import com.quant.aiorchestrator.manager.EventSourceAdapterManager;
+import com.quant.aiorchestrator.manager.EventSourcePreviewProjectionManager;
+import com.quant.aiorchestrator.manager.EventSourcePreviewValidationManager;
+import com.quant.aiorchestrator.manager.GovCnPolicyProjectionManager;
+import com.quant.aiorchestrator.manager.HttpJsonEventProjectionManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestOrchestrationManager;
+import com.quant.aiorchestrator.manager.RssXmlEventProjectionManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestHistoryCommandManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestHistoryFileManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestHistoryItemManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestHistoryQueryManager;
+import com.quant.aiorchestrator.manager.MarketEventIngestHistoryStoreManager;
+import com.quant.aiorchestrator.mapper.MarketEventIngestRunMapper;
+import com.quant.aiorchestrator.service.CninfoProxyEventSourceSyncAdapter;
+import com.quant.aiorchestrator.service.CninfoPublicAnnouncementSyncAdapter;
+import com.quant.aiorchestrator.service.CsrcRiskHtmlSyncAdapter;
+import com.quant.aiorchestrator.service.EventSourcePreviewService;
+import com.quant.aiorchestrator.service.EventSourceSyncAdapter;
+import com.quant.aiorchestrator.service.GovCnPolicyHtmlSyncAdapter;
+import com.quant.aiorchestrator.service.HttpJsonEventSourceSyncAdapter;
+import com.quant.aiorchestrator.service.DataIngestMarketEventIngestCommandAdapter;
+import com.quant.aiorchestrator.service.MarketEventIngestHistoryService;
+import com.quant.aiorchestrator.service.MarketEventMockIngestGenerator;
+import com.quant.aiorchestrator.service.MockEventSourceSyncAdapter;
+import com.quant.aiorchestrator.service.RssXmlEventSourceSyncAdapter;
+import com.quant.aiorchestrator.service.impl.EventSourcePreviewServiceImpl;
+import com.quant.aiorchestrator.service.impl.MarketEventIngestHistoryServiceImpl;
+import com.quant.aiorchestrator.market.MarketEventIngestCommandPort;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class DataIngestServiceBoundaryTests {
+
+    @Test
+    void dataIngestServiceOwnsMarketEventIngestRunPersistenceTypes() {
+        assertEquals("com.quant.aiorchestrator.domain.entity", MarketEventIngestRunDO.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.mapper", MarketEventIngestRunMapper.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.service", MarketEventIngestHistoryService.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.service.impl", MarketEventIngestHistoryServiceImpl.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.manager", MarketEventIngestHistoryCommandManager.class.getPackageName());
+        assertEquals(MarketEventIngestHistoryCommandManager.class.getPackageName(), MarketEventIngestHistoryQueryManager.class.getPackageName());
+        assertEquals(MarketEventIngestHistoryCommandManager.class.getPackageName(), MarketEventIngestHistoryItemManager.class.getPackageName());
+        assertEquals(MarketEventIngestHistoryCommandManager.class.getPackageName(), MarketEventIngestHistoryFileManager.class.getPackageName());
+        assertEquals(MarketEventIngestHistoryCommandManager.class.getPackageName(), MarketEventIngestHistoryStoreManager.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.domain.vo", MarketEventIngestHistoryItemVO.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.dataingest", DataIngestService.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), MarketEventDataIngestService.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), RawPayloadStore.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), FileRawPayloadStore.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), SourceFetchResult.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), SourceFetchStatus.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), SourceIngestResult.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), SourceProvenance.class.getPackageName());
+        assertEquals(DataIngestService.class.getPackageName(), SourceRawPayload.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.service", EventSourceSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), HttpJsonEventSourceSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), RssXmlEventSourceSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), GovCnPolicyHtmlSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), CsrcRiskHtmlSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), CninfoPublicAnnouncementSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), CninfoProxyEventSourceSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), MockEventSourceSyncAdapter.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), MarketEventMockIngestGenerator.class.getPackageName());
+        assertEquals(EventSourceSyncAdapter.class.getPackageName(), EventSourcePreviewService.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.service.impl", EventSourcePreviewServiceImpl.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.manager", EventSourceAdapterManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), EventSourcePreviewValidationManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), EventSourcePreviewProjectionManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), HttpJsonEventProjectionManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), RssXmlEventProjectionManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), GovCnPolicyProjectionManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), CsrcRiskEventProjectionManager.class.getPackageName());
+        assertEquals(EventSourceAdapterManager.class.getPackageName(), CninfoProxyEventProjectionManager.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.domain.vo", EventSourcePreviewResultVO.class.getPackageName());
+        assertEquals(EventSourcePreviewResultVO.class.getPackageName(), EventSourceRequestDiagnosticResultVO.class.getPackageName());
+        assertEquals(EventSourcePreviewResultVO.class.getPackageName(), CninfoProxyAnnouncementResponseVO.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.controller", DataIngestMarketEventController.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.market", MarketEventIngestCommandPort.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.service", DataIngestMarketEventIngestCommandAdapter.class.getPackageName());
+        assertEquals("com.quant.aiorchestrator.manager", MarketEventIngestOrchestrationManager.class.getPackageName());
+    }
+}

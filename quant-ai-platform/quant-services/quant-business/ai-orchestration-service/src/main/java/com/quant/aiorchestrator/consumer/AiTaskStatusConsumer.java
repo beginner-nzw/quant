@@ -1,12 +1,6 @@
 package com.quant.aiorchestrator.consumer;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quant.aiorchestrator.domain.entity.ResearchTaskDO;
-import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
-import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.manager.TaskTraceManager;
-import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.service.AiTaskInboundMessageSupportService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
 import com.quant.common.messaging.KafkaTopicConstants;
@@ -16,6 +10,10 @@ import com.quant.common.model.message.AiTaskStatusMessage;
 import com.quant.common.redis.RedisKeyConstants;
 import com.quant.common.redis.RedisKeyBuilder;
 import com.quant.common.web.TraceContext;
+import com.quant.task.api.AiTaskStateSnapshot;
+import com.quant.task.port.AiTaskStatusStatePort;
+import com.quant.task.port.TaskCacheVersionPort;
+import com.quant.task.port.TaskStatePolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -33,11 +31,11 @@ public class AiTaskStatusConsumer {
     private static final String SERVICE_NAME = "ai-orchestration-service";
     private static final String CONSUMER_GROUP = "ai-orchestration-status-group";
 
-    private final ResearchTaskMapper researchTaskMapper;
-    private final TaskStateManager taskStateManager;
+    private final AiTaskStatusStatePort aiTaskStatusStateManager;
+    private final TaskStatePolicy taskStatePolicy;
     private final TaskTraceManager taskTraceManager;
     private final StringRedisTemplate stringRedisTemplate;
-    private final TaskCacheVersionManager taskCacheVersionManager;
+    private final TaskCacheVersionPort taskCacheVersionManager;
     private final TaskMessageLogService taskMessageLogService;
     private final AiTaskInboundMessageSupportService inboundMessageSupportService;
 
@@ -87,11 +85,7 @@ public class AiTaskStatusConsumer {
                 skipReason = "DUPLICATE_MESSAGE";
                 return;
             }
-            ResearchTaskDO task = researchTaskMapper.selectOne(
-                    new LambdaQueryWrapper<ResearchTaskDO>()
-                            .eq(ResearchTaskDO::getTaskId, message.getTaskId())
-                            .last("limit 1")
-            );
+            AiTaskStateSnapshot task = aiTaskStatusStateManager.selectTask(message.getTaskId());
             if (task == null) {
                 skipReason = "TASK_NOT_FOUND";
                 return;
@@ -106,7 +100,7 @@ public class AiTaskStatusConsumer {
                 return;
             }
 
-            if (taskStateManager.isFinalState(task.getStatus())) {
+            if (taskStatePolicy.isFinalState(task.getStatus())) {
                 log.warn("ignore ai task status because task already finalized, taskId={}, currentStatus={}, incomingStage={}",
                         message.getTaskId(), task.getStatus(), message.getPayload().getCurrentStage());
                 skipReason = "TASK_ALREADY_FINALIZED";
@@ -126,14 +120,14 @@ public class AiTaskStatusConsumer {
                 skipReason = "TERMINAL_STATUS_IGNORED";
                 return;
             }
-            if (!taskStateManager.canAcceptProgressUpdate(task.getStatus())) {
+            if (!taskStatePolicy.canAcceptProgressUpdate(task.getStatus())) {
                 skipReason = "STATUS_TRANSFER_NOT_ALLOWED";
                 return;
             }
 
             String currentStage = TaskStageEnum.normalize(message.getPayload().getCurrentStage());
 
-            int updated = researchTaskMapper.updateTaskStage(
+            int updated = aiTaskStatusStateManager.updateTaskStage(
                     message.getTaskId(),
                     TaskStatusEnum.RUNNING.name(),
                     currentStage
@@ -175,12 +169,8 @@ public class AiTaskStatusConsumer {
                     message.getPayload().getCurrentNode()
             );
 
-            ResearchTaskDO latestTask = researchTaskMapper.selectOne(
-                    new LambdaQueryWrapper<ResearchTaskDO>()
-                            .eq(ResearchTaskDO::getTaskId, message.getTaskId())
-                            .last("limit 1")
-            );
-            if (latestTask != null && taskStateManager.isFinalState(latestTask.getStatus())) {
+            AiTaskStateSnapshot latestTask = aiTaskStatusStateManager.selectTask(message.getTaskId());
+            if (latestTask != null && taskStatePolicy.isFinalState(latestTask.getStatus())) {
                 log.info("skip redis running state refresh because task already finalized, taskId={}, finalStatus={}",
                         message.getTaskId(), latestTask.getStatus());
                 skipReason = "TASK_FINALIZED_AFTER_PROGRESS_UPDATE";

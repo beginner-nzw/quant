@@ -2,15 +2,15 @@ package com.quant.aiorchestrator.manager;
 
 import com.quant.aiorchestrator.domain.entity.AiAgentExecutionDO;
 import com.quant.aiorchestrator.domain.entity.AiWorkflowInstanceDO;
-import com.quant.aiorchestrator.domain.entity.ResearchTaskStepDO;
-import com.quant.aiorchestrator.domain.vo.AgentConfigItemVO;
-import com.quant.aiorchestrator.domain.vo.WorkflowConfigItemVO;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
 import com.quant.aiorchestrator.mapper.AiWorkflowInstanceMapper;
-import com.quant.aiorchestrator.mapper.ResearchTaskStepMapper;
-import com.quant.aiorchestrator.service.AgentConfigService;
-import com.quant.aiorchestrator.service.WorkflowConfigService;
+import com.quant.config.api.AgentConfigItem;
+import com.quant.config.api.WorkflowConfigItem;
+import com.quant.config.port.AgentConfigQueryPort;
+import com.quant.config.port.WorkflowConfigQueryPort;
 import com.quant.common.model.enums.TaskStatusEnum;
+import com.quant.task.port.TaskTraceStepAppender;
+import com.quant.task.port.TaskWorkflowTraceFinisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +21,13 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class TaskTraceManager {
+public class TaskTraceManager implements TaskWorkflowTraceFinisher {
 
     private final AiWorkflowInstanceMapper aiWorkflowInstanceMapper;
     private final AiAgentExecutionMapper aiAgentExecutionMapper;
-    private final ResearchTaskStepMapper researchTaskStepMapper;
-    private final AgentConfigService agentConfigService;
-    private final WorkflowConfigService workflowConfigService;
+    private final TaskTraceStepAppender taskTraceStepAppender;
+    private final AgentConfigQueryPort agentConfigQueryPort;
+    private final WorkflowConfigQueryPort workflowConfigQueryPort;
 
     public void createWorkflowIfAbsent(String workflowInstanceId, String taskId, String taskType, String currentNode) {
         Long count = aiWorkflowInstanceMapper.selectCount(
@@ -39,7 +39,7 @@ public class TaskTraceManager {
         }
 
         AiWorkflowInstanceDO workflow = new AiWorkflowInstanceDO();
-        WorkflowConfigItemVO workflowConfig = workflowConfigService.resolveWorkflow(taskType);
+        WorkflowConfigItem workflowConfig = workflowConfigQueryPort.resolveWorkflow(taskType);
         workflow.setWorkflowInstanceId(workflowInstanceId);
         workflow.setTaskId(taskId);
         workflow.setWorkflowCode(workflowConfig == null ? "stock_research_workflow" : workflowConfig.getWorkflowCode());
@@ -54,19 +54,7 @@ public class TaskTraceManager {
 
     public void appendStep(String taskId, String stage, String node, int progress) {
         Integer order = resolveExecutionOrder(node);
-
-        ResearchTaskStepDO step = new ResearchTaskStepDO();
-        step.setTaskId(taskId);
-        step.setStepCode(stage);
-        step.setStepName(stage);
-        step.setAgentCode(node);
-        step.setExecutionOrder(order);
-        step.setStatus(TaskStatusEnum.SUCCESS.name());
-        step.setStartTime(LocalDateTime.now());
-        step.setFinishTime(LocalDateTime.now());
-        step.setDurationMs(0L);
-        step.setDeleted(0);
-        researchTaskStepMapper.insert(step);
+        taskTraceStepAppender.appendSucceededStep(taskId, stage, node, order);
     }
 
     public void appendAgentExecution(String workflowInstanceId,
@@ -152,10 +140,10 @@ public class TaskTraceManager {
     }
 
     private int resolveExecutionOrder(String nodeCode) {
-        List<AgentConfigItemVO> agents = agentConfigService.loadAgents();
+        List<? extends AgentConfigItem> agents = agentConfigQueryPort.loadAgents();
         return agents.stream()
                 .filter(item -> nodeCode.equals(item.getAgentCode()))
-                .map(AgentConfigItemVO::getExecutionOrder)
+                .map(AgentConfigItem::getExecutionOrder)
                 .filter(order -> order != null && order > 0)
                 .findFirst()
                 .orElseGet(() -> switch (nodeCode) {
@@ -168,16 +156,16 @@ public class TaskTraceManager {
                 });
     }
 
-    private String resolveEntryAgent(WorkflowConfigItemVO workflowConfig) {
+    private String resolveEntryAgent(WorkflowConfigItem workflowConfig) {
         List<String> configuredSequence = workflowConfig == null || workflowConfig.getNodeSequence() == null
                 ? List.of()
                 : workflowConfig.getNodeSequence();
-        List<AgentConfigItemVO> agents = agentConfigService.loadAgents();
+        List<? extends AgentConfigItem> agents = agentConfigQueryPort.loadAgents();
         for (String agentCode : configuredSequence) {
             if ("report_generation_agent".equals(agentCode)) {
                 return agentCode;
             }
-            AgentConfigItemVO config = agents.stream()
+            AgentConfigItem config = agents.stream()
                     .filter(item -> agentCode.equals(item.getAgentCode()))
                     .findFirst()
                     .orElse(null);
@@ -191,7 +179,7 @@ public class TaskTraceManager {
                         left.getExecutionOrder() == null ? Integer.MAX_VALUE : left.getExecutionOrder(),
                         right.getExecutionOrder() == null ? Integer.MAX_VALUE : right.getExecutionOrder()
                 ))
-                .map(AgentConfigItemVO::getAgentCode)
+                .map(AgentConfigItem::getAgentCode)
                 .findFirst()
                 .orElse("planner_agent");
     }

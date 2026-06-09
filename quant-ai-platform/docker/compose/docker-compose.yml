@@ -7,6 +7,10 @@ services:
     restart: unless-stopped
     profiles: ["runtime", "observability"]
     depends_on:
+      user-service:
+        condition: service_healthy
+      subscription-service:
+        condition: service_healthy
       ai-orchestration-service:
         condition: service_healthy
       research-task-service:
@@ -25,6 +29,35 @@ services:
       timeout: 5s
       retries: 8
       start_period: 20s
+    networks:
+      - quant_net
+
+  user-service:
+    build:
+      context: ../../quant-services
+      dockerfile: quant-business/user-service/Dockerfile
+    image: quant-user-service:phase-017
+    container_name: quant-user-service
+    restart: unless-stopped
+    profiles: ["runtime", "observability"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_TOOL_OPTIONS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+      QUANT_SERVICE_ACTOR_SECRET: ${QUANT_SERVICE_ACTOR_SECRET:-local-dev-service-actor-secret}
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8080'"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
     networks:
       - quant_net
 
@@ -91,6 +124,39 @@ services:
       - "8081:8081"
     healthcheck:
       test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8081'"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    networks:
+      - quant_net
+
+  subscription-service:
+    build:
+      context: ../../quant-services
+      dockerfile: quant-business/subscription-service/Dockerfile
+    image: quant-subscription-service:phase-017
+    container_name: quant-subscription-service
+    restart: unless-stopped
+    profiles: ["runtime", "observability"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      nacos:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_TOOL_OPTIONS: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+      QUANT_SERVICE_ACTOR_SECRET: ${QUANT_SERVICE_ACTOR_SECRET:-local-dev-service-actor-secret}
+      TZ: Asia/Shanghai
+    ports:
+      - "8088:8088"
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/127.0.0.1/8088'"]
       interval: 15s
       timeout: 5s
       retries: 12
@@ -309,6 +375,10 @@ services:
     profiles: ["observability"]
     depends_on:
       gateway:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      subscription-service:
         condition: service_healthy
       ai-orchestration-service:
         condition: service_healthy

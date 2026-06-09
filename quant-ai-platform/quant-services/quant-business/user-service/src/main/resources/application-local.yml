@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: user-service
+  jackson:
+    time-zone: Asia/Shanghai
+  cloud:
+    nacos:
+      config:
+        import-check:
+          enabled: false
+      discovery:
+        enabled: false
+
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3307/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level traceId=%X{traceId} %logger{36} - %msg%n"
+
+quant:
+  security:
+    auth:
+      mode: DEMO
+    service-actor:
+      secret: local-dev-service-actor-secret

@@ -1,0 +1,69 @@
+server:
+  port: 8088
+  shutdown: graceful
+
+spring:
+  application:
+    name: subscription-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  datasource:
+    url: jdbc:mysql://mysql:3306/quant_ai?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: quant
+    password: quant123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  kafka:
+    bootstrap-servers: kafka:9092
+    producer:
+      acks: all
+      retries: 3
+      properties:
+        delivery.timeout.ms: 120000
+        request.timeout.ms: 30000
+        linger.ms: 10
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: subscription-service-notification-dispatch-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+      config:
+        server-addr: nacos:8848
+        import-check:
+          enabled: false
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+quant:
+  security:
+    auth:
+      mode: DEMO
+    service-actor:
+      secret: ${QUANT_SERVICE_ACTOR_SECRET:local-dev-service-actor-secret}
+  notification:
+    delivery:
+      channel: kafka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  health:
+    db:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}

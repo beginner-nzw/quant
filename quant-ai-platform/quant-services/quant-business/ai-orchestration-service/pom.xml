@@ -51,8 +51,81 @@
         </dependency>
         <dependency>
             <groupId>com.quant</groupId>
-            <artifactId>ai-orchestration-api</artifactId>
+            <artifactId>quant-api-ai</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-task</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-risk</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-report</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-audit</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>quant-api-config</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>report-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>risk-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>strategy-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>market-event-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>research-task-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>data-ingest-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>audit-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.quant</groupId>
+            <artifactId>config-service</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

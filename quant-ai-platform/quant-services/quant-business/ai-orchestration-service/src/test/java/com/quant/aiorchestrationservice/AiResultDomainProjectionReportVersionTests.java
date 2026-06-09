@@ -1,7 +1,7 @@
 package com.quant.aiorchestrationservice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
+import com.quant.aiorchestrator.domain.dto.ResearchReportSnapshot;
 import com.quant.aiorchestrator.manager.AiResultReportProjectionManager;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
@@ -34,7 +34,7 @@ class AiResultDomainProjectionReportVersionTests {
     void successfulProjectionCreatesReportVersionSnapshot() {
         TestDeps deps = new TestDeps();
         AiResultDomainProjectionServiceImpl service = newService(deps);
-        ResearchReportDO report = buildReport(2);
+        ResearchReportSnapshot report = buildReport(2);
 
         service.project(buildMessage(TaskStatusEnum.SUCCESS.name()), report);
 
@@ -78,8 +78,8 @@ class AiResultDomainProjectionReportVersionTests {
         return message;
     }
 
-    private static ResearchReportDO buildReport(int versionNo) {
-        ResearchReportDO report = new ResearchReportDO();
+    private static ResearchReportSnapshot buildReport(int versionNo) {
+        ResearchReportSnapshot report = new ResearchReportSnapshot();
         report.setReportId("report-1");
         report.setTaskId("task-1");
         report.setVersionNo(versionNo);

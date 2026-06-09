@@ -22,13 +22,33 @@
     <module>quant-common/quant-common-mybatis</module>
     <module>quant-common/quant-common-messaging</module>
     <module>quant-common/quant-common-security</module>
+    <module>quant-common/quant-common-sentinel</module>
 
-<!--    <module>quant-api/quant-api-task</module>-->
-<!--    <module>quant-api/quant-api-ai</module>-->
+    <module>quant-api/quant-api-user</module>
+    <module>quant-api/quant-api-task</module>
+    <module>quant-api/quant-api-risk</module>
+    <module>quant-api/quant-api-report</module>
+    <module>quant-api/quant-api-audit</module>
+    <module>quant-api/quant-api-config</module>
+    <module>quant-api/quant-api-ai</module>
+    <module>quant-api/quant-api-market</module>
+    <module>quant-api/quant-api-subscription</module>
 
+    <module>quant-business/user-service</module>
+    <module>quant-business/market-event-service</module>
     <module>quant-business/research-task-service</module>
-    <module>quant-business/ai-orchestration-api</module>
     <module>quant-business/ai-orchestration-service</module>
+    <module>quant-business/strategy-service</module>
+    <module>quant-business/risk-service</module>
+    <module>quant-business/report-service</module>
+    <module>quant-business/audit-service</module>
+    <module>quant-business/subscription-service</module>
+    <module>quant-business/data-ingest-service</module>
+    <module>quant-business/config-service</module>
+
+    <module>quant-job/dashboard-metric-job</module>
+    <module>quant-job/cache-refresh-job</module>
+    <module>quant-job/retry-compensation-job</module>
   </modules>
 
   <properties>

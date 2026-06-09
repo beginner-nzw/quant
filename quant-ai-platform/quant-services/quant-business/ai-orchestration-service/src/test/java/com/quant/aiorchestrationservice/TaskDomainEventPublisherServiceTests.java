@@ -3,7 +3,7 @@ package com.quant.aiorchestrationservice;
 import com.quant.aiorchestrator.service.impl.TaskDomainEventPublisherServiceImpl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
+import com.quant.aiorchestrator.domain.dto.ResearchReportSnapshot;
 import com.quant.aiorchestrator.domain.entity.RiskWarningDO;
 import com.quant.aiorchestrator.domain.entity.StrategySignalDO;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
@@ -12,7 +12,9 @@ import com.quant.aiorchestrator.mapper.RiskWarningMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalFactorMapper;
 import com.quant.aiorchestrator.mapper.StrategySignalMapper;
 import com.quant.aiorchestrator.manager.KafkaMessagePublisherManager;
-import com.quant.aiorchestrator.manager.TaskGeneratedDomainEventManager;
+import com.quant.aiorchestrator.manager.ReportGeneratedDomainEventManager;
+import com.quant.aiorchestrator.manager.RiskWarningGeneratedDomainEventManager;
+import com.quant.aiorchestrator.manager.StrategySignalGeneratedDomainEventManager;
 import com.quant.aiorchestrator.risk.RiskStrategyStableContract;
 import com.quant.aiorchestrator.service.TaskDomainEventPublisherService;
 import com.quant.aiorchestrator.service.TaskMessageLogService;
@@ -54,18 +56,14 @@ class TaskDomainEventPublisherServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
         TaskDomainEventPublisherService service = new TaskDomainEventPublisherServiceImpl(
-                new TaskGeneratedDomainEventManager(
-                riskWarningMapper,
-                riskWarningDetailMapper,
-                strategySignalMapper,
-                strategySignalFactorMapper,
-                        reportEvidenceRefMapper
-                ),
+                new RiskWarningGeneratedDomainEventManager(riskWarningMapper, riskWarningDetailMapper),
+                new StrategySignalGeneratedDomainEventManager(strategySignalMapper, strategySignalFactorMapper),
+                new ReportGeneratedDomainEventManager(reportEvidenceRefMapper),
                 new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
         );
 
         AiTaskResultMessage message = buildSuccessMessage();
-        ResearchReportDO report = buildReport();
+        ResearchReportSnapshot report = buildReport();
         RiskWarningDO warning = buildWarning();
         StrategySignalDO signal = buildSignal();
 
@@ -108,13 +106,9 @@ class TaskDomainEventPublisherServiceTests {
         TaskMessageLogService taskMessageLogService = mock(TaskMessageLogService.class);
 
         TaskDomainEventPublisherService service = new TaskDomainEventPublisherServiceImpl(
-                new TaskGeneratedDomainEventManager(
-                riskWarningMapper,
-                riskWarningDetailMapper,
-                strategySignalMapper,
-                strategySignalFactorMapper,
-                        reportEvidenceRefMapper
-                ),
+                new RiskWarningGeneratedDomainEventManager(riskWarningMapper, riskWarningDetailMapper),
+                new StrategySignalGeneratedDomainEventManager(strategySignalMapper, strategySignalFactorMapper),
+                new ReportGeneratedDomainEventManager(reportEvidenceRefMapper),
                 new KafkaMessagePublisherManager(objectMapper, kafkaTemplate, taskMessageLogService)
         );
 
@@ -126,7 +120,7 @@ class TaskDomainEventPublisherServiceTests {
         doReturn(CompletableFuture.completedFuture(null)).when(kafkaTemplate).send(anyString(), anyString(), anyString());
 
         AiTaskResultMessage message = buildSuccessMessage();
-        ResearchReportDO report = buildReport();
+        ResearchReportSnapshot report = buildReport();
         service.publishGeneratedEvents(message, report);
         service.publishGeneratedEvents(message, report);
 
@@ -165,8 +159,8 @@ class TaskDomainEventPublisherServiceTests {
         return message;
     }
 
-    private ResearchReportDO buildReport() {
-        ResearchReportDO report = new ResearchReportDO();
+    private ResearchReportSnapshot buildReport() {
+        ResearchReportSnapshot report = new ResearchReportSnapshot();
         report.setReportId("report-1");
         report.setTaskId("task-1");
         report.setReportType("STOCK_RESEARCH");

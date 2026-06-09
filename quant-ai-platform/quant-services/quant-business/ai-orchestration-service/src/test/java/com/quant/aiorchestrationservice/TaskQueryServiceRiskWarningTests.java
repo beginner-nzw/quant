@@ -15,9 +15,10 @@ import com.quant.aiorchestrator.manager.ReportCenterProjectionManager;
 import com.quant.aiorchestrator.manager.ReportReviewStatsManager;
 import com.quant.aiorchestrator.manager.FollowUpTaskSummaryManager;
 import com.quant.aiorchestrator.manager.ResearchWorkbenchProjectionManager;
+import com.quant.aiorchestrator.manager.RiskWarningRuleManager;
 import com.quant.aiorchestrator.manager.StrategySignalRuleManager;
 import com.quant.aiorchestrator.manager.RiskWarningProjectionManager;
-import com.quant.aiorchestrator.manager.TaskCacheVersionManager;
+import com.quant.task.port.TaskCacheVersionPort;
 import com.quant.aiorchestrator.manager.TaskReportProjectionManager;
 import com.quant.aiorchestrator.manager.TaskStateManager;
 import com.quant.aiorchestrator.mapper.AiAgentExecutionMapper;
@@ -28,7 +29,6 @@ import com.quant.aiorchestrator.mapper.ResearchReportSectionMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskRetryLogMapper;
 import com.quant.aiorchestrator.mapper.ResearchTaskStepMapper;
-import com.quant.aiorchestrator.mapper.HumanReviewRecordMapper;
 import com.quant.aiorchestrator.mapper.ReportEvidenceRefMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningDetailMapper;
 import com.quant.aiorchestrator.mapper.RiskWarningMapper;
@@ -48,15 +48,26 @@ import com.quant.aiorchestrator.service.TaskReportService;
 import com.quant.aiorchestrator.service.impl.ReportQueryServiceImpl;
 import com.quant.aiorchestrator.service.impl.ResearchWorkbenchQueryServiceImpl;
 import com.quant.aiorchestrator.service.impl.RiskQueryServiceImpl;
+import com.quant.aiorchestrator.report.ReportCenterRiskProjection;
+import com.quant.aiorchestrator.report.ReportCenterTaskProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskDetailProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskProjection;
+import com.quant.aiorchestrator.report.TaskReportRiskProjectionProvider;
+import com.quant.aiorchestrator.report.TaskReportReadPort;
 import com.quant.common.model.enums.ReportReviewStatusEnum;
 import com.quant.common.model.enums.RiskLevelEnum;
 import com.quant.common.model.enums.TaskStatusEnum;
+import com.quant.task.risk.RiskWarningTaskProjection;
+import com.quant.task.risk.RiskWarningTaskReadPort;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
@@ -489,52 +500,267 @@ class TaskQueryServiceRiskWarningTests {
         StrategySignalMapper strategySignalMapper = mock(StrategySignalMapper.class);
         StrategySignalFactorMapper strategySignalFactorMapper = mock(StrategySignalFactorMapper.class);
         RiskWarningProjectionManager riskWarningProjectionManager = new RiskWarningProjectionManager(
-                researchTaskMapper,
-                researchReportMapper,
+                taskReadPort(researchTaskMapper),
+                taskReportReadPort(researchReportMapper),
                 riskWarningMapper,
                 riskWarningDetailMapper,
-                strategySignalMapper,
-                new FollowUpTaskSummaryManager(),
-                new StrategySignalRuleManager(objectMapper)
+                new com.quant.aiorchestrator.manager.RiskWarningFollowUpSummaryManager(),
+                new RiskWarningRuleManager(objectMapper)
         );
         return new QueryServices(
                 new RiskQueryServiceImpl(riskWarningProjectionManager),
                 new ResearchWorkbenchQueryServiceImpl(
-                        new ResearchWorkbenchProjectionManager(
+                        newResearchWorkbenchProjectionManager(
                                 researchTaskMapper,
                                 researchReportMapper,
                                 riskWarningMapper,
                                 riskWarningDetailMapper,
                                 strategySignalMapper,
-                                strategySignalFactorMapper,
-                                new FollowUpTaskSummaryManager(),
-                                new StrategySignalRuleManager(objectMapper)
+                                objectMapper
                         )
                 ),
                 new ReportQueryServiceImpl(
                         new ReportCenterProjectionManager(
-                                researchTaskMapper,
-                                researchReportMapper,
-                                riskWarningMapper,
+                                taskIds -> toReportCenterTaskMap(researchTaskMapper.selectList(null)),
+                                new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(researchReportMapper),
+                                taskIds -> toReportCenterRiskMap(riskWarningMapper.selectList(null)),
                                 objectMapper
                         ),
                         new TaskReportProjectionManager(
-                                researchTaskMapper,
-                                researchReportMapper,
+                                new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(researchReportMapper),
                                 stringRedisTemplate,
                                 objectMapper,
-                                riskWarningMapper,
-                                riskWarningDetailMapper,
-                                strategySignalMapper,
-                                mock(ReportEvidenceRefMapper.class),
-                                mock(HumanReviewRecordMapper.class),
-                                mock(ResearchReportSectionMapper.class)
+                                new com.quant.aiorchestrator.manager.TaskReportDomainHydrationManager(
+                                        mock(ReportEvidenceRefMapper.class),
+                                        reportId -> List.of(),
+                                        mock(ResearchReportSectionMapper.class),
+                                        objectMapper
+                                ),
+                                taskReportRiskProvider(riskWarningMapper, riskWarningDetailMapper)
                         ),
                         new ReportReviewStatsManager(researchReportMapper),
                         mock(TaskReportService.class),
                         mock(ReportVersionService.class)
                 )
         );
+    }
+
+    private ResearchWorkbenchProjectionManager newResearchWorkbenchProjectionManager(ResearchTaskMapper researchTaskMapper,
+                                                                                    ResearchReportMapper researchReportMapper,
+                                                                                    RiskWarningMapper riskWarningMapper,
+                                                                                    RiskWarningDetailMapper riskWarningDetailMapper,
+                                                                                    StrategySignalMapper strategySignalMapper,
+                                                                                    ObjectMapper objectMapper) {
+        var taskQueryReadManager = new com.quant.aiorchestrator.manager.TaskQueryReadManager(researchTaskMapper, null, null);
+        var workbenchReadManager = new com.quant.aiorchestrator.manager.ResearchWorkbenchReadManager(
+                taskQueryReadManager,
+                new com.quant.task.workbench.ResearchWorkbenchRiskProvider() {
+                    @Override
+                    public Map<String, com.quant.task.workbench.ResearchWorkbenchRiskProjection> loadLatestRiskWarningMapByTaskIds(Set<String> taskIds) {
+                        return riskWarningMapper.selectList(null).stream()
+                                .filter(item -> taskIds == null || taskIds.contains(item.getTaskId()))
+                                .collect(Collectors.toMap(
+                                        RiskWarningDO::getTaskId,
+                                        item -> new com.quant.task.workbench.ResearchWorkbenchRiskProjection(
+                                                item.getTaskId(),
+                                                item.getWarningId(),
+                                                item.getWarningLevel(),
+                                                item.getWarningSummary(),
+                                                item.getWarningReason(),
+                                                item.getSuggestAction(),
+                                                item.getReviewStatus(),
+                                                item.getReviewerId(),
+                                                item.getReviewTime(),
+                                                item.getCreatedAt()
+                                        ),
+                                        (left, right) -> left
+                                ));
+                    }
+
+                    @Override
+                    public Map<String, List<com.quant.task.workbench.ResearchWorkbenchRiskDetailProjection>> loadRiskWarningDetailMapByWarningIds(Set<String> warningIds) {
+                        return riskWarningDetailMapper.selectList(null).stream()
+                                .filter(item -> warningIds == null || warningIds.contains(item.getWarningId()))
+                                .collect(Collectors.groupingBy(
+                                        RiskWarningDetailDO::getWarningId,
+                                        Collectors.mapping(
+                                                item -> new com.quant.task.workbench.ResearchWorkbenchRiskDetailProjection(
+                                                        item.getWarningId(),
+                                                        item.getDetailDesc(),
+                                                        item.getIndicatorName(),
+                                                        item.getIndicatorValue()
+                                                ),
+                                                Collectors.toList()
+                                        )
+                                ));
+                    }
+                },
+                taskIds -> strategySignalMapper.selectList(null).stream()
+                        .filter(item -> taskIds == null || taskIds.contains(item.getTaskId()))
+                        .collect(Collectors.toMap(
+                                com.quant.aiorchestrator.domain.entity.StrategySignalDO::getTaskId,
+                                item -> new com.quant.task.workbench.ResearchWorkbenchStrategyProjection(
+                                        item.getTaskId(),
+                                        item.getSignalDirection(),
+                                        item.getSignalLevel(),
+                                        item.getSignalScore(),
+                                        item.getConfidenceScore(),
+                                        item.getReasonSummary()
+                                ),
+                                (left, right) -> left
+                        ))
+        );
+        var workbenchRuleManager = new com.quant.aiorchestrator.manager.ResearchWorkbenchRuleManager(objectMapper);
+        return new ResearchWorkbenchProjectionManager(
+                taskQueryReadManager,
+                taskReportReadPort(researchReportMapper),
+                workbenchReadManager,
+                new com.quant.aiorchestrator.manager.ResearchWorkbenchDispositionManager(
+                        workbenchReadManager,
+                        new FollowUpTaskSummaryManager(),
+                        workbenchRuleManager
+                ),
+                workbenchRuleManager,
+                new com.quant.aiorchestrator.manager.ResearchWorkbenchItemAssembler(workbenchRuleManager)
+        );
+    }
+
+    private static Map<String, ReportCenterTaskProjection> toReportCenterTaskMap(List<ResearchTaskDO> tasks) {
+        if (tasks == null) {
+            return Map.of();
+        }
+        return tasks.stream().collect(Collectors.toMap(
+                ResearchTaskDO::getTaskId,
+                task -> new ReportCenterTaskProjection(
+                        task.getTaskId(),
+                        task.getTaskTitle(),
+                        task.getTaskType(),
+                        task.getTargetCode(),
+                        task.getTargetName(),
+                        task.getPriority(),
+                        task.getCreatedAt()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static TaskReportReadPort taskReportReadPort(ResearchReportMapper researchReportMapper) {
+        return new com.quant.aiorchestrator.manager.ReportTaskPageReadManager(researchReportMapper);
+    }
+
+    private static RiskWarningTaskReadPort taskReadPort(ResearchTaskMapper researchTaskMapper) {
+        return new RiskWarningTaskReadPort() {
+            @Override
+            public Map<String, RiskWarningTaskProjection> loadTaskMapByTaskIds(Set<String> taskIds) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return Map.of();
+                }
+                return tasks.stream()
+                        .filter(task -> taskIds == null || taskIds.contains(task.getTaskId()))
+                        .collect(Collectors.toMap(
+                                ResearchTaskDO::getTaskId,
+                                TaskQueryServiceRiskWarningTests::toTaskProjection,
+                                (left, right) -> left
+                        ));
+            }
+
+            @Override
+            public List<RiskWarningTaskProjection> loadRiskWarningFollowUpTasks() {
+                return loadFollowUpTasksBySourceDomain("RISK_WARNING");
+            }
+
+            @Override
+            public List<RiskWarningTaskProjection> loadFollowUpTasksBySourceDomain(String sourceDomain) {
+                List<ResearchTaskDO> tasks = researchTaskMapper.selectList(null);
+                if (tasks == null) {
+                    return List.of();
+                }
+                return tasks.stream()
+                        .filter(task -> sourceDomain == null || sourceDomain.equals(task.getSourceDomain()))
+                        .map(TaskQueryServiceRiskWarningTests::toTaskProjection)
+                        .toList();
+            }
+        };
+    }
+
+    private static RiskWarningTaskProjection toTaskProjection(ResearchTaskDO task) {
+        return new RiskWarningTaskProjection(
+                task.getId(),
+                task.getTaskId(),
+                task.getTaskType(),
+                task.getTaskTitle(),
+                task.getTargetCode(),
+                task.getTargetName(),
+                task.getPriority(),
+                task.getStatus(),
+                task.getCurrentStage(),
+                task.getSourceTaskId(),
+                task.getSourceReportId(),
+                task.getSourceDomain(),
+                task.getCreatedAt()
+        );
+    }
+
+    private static Map<String, ReportCenterRiskProjection> toReportCenterRiskMap(List<RiskWarningDO> risks) {
+        if (risks == null) {
+            return Map.of();
+        }
+        return risks.stream().collect(Collectors.toMap(
+                RiskWarningDO::getTaskId,
+                risk -> new ReportCenterRiskProjection(
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus(),
+                        risk.getCreatedAt()
+                ),
+                (left, right) -> left
+        ));
+    }
+
+    private static TaskReportRiskProjectionProvider taskReportRiskProvider(RiskWarningMapper riskWarningMapper,
+                                                                           RiskWarningDetailMapper riskWarningDetailMapper) {
+        return new TaskReportRiskProjectionProvider() {
+            @Override
+            public Map<String, TaskReportRiskProjection> loadLatestRiskWarningMapByTaskIds(java.util.Set<String> taskIds) {
+                return toTaskReportRiskMap(riskWarningMapper.selectList(null));
+            }
+
+            @Override
+            public Map<String, List<TaskReportRiskDetailProjection>> loadRiskWarningDetailMapByWarningIds(java.util.Set<String> warningIds) {
+                List<RiskWarningDetailDO> details = riskWarningDetailMapper.selectList(null);
+                if (details == null) {
+                    return Map.of();
+                }
+                return details.stream().collect(Collectors.groupingBy(
+                        RiskWarningDetailDO::getWarningId,
+                        Collectors.mapping(
+                                detail -> new TaskReportRiskDetailProjection(detail.getWarningId(), detail.getDetailDesc()),
+                                Collectors.toList()
+                        )
+                ));
+            }
+        };
+    }
+
+    private static Map<String, TaskReportRiskProjection> toTaskReportRiskMap(List<RiskWarningDO> risks) {
+        if (risks == null) {
+            return Map.of();
+        }
+        return risks.stream().collect(Collectors.toMap(
+                RiskWarningDO::getTaskId,
+                risk -> new TaskReportRiskProjection(
+                        risk.getWarningId(),
+                        risk.getTaskId(),
+                        risk.getWarningLevel(),
+                        risk.getWarningSummary(),
+                        risk.getWarningReason(),
+                        risk.getSuggestAction(),
+                        risk.getReviewStatus()
+                ),
+                (left, right) -> left
+        ));
     }
 
     private static final class QueryServices {

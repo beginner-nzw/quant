@@ -1,25 +1,32 @@
 package com.quant.aiorchestrator.service.impl;
 
-import com.quant.aiorchestrator.domain.entity.ResearchReportDO;
 import com.quant.aiorchestrator.manager.KafkaMessagePublisherManager;
-import com.quant.aiorchestrator.manager.TaskGeneratedDomainEventManager;
+import com.quant.aiorchestrator.domain.dto.ResearchReportSnapshot;
+import com.quant.aiorchestrator.manager.RiskWarningGeneratedDomainEventPort;
+import com.quant.aiorchestrator.manager.StrategySignalGeneratedDomainEventPort;
+import com.quant.aiorchestrator.service.ReportGeneratedDomainEventPort;
 import com.quant.aiorchestrator.service.TaskDomainEventPublisherService;
 import com.quant.common.model.enums.TaskStatusEnum;
 import com.quant.common.model.message.AiTaskResultMessage;
+import com.quant.common.model.message.GeneratedDomainEvent;
 import com.quant.common.model.message.MessageEnvelope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class TaskDomainEventPublisherServiceImpl implements TaskDomainEventPublisherService {
 
-    private final TaskGeneratedDomainEventManager generatedDomainEventManager;
+    private final RiskWarningGeneratedDomainEventPort riskWarningGeneratedDomainEventManager;
+    private final StrategySignalGeneratedDomainEventPort strategySignalGeneratedDomainEventManager;
+    private final ReportGeneratedDomainEventPort reportGeneratedDomainEventManager;
     private final KafkaMessagePublisherManager kafkaMessagePublisherManager;
 
-    public void publishGeneratedEvents(AiTaskResultMessage message, ResearchReportDO report) {
+    public void publishGeneratedEvents(AiTaskResultMessage message, ResearchReportSnapshot report) {
         if (message == null || message.getPayload() == null || report == null) {
             return;
         }
@@ -27,7 +34,13 @@ public class TaskDomainEventPublisherServiceImpl implements TaskDomainEventPubli
             return;
         }
 
-        generatedDomainEventManager.buildGeneratedEvents(message, report)
+        Stream.concat(
+                        Stream.concat(
+                                riskWarningGeneratedDomainEventManager.buildRiskWarningGeneratedEvent(message).stream(),
+                                strategySignalGeneratedDomainEventManager.buildStrategySignalGeneratedEvent(message).stream()
+                        ),
+                        Stream.of(reportGeneratedDomainEventManager.buildReportGeneratedEvent(message, report))
+                )
                 .forEach(event -> send(event.topicName(), event.key(), event.message()));
     }
 
